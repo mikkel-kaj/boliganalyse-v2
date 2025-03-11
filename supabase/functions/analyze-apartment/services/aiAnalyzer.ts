@@ -149,6 +149,7 @@ export async function ingestHtmlForLink(
 
   // Extract readable text content from HTML
   const textContent = await extractTextFromHtml(htmlContent);
+  console.log(textContent)
   console.log("Extracted text content length for initial analysis:", textContent.length);
   
   // Extract images and energy rating
