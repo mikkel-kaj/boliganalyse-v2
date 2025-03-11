@@ -166,14 +166,14 @@ const AnalysisPage = () => {
         setListing(data);
         
         // Check if we have an analysis in the JSONB column and it's properly structured
-        if (data.analysis_json && 
-            typeof data.analysis_json === 'object' && 
-            'property' in data.analysis_json && 
-            'risks' in data.analysis_json && 
-            'highlights' in data.analysis_json) {
-          console.log("Using stored analysis from database:", data.analysis_json);
+        if (data.analysis && 
+            typeof data.analysis === 'object' && 
+            'property' in data.analysis && 
+            'risks' in data.analysis && 
+            'highlights' in data.analysis) {
+          console.log("Using stored analysis from database:", data.analysis);
           
-          const analysisData = data.analysis_json;
+          const analysisData = data.analysis;
           
           // Use the stored analysis
           setProperty(analysisData.property);

@@ -50,7 +50,7 @@ export async function processListingInBackground(
       .from("apartment_listings")
       .update({
         status: "completed",
-        analysis_json: analysisJson,
+        analysis: analysisJson, // Changed from analysis_json to analysis
         updated_at: new Date().toISOString(),
       })
       .eq("id", listingId);
