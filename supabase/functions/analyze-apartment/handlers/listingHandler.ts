@@ -76,10 +76,17 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
       console.error("Failed to enable real-time updates, continuing anyway:", rtError);
     }
 
-    // Kick off background job
-    EdgeRuntime.waitUntil(
-      processListingInBackground(newListing.id, url, normalizedUrl, supabase),
-    );
+    // Add error handling for background job
+    try {
+      // Kick off background job
+      EdgeRuntime.waitUntil(
+        processListingInBackground(newListing.id, url, normalizedUrl, supabase),
+      );
+      console.log(`Background processing started for listing: ${newListing.id}`);
+    } catch (bgError) {
+      console.error(`Failed to start background processing: ${bgError}`);
+      // Still return success to client, since we created the listing entry
+    }
 
     // Return quickly to the caller
     return new Response(
@@ -93,7 +100,7 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
   } catch (error) {
     console.error("Error handling listing:", error);
     return new Response(
-      JSON.stringify({ error: "Failed to process listing" }),
+      JSON.stringify({ error: "Failed to process listing", details: String(error) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
     );
   }

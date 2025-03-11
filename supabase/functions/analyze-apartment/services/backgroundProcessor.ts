@@ -1,3 +1,4 @@
+
 import { ingestHtmlForLink, finalAnalysis } from "./aiAnalyzer.ts";
 
 /**
@@ -34,54 +35,71 @@ export async function processListingInBackground(
       .eq("id", listingId);
 
     // 3. Phase #1: Use AI to extract an "originalLink" from the first HTML
-    const { originalLink, partialAnalysis } = await ingestHtmlForLink(firstHtml);
-    console.log(`Listing ${listingId}: partial AI parse => link=${originalLink || "null"}`);
+    console.log(`Listing ${listingId}: Starting AI parsing for link extraction...`);
+    try {
+      const { originalLink, partialAnalysis } = await ingestHtmlForLink(firstHtml);
+      console.log(`Listing ${listingId}: partial AI parse => link=${originalLink || "null"}`);
+      
+      // 4. If we do NOT have an original link, we just do final analysis with the single HTML
+      let secondHtml = "";
+      if (originalLink) {
+        // Update DB => "Leder efter fejl og mangler.."
+        await supabase
+          .from("apartment_listings")
+          .update({ status: "Leder efter fejl og mangler.." })
+          .eq("id", listingId);
 
-    // 4. If we do NOT have an original link, we just do final analysis with the single HTML
-    let secondHtml = "";
-    if (originalLink) {
-      // Update DB => "Leder efter fejl og mangler.."
-      await supabase
-        .from("apartment_listings")
-        .update({ status: "Leder efter fejl og mangler.." })
-        .eq("id", listingId);
-
-      // Make second GET request
-      console.log(`Listing ${listingId}: Doing second GET => ${originalLink}`);
-      const secondResponse = await fetch(originalLink);
-      if (secondResponse.ok) {
-        secondHtml = await secondResponse.text();
-        console.log(`Listing ${listingId}: second HTML length=${secondHtml.length}`);
+        // Make second GET request
+        console.log(`Listing ${listingId}: Doing second GET => ${originalLink}`);
+        try {
+          const secondResponse = await fetch(originalLink);
+          if (secondResponse.ok) {
+            secondHtml = await secondResponse.text();
+            console.log(`Listing ${listingId}: second HTML length=${secondHtml.length}`);
+          } else {
+            console.warn(`Listing ${listingId}: second GET failed, code=${secondResponse.status}`);
+          }
+        } catch (fetchErr) {
+          console.error(`Listing ${listingId}: Error fetching second URL: ${fetchErr}`);
+          // Continue with empty secondHtml
+        }
       } else {
-        console.warn(`Listing ${listingId}: second GET failed, code=${secondResponse.status}`);
+        // If no second link was found, we still proceed with final analysis on the single HTML
+        await supabase
+          .from("apartment_listings")
+          .update({ status: "Leder efter fejl og mangler.." })
+          .eq("id", listingId);
       }
-    } else {
-      // If no second link was found, we still proceed with final analysis on the single HTML
-      await supabase
-        .from("apartment_listings")
-        .update({ status: "Leder efter fejl og mangler.." })
-        .eq("id", listingId);
+
+      // 5. Phase #2: Combine first + second HTML in final analysis
+      console.log(`Listing ${listingId}: Starting final AI analysis...`);
+      try {
+        const finalJson = await finalAnalysis(firstHtml, secondHtml);
+        console.log(`Listing ${listingId}: final analysis done.`);
+
+        // 6. Mark DB => "Analyse fuldført" + store the final result
+        const { error: updateError } = await supabase
+          .from("apartment_listings")
+          .update({
+            status: "Analyse fuldført",
+            analysis: finalJson, // store the final JSON
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", listingId);
+
+        if (updateError) {
+          throw new Error(`DB update error: ${updateError.message}`);
+        }
+
+        console.log(`Listing ${listingId}: Completed successfully!`);
+      } catch (finalAnalysisErr) {
+        console.error(`Listing ${listingId}: Error in final analysis: ${finalAnalysisErr}`);
+        throw new Error(`Final analysis failed: ${finalAnalysisErr.message}`);
+      }
+    } catch (aiErr) {
+      console.error(`Listing ${listingId}: Error in AI processing: ${aiErr}`);
+      throw new Error(`AI processing failed: ${aiErr.message}`);
     }
-
-    // 5. Phase #2: Combine first + second HTML in final analysis
-    const finalJson = await finalAnalysis(firstHtml, secondHtml);
-    console.log(`Listing ${listingId}: final analysis done.`);
-
-    // 6. Mark DB => "Analyse fuldført" + store the final result
-    const { error: updateError } = await supabase
-      .from("apartment_listings")
-      .update({
-        status: "Analyse fuldført",
-        analysis: finalJson, // store the final JSON
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", listingId);
-
-    if (updateError) {
-      throw new Error(`DB update error: ${updateError.message}`);
-    }
-
-    console.log(`Listing ${listingId}: Completed successfully!`);
   } catch (err) {
     console.error(`Listing ${listingId}: Error =>`, err);
 
