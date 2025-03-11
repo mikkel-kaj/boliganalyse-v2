@@ -1,3 +1,4 @@
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.1";
 import { corsHeaders } from "../utils/cors.ts";
 import { processListingInBackground } from "../services/backgroundProcessor.ts";
@@ -62,6 +63,18 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
     }
 
     console.log("Created new listing:", newListing.id);
+
+    // Enable real-time updates for this table (only needs to be done once, but safe to call multiple times)
+    try {
+      await supabase.rpc('alter_table_set_realtime_publication', {
+        table_name: 'apartment_listings',
+        enable: true
+      }).then((result) => {
+        console.log("Real-time publication result:", result);
+      });
+    } catch (rtError) {
+      console.error("Failed to enable real-time updates, continuing anyway:", rtError);
+    }
 
     // Kick off background job
     EdgeRuntime.waitUntil(

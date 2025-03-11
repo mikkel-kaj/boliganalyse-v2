@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import AnalysisProgress from "@/components/AnalysisProgress";
 import { 
   ArrowLeft, Share2, AlertTriangle, 
   Check, HelpCircle, Star, Send, ExternalLink, Loader2,
@@ -50,64 +51,91 @@ const AnalysisPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [risks, setRisks] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
+  const [status, setStatus] = useState<string>("Starter analyse");
   
-  useEffect(() => {
-    const fetchListing = async () => {
-      if (!id) {
-        setError("Ingen analyse-ID angivet");
+  // Function to fetch listing data
+  const fetchListing = async () => {
+    if (!id) {
+      setError("Ingen analyse-ID angivet");
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('apartment_listings')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!data) {
+        setError("Analysen blev ikke fundet");
         setLoading(false);
         return;
       }
       
-      try {
-        const { data, error } = await supabase
-          .from('apartment_listings')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
+      setListing(data);
+      setStatus(data.status || "Starter analyse");
+      
+      // If analysis is available, parse it
+      if (data.analysis && 
+          typeof data.analysis === 'object' && 
+          'property' in data.analysis) {
+        console.log("Using stored analysis from database:", data.analysis);
         
-        if (error) {
-          throw error;
-        }
+        const analysisData = data.analysis;
         
-        if (!data) {
-          setError("Analysen blev ikke fundet");
-          setLoading(false);
-          return;
-        }
+        setProperty(analysisData.property);
         
-        setListing(data);
+        const risksArray = Array.isArray(analysisData.risks) ? analysisData.risks : [];
+        const highlightsArray = Array.isArray(analysisData.highlights) ? analysisData.highlights : [];
         
-        if (data.analysis && 
-            typeof data.analysis === 'object' && 
-            'property' in data.analysis && 
-            'risks' in data.analysis && 
-            'highlights' in data.analysis) {
-          console.log("Using stored analysis from database:", data.analysis);
-          
-          const analysisData = data.analysis;
-          
-          setProperty(analysisData.property);
-          
-          const risksArray = Array.isArray(analysisData.risks) ? analysisData.risks : [];
-          const highlightsArray = Array.isArray(analysisData.highlights) ? analysisData.highlights : [];
-          
-          setRisks(risksArray);
-          setHighlights(highlightsArray);
-        } else {
-          console.log("No valid stored analysis found or analysis is incomplete");
-          setError("Analysen er ikke fuldført endnu eller indeholder ikke den forventede data.");
-        }
-        
-      } catch (err) {
-        console.error("Error fetching listing:", err);
-        setError("Der opstod en fejl ved indlæsning af analysen");
-      } finally {
-        setLoading(false);
+        setRisks(risksArray);
+        setHighlights(highlightsArray);
       }
-    };
-    
+      
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching listing:", err);
+      setError("Der opstod en fejl ved indlæsning af analysen");
+      setLoading(false);
+    }
+  };
+  
+  // Initial data fetch
+  useEffect(() => {
     fetchListing();
+  }, [id]);
+  
+  // Set up real-time subscription for status updates
+  useEffect(() => {
+    if (!id) return;
+    
+    const channel = supabase
+      .channel('table-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'apartment_listings',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          console.log('Change received!', payload);
+          // Refresh data when we receive an update
+          fetchListing();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const handleShare = () => {
@@ -127,7 +155,8 @@ const AnalysisPage = () => {
     });
   };
 
-  if (loading) {
+  // Show loading spinner only for initial load
+  if (loading && !listing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -154,16 +183,64 @@ const AnalysisPage = () => {
     );
   }
 
-  if (!property) {
+  // Analysis is not complete yet, show progress
+  if (!property || status !== "Analyse fuldført") {
+    // Try to get property address if available in the analysis
+    const address = property?.address || "Boligadresse";
+    const firstImage = property?.images && property.images.length > 0 
+      ? property.images[0] 
+      : null;
+      
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto">
-          <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-yellow-500" />
-          <h2 className="text-xl font-medium mb-2">Kunne ikke finde analyse</h2>
-          <p className="text-muted-foreground mb-6">Vi kunne ikke finde den ønskede boliganalyse.</p>
-          <Button asChild>
-            <Link to="/"><ArrowLeft className="mr-2 h-4 w-4" /> Tilbage til forsiden</Link>
-          </Button>
+      <div className="container py-12">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-2 mb-8">
+            <Button asChild variant="ghost" size="icon" className="rounded-full">
+              <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
+            </Button>
+            <h1 className="text-2xl font-medium">{address}</h1>
+          </div>
+          
+          <AnalysisProgress 
+            status={status} 
+            backgroundImage={firstImage}
+          />
+          
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-medium mb-4">Hvad sker der nu?</h2>
+              <p className="text-muted-foreground mb-4">
+                Vores AI-system arbejder på at analysere boligen. Dette inkluderer:
+              </p>
+              
+              <ul className="space-y-2 mb-4">
+                <li className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${status !== "Starter analyse" ? 'bg-green-500' : 'bg-purple animate-pulse'}`} />
+                  <span>Forberedelse af analyse</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${status === "Søger efter salgsopslag" ? 'bg-purple animate-pulse' : (status === "Starter analyse" ? 'bg-gray-300' : 'bg-green-500')}`} />
+                  <span>Indsamling af data fra boligannoncen</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${status === "Opslag fundet!" ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`} />
+                  <span>Analyse af boligens detaljer</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${status === "Leder efter fejl og mangler.." ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag", "Opslag fundet!"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`} />
+                  <span>AI-vurdering af risici og højdepunkter</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${status === "Analyse fuldført" ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <span>Færdiggørelse af analysen</span>
+                </li>
+              </ul>
+              
+              <p className="text-sm text-muted-foreground">
+                Siden opdaterer automatisk, når analysen er færdig. Du behøver ikke at genindlæse siden.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -191,18 +268,18 @@ const AnalysisPage = () => {
     const details = [];
     
     // Add primary details
-    if (property.price || property.totalPrice) {
+    if (property.price) {
       details.push({
         label: "Totalpris",
-        value: property.price || property.totalPrice || "N/A",
-        subValue: property.pricePerSqm ? `${property.pricePerSqm} kr per m²` : null
+        value: property.price,
+        subValue: property.pricePerSqm ? `${property.pricePerSqm} per m²` : null
       });
     }
     
     if (property.askingPrice) {
       details.push({
         label: "Udbudspris",
-        value: property.askingPrice || "N/A",
+        value: property.askingPrice,
         subValue: null
       });
     }
@@ -210,15 +287,15 @@ const AnalysisPage = () => {
     if (property.monthlyFee) {
       details.push({
         label: "Fællesudgift/md",
-        value: property.monthlyFee || "N/A",
+        value: property.monthlyFee,
         subValue: null
       });
     }
     
     if (property.size) {
       details.push({
-        label: "Internt boligareal",
-        value: `${property.size} ${property.sizeType || ""}`.trim(),
+        label: "Boligareal",
+        value: property.size,
         subValue: null
       });
     }
@@ -226,7 +303,7 @@ const AnalysisPage = () => {
     if (property.floor) {
       details.push({
         label: "Etage",
-        value: property.floor || "N/A",
+        value: property.floor,
         subValue: null
       });
     }
@@ -239,14 +316,22 @@ const AnalysisPage = () => {
       });
     }
     
-    // Add any additional details from otherDetails
+    // Add any additional details
     if (property.otherDetails && typeof property.otherDetails === 'object') {
       Object.entries(property.otherDetails).forEach(([key, value]) => {
-        details.push({
-          label: key,
-          value: value,
-          subValue: null
-        });
+        if (typeof value === 'string') {
+          details.push({
+            label: key,
+            value: value,
+            subValue: null
+          });
+        }
+      });
+    } else if (typeof property.otherDetails === 'string') {
+      details.push({
+        label: "Beskrivelse",
+        value: property.otherDetails,
+        subValue: null
       });
     }
     
@@ -305,7 +390,7 @@ const AnalysisPage = () => {
                         <div key={`detail-${index}`}>
                           <h3 className="text-sm text-muted-foreground">{detail.label}</h3>
                           <p className="text-xl font-bold">
-                            {detail.label.toLowerCase().includes('pris') ? 'kr ' : ''}{detail.value}
+                            {detail.value}
                           </p>
                           {detail.subValue && (
                             <p className="text-xs text-muted-foreground">{detail.subValue}</p>
