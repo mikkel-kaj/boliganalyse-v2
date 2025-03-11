@@ -230,7 +230,7 @@ export async function ingestHtmlForLink(
     body: JSON.stringify({
       model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
-      max_tokens: 5000,
+      max_tokens: 4096,
       temperature: 0.5,
     }),
   });
@@ -472,7 +472,7 @@ export async function finalAnalysis(
     body: JSON.stringify({
       model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
-      max_tokens: 5000,
+      max_tokens: 4096,
       temperature: 0.5,
     }),
   });
