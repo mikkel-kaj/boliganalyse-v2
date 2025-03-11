@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -120,18 +119,29 @@ const AnalysisPage = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'apartment_listings',
           filter: `id=eq.${id}`
         },
         (payload) => {
           console.log('Change received!', payload);
-          // Refresh data when we receive an update
-          fetchListing();
+          
+          // Directly update the status without refetching the entire listing
+          if (payload.new && payload.new.status) {
+            console.log('New status:', payload.new.status);
+            setStatus(payload.new.status);
+            
+            // If the analysis is completed, fetch the full listing with analysis data
+            if (payload.new.status === "Analyse fuldført") {
+              fetchListing();
+            }
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
       
     return () => {
       supabase.removeChannel(channel);
