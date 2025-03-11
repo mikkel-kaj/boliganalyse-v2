@@ -4,14 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewAnalysisPage = () => {
   const [url, setUrl] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!url.trim()) {
@@ -23,7 +25,7 @@ const NewAnalysisPage = () => {
       return;
     }
 
-    // In a real app, we might validate the URL format more rigorously
+    // Basic validation to check if URL contains bolig or ejendom
     if (!url.includes('bolig') && !url.includes('ejendom')) {
       toast({
         title: "Ugyldig URL",
@@ -33,8 +35,53 @@ const NewAnalysisPage = () => {
       return;
     }
 
-    // Navigate to the analysis page
-    navigate('/analyse/demo');
+    setIsAnalyzing(true);
+
+    try {
+      // Call our Supabase Edge Function to analyze the apartment listing
+      const { data, error } = await supabase.functions.invoke('analyze-apartment', {
+        body: { url }
+      });
+
+      if (error) {
+        console.error("Error calling analyze-apartment function:", error);
+        toast({
+          title: "Fejl ved analyse",
+          description: "Der opstod en fejl under analysen af boligen. Prøv igen senere.",
+          variant: "destructive"
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      console.log("Analysis response:", data);
+
+      if (data.isExisting) {
+        toast({
+          title: "Eksisterende analyse fundet",
+          description: "Vi har allerede analyseret denne bolig.",
+        });
+      } else {
+        toast({
+          title: "Analyse startet",
+          description: "Vi er ved at analysere boligannoncen. Dette kan tage op til 30 sekunder.",
+        });
+      }
+
+      // In both cases, navigate to the analysis page
+      // For now, we'll navigate to the demo page, but in a real implementation
+      // we would use the actual listing ID
+      navigate('/analyse/demo');
+    } catch (err) {
+      console.error("Error during analysis:", err);
+      toast({
+        title: "Fejl ved analyse",
+        description: "Der opstod en fejl under analysen af boligen. Prøv igen senere.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -57,6 +104,7 @@ const NewAnalysisPage = () => {
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="f.eks. https://www.boligsiden.dk/adresse/..."
                   className="pl-10"
+                  disabled={isAnalyzing}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -64,9 +112,22 @@ const NewAnalysisPage = () => {
               </p>
             </div>
             
-            <Button type="submit" className="w-full bg-purple hover:bg-purple-dark">
-              <span>Analyser bolig</span>
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button 
+              type="submit" 
+              className="w-full bg-purple hover:bg-purple-dark"
+              disabled={isAnalyzing}
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Analyserer...</span>
+                </>
+              ) : (
+                <>
+                  <span>Analyser bolig</span>
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
             
             <p className="text-xs text-center text-muted-foreground">
