@@ -34,6 +34,9 @@
     --ring: 265 86% 75%;
 
     --radius: 0.75rem;
+    
+    --purple: 265 86% 75%;
+    --purple-light: 265 86% 85%;
   }
 
   .light {
@@ -64,6 +67,9 @@
     --border: 240 5% 90%;
     --input: 240 5% 90%;
     --ring: 265 86% 75%;
+    
+    --purple: 265 86% 75%;
+    --purple-light: 265 86% 85%;
   }
 }
 
@@ -95,4 +101,54 @@
 
 .risk-badge {
   @apply px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 bg-opacity-20;
+}
+
+.text-purple {
+  @apply text-[hsl(var(--purple))];
+}
+
+.bg-purple {
+  @apply bg-[hsl(var(--purple))];
+}
+
+/* Risk categories */
+.risk-building {
+  @apply bg-amber-500 text-white;
+}
+
+.risk-technical {
+  @apply bg-blue-500 text-white;
+}
+
+.risk-safety {
+  @apply bg-red-500 text-white;
+}
+
+.risk-ventilation {
+  @apply bg-sky-500 text-white;
+}
+
+.risk-history {
+  @apply bg-gray-500 text-white;
+}
+
+/* Highlight categories */
+.highlight-transport {
+  @apply bg-green-500 text-white;
+}
+
+.highlight-kitchen {
+  @apply bg-amber-500 text-white;
+}
+
+.highlight-financial {
+  @apply bg-emerald-500 text-white;
+}
+
+.highlight-community {
+  @apply bg-blue-500 text-white;
+}
+
+.highlight-facilities {
+  @apply bg-purple-500 text-white;
 }
