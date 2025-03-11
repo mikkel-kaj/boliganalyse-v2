@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -185,6 +186,75 @@ const AnalysisPage = () => {
     id: highlight.id || `highlight-${index}`,
   }));
 
+  // Helper function to get property details
+  const getPropertyDetails = () => {
+    const details = [];
+    
+    // Add primary details
+    if (property.price || property.totalPrice) {
+      details.push({
+        label: "Totalpris",
+        value: property.price || property.totalPrice || "N/A",
+        subValue: property.pricePerSqm ? `${property.pricePerSqm} kr per m²` : null
+      });
+    }
+    
+    if (property.askingPrice) {
+      details.push({
+        label: "Udbudspris",
+        value: property.askingPrice || "N/A",
+        subValue: null
+      });
+    }
+    
+    if (property.monthlyFee) {
+      details.push({
+        label: "Fællesudgift/md",
+        value: property.monthlyFee || "N/A",
+        subValue: null
+      });
+    }
+    
+    if (property.size) {
+      details.push({
+        label: "Internt boligareal",
+        value: `${property.size} ${property.sizeType || ""}`.trim(),
+        subValue: null
+      });
+    }
+    
+    if (property.floor) {
+      details.push({
+        label: "Etage",
+        value: property.floor || "N/A",
+        subValue: null
+      });
+    }
+    
+    if (property.yearBuilt) {
+      details.push({
+        label: "Byggeår",
+        value: property.yearBuilt,
+        subValue: null
+      });
+    }
+    
+    // Add any additional details from otherDetails
+    if (property.otherDetails && typeof property.otherDetails === 'object') {
+      Object.entries(property.otherDetails).forEach(([key, value]) => {
+        details.push({
+          label: key,
+          value: value,
+          subValue: null
+        });
+      });
+    }
+    
+    return details;
+  };
+
+  const propertyDetails = getPropertyDetails();
+
   return (
     <div className="min-h-screen pb-12">
       <div className="container py-6">
@@ -231,37 +301,15 @@ const AnalysisPage = () => {
                   
                   <div className="p-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-                      <div>
-                        <h3 className="text-sm text-muted-foreground">Totalpris</h3>
-                        <p className="text-xl font-bold">kr {property.price || property.totalPrice || "N/A"}</p>
-                        <p className="text-xs text-muted-foreground">{property.pricePerSqm || "N/A"} kr per m²</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm text-muted-foreground">Udbudspris</h3>
-                        <p className="text-xl font-bold">kr {property.askingPrice || "N/A"}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm text-muted-foreground">Fællesudgift/md</h3>
-                        <p className="text-xl font-bold">kr {property.monthlyFee || "N/A"}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm text-muted-foreground">Internt boligareal</h3>
-                        <p className="text-xl font-bold">{property.size || "N/A"} m² {property.sizeType || ""}</p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm text-muted-foreground">Etage</h3>
-                        <p className="text-xl font-bold">{property.floor || "N/A"}</p>
-                      </div>
-                      {property.yearBuilt && (
-                        <div>
-                          <h3 className="text-sm text-muted-foreground">Byggeår</h3>
-                          <p className="text-xl font-bold">{property.yearBuilt}</p>
-                        </div>
-                      )}
-                      {property.otherDetails && Object.entries(property.otherDetails).map(([key, value]: [string, any]) => (
-                        <div key={key}>
-                          <h3 className="text-sm text-muted-foreground">{key}</h3>
-                          <p className="text-xl font-bold">{value}</p>
+                      {propertyDetails.map((detail, index) => (
+                        <div key={`detail-${index}`}>
+                          <h3 className="text-sm text-muted-foreground">{detail.label}</h3>
+                          <p className="text-xl font-bold">
+                            {detail.label.toLowerCase().includes('pris') ? 'kr ' : ''}{detail.value}
+                          </p>
+                          {detail.subValue && (
+                            <p className="text-xs text-muted-foreground">{detail.subValue}</p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -273,7 +321,7 @@ const AnalysisPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {risksWithIds.map((risk) => (
                           <div key={risk.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{risk.icon || risk.categoryIcon || "⚠️"}</div>
+                            <div className="text-2xl mb-1">{risk.icon || "⚠️"}</div>
                             <div className="text-xs leading-tight">{risk.title}</div>
                           </div>
                         ))}
