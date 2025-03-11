@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.1";
 
@@ -122,12 +123,15 @@ async function processListingInBackground(id: string, url: string, normalizedUrl
   console.log(`Starting background processing for listing ${id}`);
   
   try {
-    // Wait 10 seconds as requested
-    await new Promise(resolve => setTimeout(resolve, 10000));
-    console.log(`Waited 10 seconds for listing ${id}`);
+    // Update status to show we're fetching
+    await supabase
+      .from('apartment_listings')
+      .update({ status: 'fetching' })
+      .eq('id', id);
+      
+    console.log(`Fetching content from ${url}`);
     
     // Fetch the content from the URL
-    console.log(`Fetching content from ${url}`);
     const response = await fetch(url);
     
     if (!response.ok) {
@@ -136,11 +140,25 @@ async function processListingInBackground(id: string, url: string, normalizedUrl
     
     const htmlContent = await response.text();
     
-    // Update the database with the fetched content
-    const { error: updateError } = await supabase
+    console.log(`Successfully fetched HTML content for listing ${id}, length: ${htmlContent.length} characters`);
+    
+    // Update status to show we're analyzing
+    await supabase
       .from('apartment_listings')
       .update({ 
         html_content: htmlContent,
+        status: 'analyzing'
+      })
+      .eq('id', id);
+      
+    // Here you would typically analyze the HTML content
+    // For now, we'll just simulate a delay
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // Update the database with the analyzed content
+    const { error: updateError } = await supabase
+      .from('apartment_listings')
+      .update({ 
         status: 'completed',
         updated_at: new Date().toISOString()
       })

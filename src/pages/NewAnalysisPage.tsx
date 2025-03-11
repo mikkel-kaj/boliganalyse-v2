@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,50 @@ import { supabase } from "@/integrations/supabase/client";
 const NewAnalysisPage = () => {
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzingStatus, setAnalyzingStatus] = useState('');
+  const [listingId, setListingId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Effect to poll for updates if we're analyzing a listing
+  useEffect(() => {
+    if (!listingId || !isAnalyzing) return;
+    
+    const interval = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('apartment_listings')
+        .select('status, id')
+        .eq('id', listingId)
+        .single();
+      
+      if (error) {
+        console.error("Error polling for status updates:", error);
+        return;
+      }
+      
+      setAnalyzingStatus(data.status);
+      
+      if (data.status === 'completed') {
+        clearInterval(interval);
+        setIsAnalyzing(false);
+        toast({
+          title: "Analyse fuldført",
+          description: "Boliganalysen er nu klar.",
+        });
+        navigate(`/analyse/${listingId}`);
+      } else if (data.status === 'error') {
+        clearInterval(interval);
+        setIsAnalyzing(false);
+        toast({
+          title: "Fejl ved analyse",
+          description: "Der opstod en fejl under analysen. Prøv igen senere.",
+          variant: "destructive"
+        });
+      }
+    }, 2000); // Poll every 2 seconds
+    
+    return () => clearInterval(interval);
+  }, [listingId, isAnalyzing, navigate, toast]);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +78,7 @@ const NewAnalysisPage = () => {
     }
 
     setIsAnalyzing(true);
+    setAnalyzingStatus('starter');
 
     try {
       // Call our Supabase Edge Function to analyze the apartment listing
@@ -57,21 +100,22 @@ const NewAnalysisPage = () => {
       console.log("Analysis response:", data);
 
       if (data.isExisting) {
+        // If the listing already exists, navigate directly to it
         toast({
           title: "Eksisterende analyse fundet",
           description: "Vi har allerede analyseret denne bolig.",
         });
+        navigate(`/analyse/${data.listing.id}`);
+        setIsAnalyzing(false);
       } else {
+        // If it's a new analysis, set the ID for polling
+        setListingId(data.listing.id);
+        setAnalyzingStatus(data.listing.status);
         toast({
           title: "Analyse startet",
           description: "Vi er ved at analysere boligannoncen. Dette kan tage op til 30 sekunder.",
         });
       }
-
-      // In both cases, navigate to the analysis page
-      // For now, we'll navigate to the demo page, but in a real implementation
-      // we would use the actual listing ID
-      navigate('/analyse/demo');
     } catch (err) {
       console.error("Error during analysis:", err);
       toast({
@@ -79,8 +123,21 @@ const NewAnalysisPage = () => {
         description: "Der opstod en fejl under analysen af boligen. Prøv igen senere.",
         variant: "destructive"
       });
-    } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  // Render status message based on current status
+  const renderStatusMessage = () => {
+    switch (analyzingStatus) {
+      case 'fetching':
+        return 'Indlæser boligdetaljer...';
+      case 'analyzing':
+        return 'Analyserer boligdata...';
+      case 'completed':
+        return 'Analyse fuldført!';
+      default:
+        return 'Forbereder analyse...';
     }
   };
 
@@ -120,7 +177,7 @@ const NewAnalysisPage = () => {
               {isAnalyzing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  <span>Analyserer...</span>
+                  <span>{renderStatusMessage()}</span>
                 </>
               ) : (
                 <>
