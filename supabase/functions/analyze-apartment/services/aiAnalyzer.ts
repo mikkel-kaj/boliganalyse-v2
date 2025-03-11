@@ -29,13 +29,16 @@ export async function ingestHtmlForLink(
   console.log("Preparing prompt for OpenAI...");
   const prompt = `
     Du modtager første del af HTML fra en boligannonce. 
-    Din opgave i denne fase: 
-      1) Uddrag alt relevant i tekstform (f.eks. adresse, pris, overskrifter).
+    Din opgave i denne fase er:
+      1) Uddrag alt relevant i tekstform (f.eks. adresse, pris, overskrifter, energimærke, tilstandsrapport).
       2) Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL i feltet "originalLink".
+      3) Kig efter potentielle risici eller bekymringspunkter i boligteksten som kan undersøges i fase 2.
+      
     Returnér JSON:
     {
       "originalLink": "... or null if not found",
-      "infoExtract": "...some minimal extracted data..."
+      "infoExtract": "Sammenfat de vigtigste detaljer inkl. adresse, pris, størrelse, type",
+      "potentialRisks": ["Liste af potentielle risikoemner du har bemærket i teksten"]
     }
     - Svar på dansk.
     - Ingen ekstra tekst udenfor JSON.
@@ -131,8 +134,21 @@ export async function finalAnalysis(
 
   console.log("Preparing prompt for final analysis...");
   const prompt = `
-    Du har to HTML-dokumenter fra en boligannonce. 
-    Saml alle oplysninger fra begge. Returnér JSON:
+    Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
+    
+    Du har modtaget HTML fra en eller to boligannoncer (samme bolig).
+    
+    Analysér omhyggeligt HTML-indholdet med fokus på:
+    
+    1. RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
+       - Tænk på forhold som tilstandsrapport, energimærke, vedligeholdelse, økonomi, beliggenhed, juridiske forhold, osv.
+       - Inkluder konkrete handlingsanbefalinger for hver risiko (hvad køber bør spørge om/undersøge)
+    
+    2. FORDELE: Fremhæv 8-10 positive aspekter ved boligen.
+       - Fokuser på væsentlige fordele som beliggenhed, indretning, potentiale, energieffektivitet, stand, osv.
+       - Vælg passende ikoner fra listen i output-skabelonen
+    
+    Returnér JSON i dette format:
     {
       "property": {
         "address": "...",
@@ -141,37 +157,42 @@ export async function finalAnalysis(
         "pricePerM2": "...",
         "size": "...",
         "boligType": "...",
+        "energiMaerke": "...",
+        "byggeaar": "...",
         "anyOtherFieldsYouFind": "..."
       },
       "risks": [
         {
-          "category": "...",
-          "title": "...",
-          "details": "...",
-          "excerpt": "...",
+          "category": "Energi|Tilstand|Økonomi|Beliggenhed|Juridisk|Andet",
+          "title": "Kort præcis titel",
+          "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
+          "excerpt": "Kort tekstuddrag fra annoncen der understøtter dette (hvis relevant)",
           "recommendations": [
-            {"promptTitle": "Spørg megler", "prompt": "..."}
+            {"promptTitle": "Spørg megler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
           ]
         }
       ],
       "highlights": [
         {
-          "icon": "...",
-          "title": "...",
-          "details": "..."
+          "icon": "home|building|map|key|piggy-bank|scale|star|heart|award|lightbulb|thumbs-up|check|flag|search",
+          "title": "Kort præcis fordel",
+          "details": "Uddybet forklaring (2-3 sætninger)"
         }
       ]
     }
-    - Inkludér mindst 5 risks og 5 highlights, hvis muligt.
+    
+    VIGTIG VEJLEDNING:
+    - Vær grundig med RISICI - dette er den vigtigste del! Medtag også mindre risici.
+    - FORDELE skal fremhæve det positive, men må ikke ignorere sandheden.
     - Alt skal være på dansk.
-    - Hvis data mangler, sæt det til tom streng ("").
+    - Hvis data mangler, brug tom streng ("").
     - Ingen tekst udenfor JSON.
 
     Dokument 1 (første HTML):
     """${firstHtml.substring(0, 8000)}"""
 
-    Dokument 2 (anden HTML):
-    """${secondHtml.substring(0, 8000)}"""
+    ${secondHtml ? `Dokument 2 (anden HTML):
+    """${secondHtml.substring(0, 8000)}"""` : ''}
   `;
 
   console.log("Making request to OpenAI API for final analysis...");
@@ -184,7 +205,7 @@ export async function finalAnalysis(
     body: JSON.stringify({
       model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
-      max_tokens: 3000,
+      max_tokens: 3500,
       temperature: 0.5,
     }),
   });

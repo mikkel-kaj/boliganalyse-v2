@@ -60,6 +60,11 @@ export async function processListingInBackground(
       console.log(`[${listingId}] AI link extraction complete. Link found: ${originalLink || "none"}`);
       console.log(`[${listingId}] Partial analysis:`, partialAnalysis);
       
+      // Store the partial analysis for debugging purposes
+      await updateListingStatus(supabase, listingId, "Første fase analyse gennemført", {
+        partial_analysis: partialAnalysis
+      });
+      
       // 4. If we do NOT have an original link, we just do final analysis with the single HTML
       let secondHtml = "";
       if (originalLink) {
@@ -93,7 +98,9 @@ export async function processListingInBackground(
         // 6. Mark DB => "Analyse fuldført" + store the final result
         console.log(`[${listingId}] Updating database with final analysis...`);
         await updateListingStatus(supabase, listingId, "Analyse fuldført", {
-          analysis: finalJson
+          analysis: finalJson,
+          // Keep the partial_analysis field as is
+          // The partial_analysis field will be preserved since we're not overwriting it
         });
 
         console.log(`[${listingId}] Analysis completed successfully!`);
@@ -112,6 +119,7 @@ export async function processListingInBackground(
     try {
       await updateListingStatus(supabase, listingId, "Fejl", {
         error_message: String(err)
+        // The partial_analysis field will be preserved if it exists
       });
     } catch (dbErr) {
       console.error(`[${listingId}] Failed to update error status:`, dbErr);

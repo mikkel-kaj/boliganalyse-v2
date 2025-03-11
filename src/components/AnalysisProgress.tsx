@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -8,7 +7,8 @@ const statusMessages: Record<string, { message: string, progress: number }> = {
   "Starter analyse": { message: "Forbereder analyse...", progress: 5 },
   "Søger efter salgsopslag": { message: "Finder boligannoncen...", progress: 20 },
   "Opslag fundet!": { message: "Boligannonce fundet!", progress: 40 },
-  "Leder efter fejl og mangler..": { message: "Analyserer boligdetaljer...", progress: 60 },
+  "Første fase analyse gennemført": { message: "Første analyse gennemført...", progress: 50 },
+  "Leder efter fejl og mangler..": { message: "Analyserer boligdetaljer...", progress: 70 },
   "Analyse fuldført": { message: "Analyse fuldført!", progress: 100 },
   "Fejl": { message: "Der opstod en fejl under analysen", progress: 100 },
 };

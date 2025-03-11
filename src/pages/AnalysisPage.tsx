@@ -234,10 +234,14 @@ const AnalysisPage = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${status === "Opslag fundet!" ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`} />
-                  <span>Analyse af boligens detaljer</span>
+                  <span>Indledende analyse af boligen</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${status === "Leder efter fejl og mangler.." ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag", "Opslag fundet!"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`} />
+                  <div className={`h-2 w-2 rounded-full ${status === "Første fase analyse gennemført" ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag", "Opslag fundet!"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`} />
+                  <span>Identifikation af nøgleinformation</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${status === "Leder efter fejl og mangler.." ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag", "Opslag fundet!", "Første fase analyse gennemført"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`} />
                   <span>AI-vurdering af risici og højdepunkter</span>
                 </li>
                 <li className="flex items-center gap-2">
