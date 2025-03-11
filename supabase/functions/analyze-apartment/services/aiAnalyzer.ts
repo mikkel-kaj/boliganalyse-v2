@@ -230,7 +230,7 @@ export async function ingestHtmlForLink(
     body: JSON.stringify({
       model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
-      max_tokens: 1500,
+      max_tokens: 5000,
       temperature: 0.5,
     }),
   });
@@ -376,28 +376,54 @@ export async function finalAnalysis(
     ${energyRating ? `\n    Energimærke: ${energyRating}` : ''}
     ${allImages.length > 0 ? `\n    Antal billeder: ${allImages.length}` : ''}
     
+    Din opgave er at analysere boligannoncer grundigt og identificere både risici og fordele for en potentiel køber.
+    
     Analysér omhyggeligt teksten med fokus på:
+
+    1) BASAL INFORMATION: Bekræft/opdater følgende områder fra den indledende analyse:
+      - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
+      - Bygningsdetaljer: byggeår, renoveringsår, energimærke, tag, vægge, konstruktionsmateriale
+      - Økonomi: udbetaling, månedlig ydelse, ejerudgift, boligafgift, grundskyld, fællesudgifter
+      - Tilstand: stand, energimærke, vedligeholdelsesrapport, tilstandsrapport, el-rapport
+      - Området: beskrivelse af kvarteret, afstand til transport, institutioner, indkøb
+      - Historik: tidligere priser, tid på markedet, prisændringer, tidligere salg
+      
+    2) RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
+      - Prishistorik (mange prisfald?)
+      - Bygningens alder og stand
+      - Energimærkning (dårlig = højere varmeudgifter)
+      - Renoveringsbehov
+      - Område/beliggenhed (trafik, støj, fremtidig udvikling)
+      - Månedlige udgifter (høje fællesudgifter?)
+      - Juridiske forhold (andel: bestyrelsens økonomi?, forpligtelser?)
+      - Tid på markedet (lang tid = potentielle problemer?)
+      - For hver risiko, inkluder konkrete handlingsanbefalinger (hvad køber bør spørge om/undersøge)
     
-    1. RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
-       - Tænk på forhold som tilstandsrapport, energimærke, vedligeholdelse, økonomi, beliggenhed, juridiske forhold, osv.
-       - Inkluder konkrete handlingsanbefalinger for hver risiko (hvad køber bør spørge om/undersøge)
-    
-    2. FORDELE: Fremhæv 8-10 positive aspekter ved boligen.
-       - Fokuser på væsentlige fordele som beliggenhed, indretning, potentiale, energieffektivitet, stand, osv.
-       - Vælg passende ikoner fra listen i output-skabelonen
+    3) FORDELE: Fremhæv 8-10 positive aspekter ved boligen:
+      - Beliggenhed og område
+      - Indretning og planløsning
+      - Potentiale og muligheder
+      - Energieffektivitet og bæredygtighed
+      - Stand og kvalitet
+      - Økonomi og værdi
+      - Vælg passende ikoner fra listen i output-skabelonen
     
     Returnér JSON i dette format:
     {
       "property": {
         "address": "...",
         "price": "...", 
-        "buyingExpenses": "...",
+        "udbetaling": "...",
         "pricePerM2": "...",
         "size": "...",
+        "rooms": "...", 
+        "floor": "...",
         "boligType": "...",
+        "ejerform": "...",
         "energiMaerke": "${energyRating || '...'}",
         "byggeaar": "...",
-        "anyOtherFieldsYouFind": "..."
+        "renoveringsaar": "...",
+        "monthlyExpenses": "..."
       },
       "risks": [
         {
@@ -421,9 +447,11 @@ export async function finalAnalysis(
     }
     
     VIGTIG VEJLEDNING:
+    - Svar på dansk.
+    - Være grundig og fokuser på fakta frem for salgssprog.
     - Vær grundig med RISICI - dette er den vigtigste del! Medtag også mindre risici.
     - FORDELE skal fremhæve det positive, men må ikke ignorere sandheden.
-    - Alt skal være på dansk.
+    - Udtræk så mange relevante informationer som muligt.
     - Hvis data mangler, brug tom streng ("").
     - Ingen tekst udenfor JSON.
 
@@ -444,7 +472,7 @@ export async function finalAnalysis(
     body: JSON.stringify({
       model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
-      max_tokens: 3500,
+      max_tokens: 5000,
       temperature: 0.5,
     }),
   });

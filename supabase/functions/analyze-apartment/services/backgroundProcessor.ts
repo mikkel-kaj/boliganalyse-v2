@@ -31,18 +31,17 @@ async function updateListingStatus(
  */
 export async function processListingInBackground(
   listingId: string,
-  originalUrl: string,
   normalizedUrl: string,
   supabase: any,
 ) {
-  console.log(`[${listingId}] Starting background process for URL: ${originalUrl}`);
+  console.log(`[${listingId}] Starting background process for URL: ${normalizedUrl}`);
 
   try {
     // 1. Update DB: status => "Søger efter salgsopslag"
     await updateListingStatus(supabase, listingId, "Søger efter salgsopslag");
 
-    console.log(`[${listingId}] Fetching HTML from: ${originalUrl}`);
-    const response = await fetch(originalUrl);
+    console.log(`[${listingId}] Fetching HTML from: ${normalizedUrl}`);
+    const response = await fetch(normalizedUrl);
     if (!response.ok) {
       console.error(`[${listingId}] Failed to fetch listing. Status: ${response.status}`);
       throw new Error(`Failed to fetch listing. ${response.status} ${response.statusText}`);

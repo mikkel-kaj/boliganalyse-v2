@@ -80,7 +80,7 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
     try {
       // Kick off background job
       EdgeRuntime.waitUntil(
-        processListingInBackground(newListing.id, url, normalizedUrl, supabase),
+        processListingInBackground(newListing.id, normalizedUrl, supabase),
       );
       console.log(`Background processing started for listing: ${newListing.id}`);
     } catch (bgError) {
