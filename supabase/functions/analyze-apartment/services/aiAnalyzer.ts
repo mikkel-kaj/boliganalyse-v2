@@ -1,4 +1,3 @@
-
 /**
  * Two-phase AI analysis:
  *  - Phase 1: Ingest initial HTML to discover link to original posting
@@ -41,7 +40,7 @@ export async function ingestHtmlForLink(
     - Svar på dansk.
     - Ingen ekstra tekst udenfor JSON.
     HTML:
-    """${htmlContent.substring(0, 15000)}"""
+    """${htmlContent.substring(0, 10000)}"""
   `;
 
   console.log("Making request to OpenAI API...");
@@ -52,7 +51,7 @@ export async function ingestHtmlForLink(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4",
+      model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
       max_tokens: 1500,
       temperature: 0.5,
@@ -62,7 +61,21 @@ export async function ingestHtmlForLink(
   if (!response.ok) {
     const errorText = await response.text();
     console.error("OpenAI API error:", response.status, errorText);
-    throw new Error(`OpenAI error (phase1): ${response.statusText}. ${errorText}`);
+    
+    // Add more detailed error information
+    let errorDetails = `Status: ${response.status}, ${response.statusText}`;
+    try {
+      const errorJson = JSON.parse(errorText);
+      if (errorJson.error) {
+        errorDetails += `. Message: ${errorJson.error.message || 'Unknown error'}`;
+        console.error("Detailed OpenAI error:", errorJson.error);
+      }
+    } catch (e) {
+      // If JSON parsing fails, use the raw error text
+      errorDetails += `. Raw error: ${errorText}`;
+    }
+    
+    throw new Error(`OpenAI error (phase1): ${errorDetails}`);
   }
 
   const data = await response.json();
@@ -155,10 +168,10 @@ export async function finalAnalysis(
     - Ingen tekst udenfor JSON.
 
     Dokument 1 (første HTML):
-    """${firstHtml.substring(0, 12000)}"""
+    """${firstHtml.substring(0, 8000)}"""
 
     Dokument 2 (anden HTML):
-    """${secondHtml.substring(0, 12000)}"""
+    """${secondHtml.substring(0, 8000)}"""
   `;
 
   console.log("Making request to OpenAI API for final analysis...");
@@ -169,7 +182,7 @@ export async function finalAnalysis(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4",
+      model: "gpt-4-turbo-preview",
       messages: [{ role: "system", content: prompt }],
       max_tokens: 3000,
       temperature: 0.5,
@@ -179,7 +192,21 @@ export async function finalAnalysis(
   if (!response.ok) {
     const errorText = await response.text();
     console.error("OpenAI API error in final analysis:", response.status, errorText);
-    throw new Error(`OpenAI error (phase2): ${response.statusText}. ${errorText}`);
+    
+    // Add more detailed error information
+    let errorDetails = `Status: ${response.status}, ${response.statusText}`;
+    try {
+      const errorJson = JSON.parse(errorText);
+      if (errorJson.error) {
+        errorDetails += `. Message: ${errorJson.error.message || 'Unknown error'}`;
+        console.error("Detailed OpenAI error in final analysis:", errorJson.error);
+      }
+    } catch (e) {
+      // If JSON parsing fails, use the raw error text
+      errorDetails += `. Raw error: ${errorText}`;
+    }
+    
+    throw new Error(`OpenAI error (phase2): ${errorDetails}`);
   }
 
   const data = await response.json();
