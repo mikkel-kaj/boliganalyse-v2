@@ -1,17 +1,59 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const HomePage = () => {
   const [url, setUrl] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzingStatus, setAnalyzingStatus] = useState('');
+  const [listingId, setListingId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleAnalyze = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!listingId || !isAnalyzing) return;
+    
+    const interval = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('apartment_listings')
+        .select('status, id')
+        .eq('id', listingId)
+        .single();
+      
+      if (error) {
+        console.error("Error polling for status updates:", error);
+        return;
+      }
+      
+      setAnalyzingStatus(data.status);
+      
+      if (data.status === 'completed') {
+        clearInterval(interval);
+        setIsAnalyzing(false);
+        toast({
+          title: "Analyse fuldført",
+          description: "Boliganalysen er nu klar.",
+        });
+        navigate(`/analyse/${listingId}`);
+      } else if (data.status === 'error') {
+        clearInterval(interval);
+        setIsAnalyzing(false);
+        toast({
+          title: "Fejl ved analyse",
+          description: "Der opstod en fejl under analysen. Prøv igen senere.",
+          variant: "destructive"
+        });
+      }
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [listingId, isAnalyzing, navigate, toast]);
+
+  const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!url.trim()) {
@@ -23,7 +65,6 @@ const HomePage = () => {
       return;
     }
 
-    // In a real app, we might validate the URL format more rigorously
     if (!url.includes('bolig') && !url.includes('ejendom')) {
       toast({
         title: "Ugyldig URL",
@@ -33,8 +74,64 @@ const HomePage = () => {
       return;
     }
 
-    // In a mock version, we'll just redirect to the analysis page
-    navigate('/analyse/demo');
+    setIsAnalyzing(true);
+    setAnalyzingStatus('starter');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-apartment', {
+        body: { url }
+      });
+
+      if (error) {
+        console.error("Error calling analyze-apartment function:", error);
+        toast({
+          title: "Fejl ved analyse",
+          description: "Der opstod en fejl under analysen af boligen. Prøv igen senere.",
+          variant: "destructive"
+        });
+        setIsAnalyzing(false);
+        return;
+      }
+
+      console.log("Analysis response:", data);
+
+      if (data.isExisting) {
+        toast({
+          title: "Eksisterende analyse fundet",
+          description: "Vi har allerede analyseret denne bolig.",
+        });
+        navigate(`/analyse/${data.listing.id}`);
+        setIsAnalyzing(false);
+      } else {
+        setListingId(data.listing.id);
+        setAnalyzingStatus(data.listing.status);
+        toast({
+          title: "Analyse startet",
+          description: "Vi er ved at analysere boligannoncen. Dette kan tage op til 30 sekunder.",
+        });
+      }
+    } catch (err) {
+      console.error("Error during analysis:", err);
+      toast({
+        title: "Fejl ved analyse",
+        description: "Der opstod en fejl under analysen af boligen. Prøv igen senere.",
+        variant: "destructive"
+      });
+      setIsAnalyzing(false);
+    }
+  };
+
+  const renderStatusMessage = () => {
+    switch (analyzingStatus) {
+      case 'fetching':
+        return 'Indlæser boligdetaljer...';
+      case 'analyzing':
+        return 'Analyserer boligdata...';
+      case 'completed':
+        return 'Analyse fuldført!';
+      default:
+        return 'Forbereder analyse...';
+    }
   };
 
   return (
@@ -72,11 +169,25 @@ const HomePage = () => {
                   onChange={(e) => setUrl(e.target.value)}
                   className="pl-28 h-12"
                   placeholder="Indsæt link til boligannonce..."
+                  disabled={isAnalyzing}
                 />
               </div>
-              <Button type="submit" className="bg-purple hover:bg-purple-dark h-12 px-6">
-                <span>Analyser bolig</span>
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button 
+                type="submit" 
+                className="bg-purple hover:bg-purple-dark h-12 px-6"
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>{renderStatusMessage()}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Analyser bolig</span>
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
             </form>
             
@@ -156,7 +267,6 @@ const HomePage = () => {
   );
 };
 
-// Mock data for recent properties
 const recentProperties = [
   {
     address: "Mågevej 12, 2400 København",
