@@ -19,8 +19,8 @@ export async function analyzeWithAI(htmlContent: string): Promise<any> {
   // Example instruction: ask GPT to parse everything from the raw HTML
   // (address, images, price, size, risks, highlights, etc.)
   const prompt = `
-    You are a real-estate AI. You receive full HTML of a property listing. 
-    Return a JSON object with the structure:
+    Du er en ejendomsmægler-AI. Du modtager fuld HTML fra en boligannonce. 
+    Returnér et JSON-objekt med følgende struktur:
 
     {
       "property": {
@@ -28,7 +28,7 @@ export async function analyzeWithAI(htmlContent: string): Promise<any> {
         "price": "...",
         "size": "...",
         "images": ["...", ...],
-        "otherDetails": "... any additional fields you want..."
+        "otherDetails": "... andre felter, du finder relevante..."
       },
       "risks": [
         {
@@ -50,13 +50,14 @@ export async function analyzeWithAI(htmlContent: string): Promise<any> {
       ]
     }
 
-    Important:
-    - DO NOT include extra commentary or disclaimers.
-    - If you see multiple images, put them in the "images" array. 
-    - If data is missing, leave it as an empty string or null, do not guess.
-    - Provide at least 5 "risks" and 5 "highlights" if possible.
+    Vigtigt:
+    - INKLUDÉR IKKE ekstra kommentarer eller ansvarsfraskrivelser.
+    - Hvis du ser flere billeder, læg dem i "images"-arrayet. 
+    - Hvis data mangler, efterlad det som en tom streng eller null, gæt ikke.
+    - Angiv mindst 5 "risks" (risici) og 5 "highlights" (højdepunkter) hvis muligt.
+    - DU SKAL SKRIVE ALT PÅ DANSK.
 
-    Listing HTML:
+    Boligannonce HTML:
     """${htmlContent.substring(0, 15000)}"""
   `;
 
