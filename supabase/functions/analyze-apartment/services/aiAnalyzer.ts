@@ -1,3 +1,4 @@
+
 /**
  * Two-phase AI analysis:
  *  - Phase 1: Ingest initial HTML to discover link to original posting
@@ -12,16 +13,21 @@ const openAiApiUrl = "https://api.openai.com/v1/chat/completions";
 export async function ingestHtmlForLink(
   htmlContent: string,
 ): Promise<{ originalLink?: string; partialAnalysis?: any }> {
+  console.log("Starting ingestHtmlForLink with HTML length:", htmlContent?.length);
+  
   if (!htmlContent) {
+    console.warn("No HTML content provided to ingestHtmlForLink");
     return { originalLink: undefined, partialAnalysis: { error: "No HTML" } };
   }
 
-  const openAiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
+  const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
+    console.error("Missing OPENAI_API_KEY in environment");
     throw new Error("Missing OPENAI_API_KEY");
   }
 
   // 1) Prompt: find the original posting link
+  console.log("Preparing prompt for OpenAI...");
   const prompt = `
     Du modtager første del af HTML fra en boligannonce. 
     Din opgave i denne fase: 
@@ -38,6 +44,7 @@ export async function ingestHtmlForLink(
     """${htmlContent.substring(0, 15000)}"""
   `;
 
+  console.log("Making request to OpenAI API...");
   const response = await fetch(openAiApiUrl, {
     method: "POST",
     headers: {
@@ -53,11 +60,16 @@ export async function ingestHtmlForLink(
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI error (phase1): ${response.statusText}`);
+    const errorText = await response.text();
+    console.error("OpenAI API error:", response.status, errorText);
+    throw new Error(`OpenAI error (phase1): ${response.statusText}. ${errorText}`);
   }
 
   const data = await response.json();
+  console.log("Received response from OpenAI:", data);
+  
   const rawText = data?.choices?.[0]?.message?.content?.trim() || "";
+  console.log("Raw text from OpenAI:", rawText);
 
   // Attempt to parse JSON
   let parsed: any;
@@ -71,7 +83,9 @@ export async function ingestHtmlForLink(
         ? match[0]
         : rawText;
     parsed = JSON.parse(jsonString);
+    console.log("Successfully parsed JSON response:", parsed);
   } catch (err) {
+    console.error("Failed to parse OpenAI response:", err);
     parsed = { error: "Invalid JSON from AI", rawText };
   }
 
@@ -83,38 +97,26 @@ export async function ingestHtmlForLink(
 
 /**
  * Phase 2: Once we have the second HTML, produce final AI output
- * Merge the known data from the partial analysis if you want
  */
 export async function finalAnalysis(
   firstHtml: string,
   secondHtml: string,
 ): Promise<any> {
+  console.log("Starting finalAnalysis with HTML lengths:", 
+    firstHtml?.length, secondHtml?.length);
+  
   if (!firstHtml && !secondHtml) {
+    console.warn("No HTML content provided to finalAnalysis");
     return { error: "No HTML to analyze" };
   }
 
-  const openAiApiKey = Deno.env.get("OPENAI_API_KEY") || "";
+  const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
+    console.error("Missing OPENAI_API_KEY in environment");
     throw new Error("Missing OPENAI_API_KEY");
   }
 
-  /**
-   * The user wants the final JSON in the shape:
-   * {
-   *   "property": {
-   *     "address": "...",
-   *     "price": "...",
-   *     "buyingExpenses": "...",
-   *     "pricePerM2": "...",
-   *     "size": "...",
-   *     "boligType": "..."
-   *   },
-   *   "risks": [...],
-   *   "highlights": [...]
-   * }
-   *
-   * We'll instruct GPT to unify data from both HTML documents.
-   */
+  console.log("Preparing prompt for final analysis...");
   const prompt = `
     Du har to HTML-dokumenter fra en boligannonce. 
     Saml alle oplysninger fra begge. Returnér JSON:
@@ -159,6 +161,7 @@ export async function finalAnalysis(
     """${secondHtml.substring(0, 12000)}"""
   `;
 
+  console.log("Making request to OpenAI API for final analysis...");
   const response = await fetch(openAiApiUrl, {
     method: "POST",
     headers: {
@@ -174,11 +177,16 @@ export async function finalAnalysis(
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI error (phase2): ${response.statusText}`);
+    const errorText = await response.text();
+    console.error("OpenAI API error in final analysis:", response.status, errorText);
+    throw new Error(`OpenAI error (phase2): ${response.statusText}. ${errorText}`);
   }
 
   const data = await response.json();
+  console.log("Received response from OpenAI for final analysis:", data);
+  
   const rawText = data?.choices?.[0]?.message?.content?.trim() || "";
+  console.log("Raw text from OpenAI final analysis:", rawText);
 
   // Attempt JSON parse
   try {
@@ -187,6 +195,7 @@ export async function finalAnalysis(
     const jsonString =
       match && match[1] ? match[1] : match ? match[0] : rawText;
     const finalObj = JSON.parse(jsonString);
+    console.log("Successfully parsed final analysis JSON:", finalObj);
 
     // Attach an analysisDate
     return {
@@ -194,6 +203,7 @@ export async function finalAnalysis(
       analysisDate: new Date().toISOString(),
     };
   } catch (err) {
+    console.error("Failed to parse OpenAI final analysis response:", err);
     return {
       error: "Invalid JSON from AI (phase2)",
       rawText,
