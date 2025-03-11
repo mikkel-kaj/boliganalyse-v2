@@ -1,3 +1,4 @@
+
 import { ingestHtmlForLink, finalAnalysis } from "./aiAnalyzer.ts";
 
 // Helper function to update listing status with proper update timestamp
@@ -99,17 +100,23 @@ export async function processListingInBackground(
         console.log(`[${listingId}] Updating database with final analysis...`);
         await updateListingStatus(supabase, listingId, "Analyse fuldført", {
           analysis: finalJson,
-          // Keep the partial_analysis field as is
-          // The partial_analysis field will be preserved since we're not overwriting it
+          // Clear any error message if it exists
+          error_message: null
         });
 
         console.log(`[${listingId}] Analysis completed successfully!`);
       } catch (finalAnalysisErr) {
         console.error(`[${listingId}] Error in final analysis:`, finalAnalysisErr);
+        await updateListingStatus(supabase, listingId, "Fejl", {
+          error_message: `Final analysis failed: ${finalAnalysisErr.message}`
+        });
         throw new Error(`Final analysis failed: ${finalAnalysisErr.message}`);
       }
     } catch (aiErr) {
       console.error(`[${listingId}] Error in AI processing:`, aiErr);
+      await updateListingStatus(supabase, listingId, "Fejl", {
+        error_message: `AI processing failed: ${aiErr.message}`
+      });
       throw new Error(`AI processing failed: ${aiErr.message}`);
     }
   } catch (err) {
