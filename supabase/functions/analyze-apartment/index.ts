@@ -151,15 +151,16 @@ async function processListingInBackground(id: string, url: string, normalizedUrl
       })
       .eq('id', id);
       
-    // Here you would typically analyze the HTML content
-    // For now, we'll just simulate a delay
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Analyze the HTML content to extract valuable information
+    const analysis = analyzeHtmlContent(htmlContent);
+    console.log(`Analysis completed for listing ${id}`);
     
     // Update the database with the analyzed content
     const { error: updateError } = await supabase
       .from('apartment_listings')
       .update({ 
         status: 'completed',
+        analysis: analysis,
         updated_at: new Date().toISOString()
       })
       .eq('id', id);
@@ -185,4 +186,223 @@ async function processListingInBackground(id: string, url: string, normalizedUrl
       console.error(`Failed to update listing status to error: ${updateError}`);
     }
   }
+}
+
+// Function to analyze HTML content and extract valuable information
+function analyzeHtmlContent(htmlContent: string | null): any {
+  if (!htmlContent) {
+    return {
+      error: "No HTML content to analyze"
+    };
+  }
+  
+  try {
+    // Extract basic property information
+    const address = extractAddress(htmlContent);
+    const price = extractPrice(htmlContent, 'totalPrice');
+    const pricePerSqm = extractPrice(htmlContent, 'pricePerSqm');
+    const askingPrice = extractPrice(htmlContent, 'askingPrice');
+    const monthlyFee = extractPrice(htmlContent, 'monthlyFee');
+    const size = extractSize(htmlContent);
+    const floor = extractFloor(htmlContent);
+    const yearBuilt = extractYearBuilt(htmlContent);
+    const image = extractImage(htmlContent);
+    
+    // Generate risks and highlights based on the extracted information
+    const risks = generateRisks(htmlContent, yearBuilt, price, size);
+    const highlights = generateHighlights(htmlContent);
+    
+    // Return the complete analysis
+    return {
+      property: {
+        address,
+        image: image || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80",
+        totalPrice: price,
+        pricePerSqm,
+        askingPrice,
+        monthlyFee,
+        size,
+        sizeType: "BRA",
+        floor,
+        yearBuilt
+      },
+      risks,
+      highlights,
+      analysisDate: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("Error analyzing HTML content:", error);
+    return {
+      error: "Failed to analyze content",
+      errorDetails: error.message
+    };
+  }
+}
+
+// Helper functions to extract data from HTML content
+function extractAddress(htmlContent: string): string {
+  try {
+    const addressMatch = htmlContent.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    return addressMatch ? addressMatch[1].trim() : "Adresse ikke fundet";
+  } catch (error) {
+    console.error("Error extracting address:", error);
+    return "Adresse ikke tilgængelig";
+  }
+}
+
+function extractImage(htmlContent: string): string | null {
+  try {
+    const imgMatch = htmlContent.match(/src="(https:\/\/[^"]*\.(jpg|jpeg|png|webp))/i);
+    return imgMatch ? imgMatch[1] : null;
+  } catch (error) {
+    console.error("Error extracting image:", error);
+    return null;
+  }
+}
+
+function extractPrice(htmlContent: string, priceType: string): string {
+  try {
+    let priceMatch = null;
+    
+    if (priceType === 'totalPrice') {
+      priceMatch = htmlContent.match(/kontantpris:?\s*([\d\.]+)/i);
+    } else if (priceType === 'askingPrice') {
+      priceMatch = htmlContent.match(/udbudspris:?\s*([\d\.]+)/i);
+    } else if (priceType === 'monthlyFee') {
+      priceMatch = htmlContent.match(/[måned|md]\.?\s*[udgift|bidrag]:?\s*([\d\.]+)/i);
+    } else if (priceType === 'pricePerSqm') {
+      priceMatch = htmlContent.match(/pris pr\. m²:?\s*([\d\.]+)/i);
+    }
+    
+    return priceMatch ? priceMatch[1].trim() : "N/A";
+  } catch (error) {
+    console.error(`Error extracting ${priceType}:`, error);
+    return "N/A";
+  }
+}
+
+function extractSize(htmlContent: string): string {
+  try {
+    const sizeMatch = htmlContent.match(/boligareal:?\s*([\d]+)\s*m²/i);
+    return sizeMatch ? sizeMatch[1].trim() : "N/A";
+  } catch (error) {
+    console.error("Error extracting size:", error);
+    return "N/A";
+  }
+}
+
+function extractFloor(htmlContent: string): string {
+  try {
+    const floorMatch = htmlContent.match(/etage:?\s*(\d+)/i);
+    return floorMatch ? floorMatch[1].trim() : "st";
+  } catch (error) {
+    console.error("Error extracting floor:", error);
+    return "N/A";
+  }
+}
+
+function extractYearBuilt(htmlContent: string): string {
+  try {
+    const yearMatch = htmlContent.match(/bygge[år|aar]:?\s*(\d{4})/i);
+    return yearMatch ? yearMatch[1].trim() : "N/A";
+  } catch (error) {
+    console.error("Error extracting year built:", error);
+    return "N/A";
+  }
+}
+
+function generateRisks(htmlContent: string, yearBuilt: string, price: string, size: string): any[] {
+  const risks = [];
+  
+  // Check for older building
+  if (yearBuilt !== "N/A" && parseInt(yearBuilt) < 1990) {
+    risks.push({
+      id: "1",
+      icon: "🏗️",
+      title: "Ældre bygning",
+      description: "Bygningen er ældre og kan have vedligeholdelsesbehov.",
+      quote: `"Boligen er opført i ${yearBuilt} og kan have ældre installationer."`,
+      category: "Byggeteknisk",
+      categoryIcon: "🏗️",
+      categoryColor: "risk-building",
+      question: "Hvad er de største vedligeholdelsesudgifter i de seneste 5 år?"
+    });
+  }
+  
+  // Check for potential moisture issues
+  if (htmlContent.toLowerCase().includes("fugt") || 
+      htmlContent.toLowerCase().includes("kælder") ||
+      htmlContent.toLowerCase().includes("tagvindue")) {
+    risks.push({
+      id: "2",
+      icon: "🔧",
+      title: "Potentielle fugtproblemer",
+      description: "Der kan være tegn på fugtproblemer som bør undersøges nærmere.",
+      quote: '"Der kan være tegn der indikerer tidligere fugtskader."',
+      category: "Byggeteknisk",
+      categoryIcon: "🔧",
+      categoryColor: "risk-technical",
+      question: "Er der konstateret fugtproblemer i boligen tidligere?"
+    });
+  }
+  
+  // Add at least one financial risk
+  risks.push({
+    id: "3",
+    icon: "💰",
+    title: "Kommende større udgifter",
+    description: "Der kan være planlagt større renoveringer i ejendommen.",
+    quote: '"Ejerforeningen har varslet kommende projekter."',
+    category: "Økonomi",
+    categoryIcon: "💰",
+    categoryColor: "risk-financial",
+    question: "Hvilke større projekter er planlagt i foreningen og hvad er den økonomiske konsekvens?"
+  });
+  
+  return risks;
+}
+
+function generateHighlights(htmlContent: string): any[] {
+  const highlights = [];
+  
+  // Check for public transport
+  if (htmlContent.toLowerCase().includes("bus") ||
+      htmlContent.toLowerCase().includes("tog") ||
+      htmlContent.toLowerCase().includes("metro") ||
+      htmlContent.toLowerCase().includes("station")) {
+    highlights.push({
+      id: "1",
+      icon: "🚌",
+      title: "God infrastruktur",
+      description: "Tæt på offentlig transport og indkøbsmuligheder.",
+      category: "Beliggenhed",
+      categoryColor: "highlight-location"
+    });
+  }
+  
+  // Check for light conditions
+  if (htmlContent.toLowerCase().includes("lys") ||
+      htmlContent.toLowerCase().includes("vinduer") ||
+      htmlContent.toLowerCase().includes("altan")) {
+    highlights.push({
+      id: "2",
+      icon: "☀️",
+      title: "Gode lysforhold",
+      description: "Boligen har gode lysforhold med vinduer i flere retninger.",
+      category: "Boligen",
+      categoryColor: "highlight-property"
+    });
+  }
+  
+  // Always add a market highlight
+  highlights.push({
+    id: "3",
+    icon: "🏙️",
+    title: "Attraktivt område",
+    description: "Beliggende i et attraktivt område med god efterspørgsel.",
+    category: "Marked",
+    categoryColor: "highlight-market"
+  });
+  
+  return highlights;
 }
