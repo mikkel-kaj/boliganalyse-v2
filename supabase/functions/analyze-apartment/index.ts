@@ -261,7 +261,7 @@ async function analyzeWithAI(htmlContent: string): Promise<any> {
     - DO NOT include extra commentary or disclaimers.
     - If you see multiple images, put them in the "images" array. 
     - If data is missing, leave it as an empty string or null, do not guess.
-    - Provide at least 3 "risks" and 3 "highlights" if possible.
+    - Provide at least 5 "risks" and 5 "highlights" if possible.
 
     Listing HTML:
     """${htmlContent.substring(0, 15000)}"""
