@@ -273,7 +273,7 @@ const AnalysisPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {risksWithIds.map((risk) => (
                           <div key={risk.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{risk.icon || "⚠️"}</div>
+                            <div className="text-2xl mb-1">{risk.icon || risk.categoryIcon || "⚠️"}</div>
                             <div className="text-xs leading-tight">{risk.title}</div>
                           </div>
                         ))}
