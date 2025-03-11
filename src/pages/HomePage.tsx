@@ -90,7 +90,6 @@ const HomePage = () => {
     }
 
     setIsAnalyzing(true);
-    setAnalyzingStatus('starter');
 
     try {
       const { data, error } = await supabase.functions.invoke('analyze-apartment', {
@@ -116,15 +115,15 @@ const HomePage = () => {
           description: "Vi har allerede analyseret denne bolig.",
         });
         navigate(`/analyse/${data.listing.id}`);
-        setIsAnalyzing(false);
       } else {
-        setListingId(data.listing.id);
-        setAnalyzingStatus(data.listing.status);
         toast({
           title: "Analyse startet",
-          description: "Vi er ved at analysere boligannoncen. Dette kan tage op til 30 sekunder.",
+          description: "Vi er ved at analysere boligannoncen.",
         });
+        navigate(`/analyse/${data.listing.id}`);
       }
+      
+      setIsAnalyzing(false);
     } catch (err) {
       console.error("Error during analysis:", err);
       toast({
@@ -298,3 +297,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+

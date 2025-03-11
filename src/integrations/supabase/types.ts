@@ -13,9 +13,11 @@ export type Database = {
         Row: {
           analysis: Json | null
           created_at: string
+          error_message: string | null
           html_content: string | null
           id: string
           normalized_url: string
+          partial_analysis: Json | null
           status: string
           updated_at: string
           url: string
@@ -23,9 +25,11 @@ export type Database = {
         Insert: {
           analysis?: Json | null
           created_at?: string
+          error_message?: string | null
           html_content?: string | null
           id?: string
           normalized_url: string
+          partial_analysis?: Json | null
           status?: string
           updated_at?: string
           url: string
@@ -33,9 +37,11 @@ export type Database = {
         Update: {
           analysis?: Json | null
           created_at?: string
+          error_message?: string | null
           html_content?: string | null
           id?: string
           normalized_url?: string
+          partial_analysis?: Json | null
           status?: string
           updated_at?: string
           url?: string
