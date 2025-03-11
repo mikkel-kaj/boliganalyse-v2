@@ -11,7 +11,6 @@ import {
   Building, Home, Map, PiggyBank, Scale, Key, Heart, Award, ThumbsUp, Lightbulb, Flag, Search
 } from "lucide-react";
 
-// Map icon names from API to Lucide React components
 const getIconComponent = (iconName: string) => {
   const iconMap: Record<string, React.ReactNode> = {
     'check': <Check className="h-5 w-5" />,
@@ -30,18 +29,14 @@ const getIconComponent = (iconName: string) => {
     'scale': <Scale className="h-5 w-5" />
   };
   
-  // Default to Lightbulb if the icon name is not found
   return iconMap[iconName?.toLowerCase()] || <Lightbulb className="h-5 w-5" />;
 };
 
-// Emoji fallback for when icon names are provided as emoji
 const getCategoryIcon = (icon: string) => {
-  // If it's an emoji (usually a single character), return it directly
   if (icon && icon.length <= 2) {
     return icon;
   }
   
-  // Otherwise try to map to a Lucide icon
   return getIconComponent(icon);
 };
 
@@ -64,89 +59,6 @@ const AnalysisPage = () => {
       }
       
       try {
-        // If this is the demo listing
-        if (id === 'demo') {
-          // Set up demo data
-          setProperty({
-            id: 'demo',
-            address: "Strømsveien 20, 0657 Oslo",
-            timeAgo: "3 min",
-            image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80",
-            totalPrice: "2.799.073",
-            pricePerSqm: "186.515",
-            askingPrice: "2.200.000",
-            monthlyFee: "5.660",
-            size: "15",
-            sizeType: "BRA-i",
-            floor: "2",
-            yearBuilt: "1931",
-          });
-          setRisks([
-            {
-              id: "1",
-              icon: "🏗️",
-              title: "Ældre bygning",
-              description: "Bygningen er ældre og kan have vedligeholdelsesbehov.",
-              quote: '"Boligen er opført før 1950 og kan have ældre installationer."',
-              category: "Byggeteknisk",
-              categoryIcon: "🏗️",
-              categoryColor: "risk-building",
-              question: "Hvad er de største vedligeholdelsesudgifter i de seneste 5 år?"
-            },
-            {
-              id: "2",
-              icon: "🔧",
-              title: "Potentielle fugtproblemer",
-              description: "Der kan være tegn på fugtproblemer som bør undersøges nærmere.",
-              quote: '"Der kan være tegn der indikerer tidligere fugtskader."',
-              category: "Byggeteknisk",
-              categoryIcon: "🔧",
-              categoryColor: "risk-technical",
-              question: "Er der konstateret fugtproblemer i boligen tidligere?"
-            },
-            {
-              id: "3",
-              icon: "💰",
-              title: "Kommende større udgifter",
-              description: "Der kan være planlagt større renoveringer i ejendommen.",
-              quote: '"Ejerforeningen har varslet kommende projekter."',
-              category: "Økonomi",
-              categoryIcon: "💰",
-              categoryColor: "risk-financial",
-              question: "Hvilke større projekter er planlagt i foreningen og hvad er den økonomiske konsekvens?"
-            }
-          ]);
-          setHighlights([
-            {
-              id: "1",
-              icon: "🚌",
-              title: "God infrastruktur",
-              description: "Tæt på offentlig transport og indkøbsmuligheder.",
-              category: "Beliggenhed",
-              categoryColor: "highlight-location"
-            },
-            {
-              id: "2",
-              icon: "☀️",
-              title: "Gode lysforhold",
-              description: "Boligen har gode lysforhold med vinduer i flere retninger.",
-              category: "Boligen",
-              categoryColor: "highlight-property"
-            },
-            {
-              id: "3",
-              icon: "🏙️",
-              title: "Attraktivt område",
-              description: "Beliggende i et attraktivt område med god efterspørgsel.",
-              category: "Marked",
-              categoryColor: "highlight-market"
-            }
-          ]);
-          setLoading(false);
-          return;
-        }
-        
-        // Fetch the actual listing from Supabase
         const { data, error } = await supabase
           .from('apartment_listings')
           .select('*')
@@ -165,7 +77,6 @@ const AnalysisPage = () => {
         
         setListing(data);
         
-        // Check if we have an analysis in the JSONB column and it's properly structured
         if (data.analysis && 
             typeof data.analysis === 'object' && 
             'property' in data.analysis && 
@@ -175,10 +86,13 @@ const AnalysisPage = () => {
           
           const analysisData = data.analysis;
           
-          // Use the stored analysis
           setProperty(analysisData.property);
-          setRisks(analysisData.risks || []);
-          setHighlights(analysisData.highlights || []);
+          
+          const risksArray = Array.isArray(analysisData.risks) ? analysisData.risks : [];
+          const highlightsArray = Array.isArray(analysisData.highlights) ? analysisData.highlights : [];
+          
+          setRisks(risksArray);
+          setHighlights(highlightsArray);
         } else {
           console.log("No valid stored analysis found or analysis is incomplete");
           setError("Analysen er ikke fuldført endnu eller indeholder ikke den forventede data.");
@@ -257,12 +171,10 @@ const AnalysisPage = () => {
   const originalUrl = listing?.url || "";
   const timeAgoDisplay = listing ? "Lige nu" : property.timeAgo || "Lige nu";
   
-  // Ensure we display the primary image
   const mainImage = property.images && property.images.length > 0 
     ? property.images[0] 
     : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
 
-  // Add ID to risks and highlights if they don't have one
   const risksWithIds = risks.map((risk, index) => ({
     ...risk,
     id: risk.id || `risk-${index}`,
@@ -277,7 +189,6 @@ const AnalysisPage = () => {
     <div className="min-h-screen pb-12">
       <div className="container py-6">
         <div className="flex flex-col gap-6">
-          {/* Header with address and actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost" size="icon" className="rounded-full">
@@ -308,7 +219,6 @@ const AnalysisPage = () => {
             </div>
           </div>
           
-          {/* Main content */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card>
@@ -320,7 +230,6 @@ const AnalysisPage = () => {
                   />
                   
                   <div className="p-6">
-                    {/* Property details */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
                       <div>
                         <h3 className="text-sm text-muted-foreground">Totalpris</h3>
@@ -388,7 +297,6 @@ const AnalysisPage = () => {
                 </CardContent>
               </Card>
               
-              {/* Risk analysis section */}
               <Card className="mt-6">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
@@ -441,7 +349,6 @@ const AnalysisPage = () => {
                 </CardContent>
               </Card>
               
-              {/* Highlights section */}
               <Card className="mt-6">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-2 mb-4">
@@ -530,7 +437,6 @@ const AnalysisPage = () => {
                 </CardContent>
               </Card>
               
-              {/* Gallery if we have multiple images */}
               {property.images && property.images.length > 1 && (
                 <Card className="mt-6">
                   <CardHeader>
