@@ -15,6 +15,54 @@ declare const Deno: {
 const openAiApiUrl = "https://api.openai.com/v1/chat/completions";
 
 /**
+ * Extract images and energy rating from the HTML
+ * This helps provide visual information that LLMs can't analyze directly
+ */
+async function extractImagesAndRating(htmlContent: string): Promise<{ 
+  images: { url: string, alt?: string }[];
+  energyRating?: string;
+}> {
+  if (!htmlContent) return { images: [] };
+  
+  try {
+    // Default result with empty arrays
+    const result = {
+      images: [] as { url: string, alt?: string }[],
+      energyRating: undefined as string | undefined
+    };
+    
+    // Extract images from the presentation carousel
+    const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*alt="([^"]+)"[^>]*>/gi;
+    let imgMatch;
+    
+    while ((imgMatch = imgRegex.exec(htmlContent)) !== null) {
+      const url = imgMatch[1];
+      const alt = imgMatch[2];
+      
+      // Only add unique image URLs
+      if (url && !result.images.some(img => img.url === url)) {
+        result.images.push({ url, alt });
+      }
+    }
+    
+    // Extract energy rating
+    // Look for the SVG with title "Energimærke X"
+    const energyRatingRegex = /<svg[^>]*><title>Energimærke\s+([A-G])<\/title>/i;
+    const energyMatch = htmlContent.match(energyRatingRegex);
+    
+    if (energyMatch && energyMatch[1]) {
+      result.energyRating = energyMatch[1];
+    }
+    
+    console.log(`Extracted ${result.images.length} images and energy rating: ${result.energyRating || 'none found'}`);
+    return result;
+  } catch (error) {
+    console.error("Error extracting images and rating from HTML:", error);
+    return { images: [] };
+  }
+}
+
+/**
  * Extract readable text content from HTML
  * This helps filter out boilerplate code, scripts, styles, etc.
  */
@@ -102,6 +150,9 @@ export async function ingestHtmlForLink(
   // Extract readable text content from HTML
   const textContent = await extractTextFromHtml(htmlContent);
   console.log("Extracted text content length for initial analysis:", textContent.length);
+  
+  // Extract images and energy rating
+  const { images, energyRating } = await extractImagesAndRating(htmlContent);
 
   const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
@@ -162,6 +213,8 @@ export async function ingestHtmlForLink(
     - Være grundig og fokuser på fakta frem for salgssprog.
     - Udtræk så mange relevante informationer som muligt.
     - Ingen ekstra tekst udenfor JSON.
+    ${energyRating ? `\n    - Bemærk: Jeg har identificeret energimærke ${energyRating} i annoncen.` : ''}
+    ${images.length > 0 ? `\n    - Jeg har identificeret ${images.length} billeder af boligen.` : ''}
     
     Annoncetekst:
     """${textContent}"""
@@ -221,9 +274,44 @@ export async function ingestHtmlForLink(
         : rawText;
     parsed = JSON.parse(jsonString);
     console.log("Successfully parsed JSON response:", parsed);
+    
+    // Make sure the extracted images and energy rating are included
+    if (!parsed.images || parsed.images.length === 0) {
+      parsed.images = images.map(img => ({
+        type: img.alt?.toLowerCase().includes("plantegning") ? "floorplan" : "interior",
+        url: img.url
+      }));
+    }
+    
+    // Add energy rating if found but not in the AI response
+    if (energyRating) {
+      const hasEnergyRating = parsed.fact?.some((f: any) => 
+        f.label.toLowerCase().includes("energimærke") || 
+        f.label.toLowerCase().includes("energimaerke")
+      );
+      
+      if (!hasEnergyRating) {
+        if (!parsed.fact) parsed.fact = [];
+        parsed.fact.push({
+          label: "Energimærke",
+          value: energyRating
+        });
+      }
+    }
   } catch (err) {
     console.error("Failed to parse OpenAI response:", err);
-    parsed = { error: "Invalid JSON from AI", rawText };
+    parsed = { 
+      error: "Invalid JSON from AI", 
+      rawText,
+      images: images.map(img => ({
+        type: img.alt?.toLowerCase().includes("plantegning") ? "floorplan" : "interior",
+        url: img.url
+      })),
+      fact: energyRating ? [{
+        label: "Energimærke",
+        value: energyRating
+      }] : []
+    };
   }
 
   return {
@@ -254,6 +342,21 @@ export async function finalAnalysis(
   
   console.log("Extracted text content lengths:", firstText.length, secondText.length);
 
+  // Extract images and energy ratings from both HTML sources
+  const firstExtraction = await extractImagesAndRating(firstHtml);
+  const secondExtraction = secondHtml ? await extractImagesAndRating(secondHtml) : { images: [] };
+  
+  // Combine and deduplicate images from both sources
+  const allImages = [...firstExtraction.images];
+  secondExtraction.images.forEach(img => {
+    if (!allImages.some(existingImg => existingImg.url === img.url)) {
+      allImages.push(img);
+    }
+  });
+  
+  // Take the energy rating from either source, prioritizing the first one
+  const energyRating = firstExtraction.energyRating || secondExtraction.energyRating;
+
   const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
     console.error("Missing OPENAI_API_KEY in environment");
@@ -270,6 +373,8 @@ export async function finalAnalysis(
     Jeg har allerede udført en indledende analyse, som du skal bruge som udgangspunkt:
     ${JSON.stringify(partialAnalysis, null, 2)}
     ` : ''}
+    ${energyRating ? `\n    Energimærke: ${energyRating}` : ''}
+    ${allImages.length > 0 ? `\n    Antal billeder: ${allImages.length}` : ''}
     
     Analysér omhyggeligt teksten med fokus på:
     
@@ -290,7 +395,7 @@ export async function finalAnalysis(
         "pricePerM2": "...",
         "size": "...",
         "boligType": "...",
-        "energiMaerke": "...",
+        "energiMaerke": "${energyRating || '...'}",
         "byggeaar": "...",
         "anyOtherFieldsYouFind": "..."
       },
@@ -311,7 +416,8 @@ export async function finalAnalysis(
           "title": "Kort præcis fordel",
           "details": "Uddybet forklaring (2-3 sætninger)"
         }
-      ]
+      ],
+      "images": ${JSON.stringify(allImages.slice(0, 10))}
     }
     
     VIGTIG VEJLEDNING:
@@ -378,6 +484,15 @@ export async function finalAnalysis(
     const finalObj = JSON.parse(jsonString);
     console.log("Successfully parsed final analysis JSON:", finalObj);
 
+    // Make sure the extracted images and energy rating are included
+    if (!finalObj.images || finalObj.images.length === 0) {
+      finalObj.images = allImages;
+    }
+    
+    if (energyRating && (!finalObj.property.energiMaerke || finalObj.property.energiMaerke === '...')) {
+      finalObj.property.energiMaerke = energyRating;
+    }
+
     // Attach an analysisDate
     return {
       ...finalObj,
@@ -388,6 +503,8 @@ export async function finalAnalysis(
     return {
       error: "Invalid JSON from AI (phase2)",
       rawText,
+      images: allImages,
+      energyRating
     };
   }
 }
