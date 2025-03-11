@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -223,7 +223,11 @@ const HomePage = () => {
                 if (!analysis?.property) return null;
 
                 return (
-                  <div key={listing.id} className="property-card bg-card rounded-xl overflow-hidden border border-border">
+                  <Link
+                    key={listing.id}
+                    to={`/analyse/${listing.id}`}
+                    className="property-card bg-card rounded-xl overflow-hidden border border-border hover:border-purple/30 transition-all"
+                  >
                     <div className="relative">
                       <img 
                         src={analysis.property.images?.[0] || '/placeholder.svg'} 
@@ -269,7 +273,7 @@ const HomePage = () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
