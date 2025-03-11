@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { ArrowRight, Search, Loader2 } from "lucide-react";
+import { ArrowRight, Search, Loader2, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
 
 const NewAnalysisPage = () => {
   const [url, setUrl] = useState('');
@@ -81,7 +82,6 @@ const NewAnalysisPage = () => {
     setAnalyzingStatus('starter');
 
     try {
-      // Call our Supabase Edge Function to analyze the apartment listing
       const { data, error } = await supabase.functions.invoke('analyze-apartment', {
         body: { url }
       });
@@ -100,7 +100,6 @@ const NewAnalysisPage = () => {
       console.log("Analysis response:", data);
 
       if (data.isExisting) {
-        // If the listing already exists, navigate directly to it
         toast({
           title: "Eksisterende analyse fundet",
           description: "Vi har allerede analyseret denne bolig.",
@@ -108,7 +107,6 @@ const NewAnalysisPage = () => {
         navigate(`/analyse/${data.listing.id}`);
         setIsAnalyzing(false);
       } else {
-        // If it's a new analysis, set the ID for polling
         setListingId(data.listing.id);
         setAnalyzingStatus(data.listing.status);
         toast({
@@ -133,7 +131,7 @@ const NewAnalysisPage = () => {
       case 'fetching':
         return 'Indlæser boligdetaljer...';
       case 'analyzing':
-        return 'Analyserer boligdata...';
+        return 'Analyserer boligdata med AI...';
       case 'completed':
         return 'Analyse fuldført!';
       default:
@@ -144,57 +142,91 @@ const NewAnalysisPage = () => {
   return (
     <div className="container py-12">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Ny analyse</h1>
-        
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="text-lg font-medium mb-4">Indtast boligannonce</h2>
-          
-          <form onSubmit={handleAnalyze} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Indsæt link til boligannonce
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input 
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="f.eks. https://www.boligsiden.dk/adresse/..."
-                  className="pl-10"
-                  disabled={isAnalyzing}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Du kan indsætte URL'en fra salgsopslaget på Boligsiden, Home, EDC, danbolig osv.
-              </p>
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full bg-purple hover:bg-purple-dark"
-              disabled={isAnalyzing}
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  <span>{renderStatusMessage()}</span>
-                </>
-              ) : (
-                <>
-                  <span>Analyser bolig</span>
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-            
-            <p className="text-xs text-center text-muted-foreground">
-              Vi henter og analyserer boligdata fra annoncen ved hjælp af kunstig intelligens.
-              Analysen tager normalt under 30 sekunder.
-            </p>
-          </form>
+        <div className="text-center mb-8">
+          <Home className="h-12 w-12 mx-auto mb-4 text-purple" />
+          <h1 className="text-3xl font-bold mb-2">Ny boliganalyse</h1>
+          <p className="text-muted-foreground">
+            Indsæt link til en boligannonce, og lad vores AI analysere den for dig
+          </p>
         </div>
         
-        <div className="mt-8">
+        <Card>
+          <CardContent className="p-6">
+            <form onSubmit={handleAnalyze} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Indsæt link til boligannonce
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input 
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="f.eks. https://www.boligsiden.dk/adresse/..."
+                    className="pl-10"
+                    disabled={isAnalyzing}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Du kan indsætte URL'en fra salgsopslaget på Boligsiden, Home, EDC, danbolig osv.
+                </p>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full bg-purple hover:bg-purple-dark"
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <span>{renderStatusMessage()}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Analyser bolig</span>
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {isAnalyzing && (
+          <Card className="mt-6">
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2 w-2 rounded-full ${
+                      analyzingStatus === 'fetching' ? 'bg-blue-500 animate-pulse' : 
+                      analyzingStatus === 'analyzing' ? 'bg-purple animate-pulse' : 
+                      analyzingStatus === 'completed' ? 'bg-green-500' : 'bg-gray-300'
+                    }`} />
+                    <span className="text-sm font-medium">{renderStatusMessage()}</span>
+                  </div>
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-purple transition-all duration-500"
+                    style={{ 
+                      width: analyzingStatus === 'fetching' ? '33%' :
+                             analyzingStatus === 'analyzing' ? '66%' :
+                             analyzingStatus === 'completed' ? '100%' : '0%' 
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-center text-muted-foreground">
+                  Vi bruger kunstig intelligens til at analysere boligen. Dette kan tage op til 30 sekunder.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="mt-12">
           <h2 className="text-lg font-medium mb-4">Sådan virker det</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
