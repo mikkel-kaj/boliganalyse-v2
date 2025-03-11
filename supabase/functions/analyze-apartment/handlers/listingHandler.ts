@@ -7,12 +7,11 @@ import { processListingInBackground } from "../services/backgroundProcessor.ts";
  */
 export async function handleListing(url: string, normalizedUrl: string): Promise<Response> {
   try {
-    // Initialize Supabase client using env variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if listing already exists
+    // 1) Check if listing already exists
     const { data: existingListing, error: lookupError } = await supabase
       .from("apartment_listings")
       .select("*")
@@ -22,14 +21,14 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
     if (lookupError) {
       console.error("Error looking up existing listing:", lookupError);
       return new Response(
-        JSON.stringify({ error: "Failed to check for existing listing" }),
+        JSON.stringify({ error: "Failed to check existing listing" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 },
       );
     }
 
     if (existingListing) {
-      // If found, return immediately
-      console.log("Found existing listing:", existingListing.id);
+      // If found, don't reprocess
+      console.log("Listing already in DB:", existingListing.id);
       return new Response(
         JSON.stringify({
           message: "Listing found in database",
@@ -40,14 +39,15 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
       );
     }
 
-    // Otherwise, create a new DB row
+    // 2) Insert new row with initial status = "Starter analyse"
     const { data: newListing, error: insertError } = await supabase
       .from("apartment_listings")
       .insert([
         {
           url,
           normalized_url: normalizedUrl,
-          status: "fetching",
+          // Danish statuses:
+          status: "Starter analyse"
         },
       ])
       .select()
@@ -63,7 +63,7 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
 
     console.log("Created new listing:", newListing.id);
 
-    // Launch background job to fetch & analyze
+    // Kick off background job
     EdgeRuntime.waitUntil(
       processListingInBackground(newListing.id, url, normalizedUrl, supabase),
     );

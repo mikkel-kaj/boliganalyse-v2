@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "./utils/cors.ts";
 import { normalizeUrl } from "./utils/url.ts";
@@ -14,6 +13,7 @@ serve(async (req) => {
   }
 
   try {
+    // The request body is expected to contain { url }
     const { url } = await req.json();
     console.log("Received request to analyze URL:", url);
 
@@ -28,7 +28,7 @@ serve(async (req) => {
     const normalizedUrl = normalizeUrl(url);
     console.log("Normalized URL:", normalizedUrl);
 
-    // Process the listing
+    // Delegate to the listingHandler to check or create a new listing
     return await handleListing(url, normalizedUrl);
     
   } catch (error) {
