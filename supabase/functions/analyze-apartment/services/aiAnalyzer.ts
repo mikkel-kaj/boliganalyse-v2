@@ -15,6 +15,78 @@ declare const Deno: {
 const openAiApiUrl = "https://api.openai.com/v1/chat/completions";
 
 /**
+ * Extract readable text content from HTML
+ * This helps filter out boilerplate code, scripts, styles, etc.
+ */
+async function extractTextFromHtml(htmlContent: string): Promise<string> {
+  if (!htmlContent) return "";
+  
+  try {
+    // Use a simple regex-based approach instead of DOM parsing
+    // This is less elegant but avoids the module import issues
+    
+    // Remove scripts, styles, and other non-content elements
+    let cleanedHtml = htmlContent
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, " ")
+      .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, " ")
+      .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, " ")
+      .replace(/<path\b[^<]*(?:(?!<\/path>)<[^<]*)*<\/path>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " "); // Remove comments
+      
+    // Extract links and preserve them
+    const linkRegex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
+    const links: {url: string, text: string}[] = [];
+    let linkMatch;
+    
+    while ((linkMatch = linkRegex.exec(cleanedHtml)) !== null) {
+      links.push({
+        url: linkMatch[1],
+        text: linkMatch[2].replace(/<[^>]+>/g, '').trim()
+      });
+    }
+    
+    // Replace all HTML tags with spaces or line breaks
+    cleanedHtml = cleanedHtml
+      .replace(/<(\/)?h[1-6][^>]*>/gi, "\n# ") // Headings
+      .replace(/<(\/)?p[^>]*>/gi, "\n\n") // Paragraphs
+      .replace(/<(\/)?div[^>]*>/gi, "\n") // Divs
+      .replace(/<(\/)?tr[^>]*>/gi, "\n") // Table rows
+      .replace(/<(\/)?li[^>]*>/gi, "\n• ") // List items
+      .replace(/<br\s*\/?>/gi, "\n") // Line breaks
+      .replace(/<hr\s*\/?>/gi, "\n---\n") // Horizontal rules
+      .replace(/<[^>]+>/g, " ") // Any other tags
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&apos;/g, "'");
+    
+    // Clean up whitespace
+    let textContent = cleanedHtml
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    
+    // Append links at the end for reference
+    if (links.length > 0) {
+      textContent += "\n\nLinks found in document:\n";
+      links.forEach(link => {
+        textContent += `- ${link.text || 'Link'}: ${link.url}\n`;
+      });
+    }
+    
+    return textContent;
+  } catch (error) {
+    console.error("Error extracting text from HTML:", error);
+    // Fallback to substring of raw HTML
+    return htmlContent.substring(0, 10000);
+  }
+}
+
+/**
  * Phase 1: Identify "original posting" link from the first HTML
  */
 export async function ingestHtmlForLink(
@@ -27,6 +99,10 @@ export async function ingestHtmlForLink(
     return { originalLink: undefined, partialAnalysis: { error: "No HTML" } };
   }
 
+  // Extract readable text content from HTML
+  const textContent = await extractTextFromHtml(htmlContent);
+  console.log("Extracted text content length for initial analysis:", textContent.length);
+
   const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
     console.error("Missing OPENAI_API_KEY in environment");
@@ -36,7 +112,7 @@ export async function ingestHtmlForLink(
   // 1) Prompt: find the original posting link
   console.log("Preparing prompt for OpenAI...");
   const prompt = `
-    Du modtager første del af HTML fra en boligannonce. 
+    Du modtager første del af tekst fra en boligannonce. 
     Din opgave i denne fase er at uddrage så meget relevant information som muligt:
 
     1) Uddrag ALLE relevante detaljer om boligen:
@@ -71,6 +147,7 @@ export async function ingestHtmlForLink(
           "label": "...",
           "value": "..."
         },
+        ...
       ],
       "potentialRisks": ["Liste af potentielle risikoemner du har bemærket i teksten"],
       "images": [
@@ -86,8 +163,8 @@ export async function ingestHtmlForLink(
     - Udtræk så mange relevante informationer som muligt.
     - Ingen ekstra tekst udenfor JSON.
     
-    HTML:
-    """${htmlContent.substring(0, 10000)}"""
+    Annoncetekst:
+    """${textContent}"""
   `;
 
   console.log("Making request to OpenAI API...");
@@ -171,6 +248,12 @@ export async function finalAnalysis(
     return { error: "No HTML to analyze" };
   }
 
+  // Extract readable text content from HTML
+  const firstText = await extractTextFromHtml(firstHtml);
+  const secondText = secondHtml ? await extractTextFromHtml(secondHtml) : "";
+  
+  console.log("Extracted text content lengths:", firstText.length, secondText.length);
+
   const openAiApiKey = Deno.env.get("OPENAI_API_KEY");
   if (!openAiApiKey) {
     console.error("Missing OPENAI_API_KEY in environment");
@@ -181,14 +264,14 @@ export async function finalAnalysis(
   const prompt = `
     Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
     
-    Du har modtaget HTML fra en eller to boligannoncer (samme bolig).
+    Du har modtaget tekst fra en eller to boligannoncer (samme bolig).
     ${partialAnalysis ? `
     
-    Jeg har allerede udført en indledende analyse, som du kan bruge som reference:
+    Jeg har allerede udført en indledende analyse, som du skal bruge som udgangspunkt:
     ${JSON.stringify(partialAnalysis, null, 2)}
     ` : ''}
     
-    Analysér omhyggeligt HTML-indholdet med fokus på:
+    Analysér omhyggeligt teksten med fokus på:
     
     1. RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
        - Tænk på forhold som tilstandsrapport, energimærke, vedligeholdelse, økonomi, beliggenhed, juridiske forhold, osv.
@@ -238,9 +321,11 @@ export async function finalAnalysis(
     - Hvis data mangler, brug tom streng ("").
     - Ingen tekst udenfor JSON.
 
+    Dokument 1 (første annonce):
+    """${firstText}"""
 
-    ${secondHtml ? `Dokument 2 (anden HTML):
-    """${secondHtml}"""` : ''}
+    ${secondText ? `Dokument 2 (anden annonce):
+    """${secondText}"""` : ''}
   `;
 
   console.log("Making request to OpenAI API for final analysis...");
