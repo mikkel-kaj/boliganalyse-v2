@@ -1,8 +1,16 @@
+// deno-lint-ignore-file no-explicit-any
 /**
  * Two-phase AI analysis:
  *  - Phase 1: Ingest initial HTML to discover link to original posting
  *  - Phase 2: After second GET, combine both HTMLs for final AI analysis
  */
+
+// Add Deno types reference for development environment
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const openAiApiUrl = "https://api.openai.com/v1/chat/completions";
 
@@ -29,19 +37,55 @@ export async function ingestHtmlForLink(
   console.log("Preparing prompt for OpenAI...");
   const prompt = `
     Du modtager første del af HTML fra en boligannonce. 
-    Din opgave i denne fase er:
-      1) Uddrag alt relevant i tekstform (f.eks. adresse, pris, overskrifter, energimærke, tilstandsrapport).
-      2) Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL i feltet "originalLink".
-      3) Kig efter potentielle risici eller bekymringspunkter i boligteksten som kan undersøges i fase 2.
+    Din opgave i denne fase er at uddrage så meget relevant information som muligt:
+
+    1) Uddrag ALLE relevante detaljer om boligen:
+      - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
+      - Bygningsdetaljer: byggeår, renoveringsår, energimærke, tag, vægge, konstruktionsmateriale
+      - Økonomi: udbetaling, månedlig ydelse, ejerudgift, boligafgift, grundskyld, fællesudgifter
+      - Tilstand: stand, energimærke, vedligeholdelsesrapport, tilstandsrapport, el-rapport
+      - Området: beskrivelse af kvarteret, afstand til transport, institutioner, indkøb
+      - Historik: tidligere priser, tid på markedet, prisændringer, tidligere salg
+      - Plantegninger: information om rumfordeling
+      - Ejendomsmægler: navn, kontaktinfo, webside, "vis mere info" links
+
+    2) Originallink: Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL.
+
+    3) Risici: Identificer potentielle bekymringspunkter ud fra:
+      - Prishistorik (mange prisfald?)
+      - Bygningens alder og stand
+      - Energimærkning (dårlig = højere varmeudgifter)
+      - Renoveringsbehov
+      - Område/beliggenhed (trafik, støj, fremtidig udvikling)
+      - Månedlige udgifter (høje fællesudgifter?)
+      - Juridiske forhold (andel: bestyrelsens økonomi?, forpligtelser?)
+      - Tid på markedet (lang tid = potentielle problemer?)
+      
+    4) Billeder: Find links til boligens billeder og særligt plantegninger
       
     Returnér JSON:
     {
       "originalLink": "... or null if not found",
-      "infoExtract": "Sammenfat de vigtigste detaljer inkl. adresse, pris, størrelse, type",
-      "potentialRisks": ["Liste af potentielle risikoemner du har bemærket i teksten"]
+      "fact": [
+        {
+          "label": "...",
+          "value": "..."
+        },
+      ],
+      "potentialRisks": ["Liste af potentielle risikoemner du har bemærket i teksten"],
+      "images": [
+        {
+          "type": "exterior/interior/floorplan",
+          "url": "..."
+        },
+        ...
+      ]
     }
     - Svar på dansk.
+    - Være grundig og fokuser på fakta frem for salgssprog.
+    - Udtræk så mange relevante informationer som muligt.
     - Ingen ekstra tekst udenfor JSON.
+    
     HTML:
     """${htmlContent.substring(0, 10000)}"""
   `;
@@ -117,6 +161,7 @@ export async function ingestHtmlForLink(
 export async function finalAnalysis(
   firstHtml: string,
   secondHtml: string,
+  partialAnalysis?: any
 ): Promise<any> {
   console.log("Starting finalAnalysis with HTML lengths:", 
     firstHtml?.length, secondHtml?.length);
@@ -137,6 +182,11 @@ export async function finalAnalysis(
     Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
     
     Du har modtaget HTML fra en eller to boligannoncer (samme bolig).
+    ${partialAnalysis ? `
+    
+    Jeg har allerede udført en indledende analyse, som du kan bruge som reference:
+    ${JSON.stringify(partialAnalysis, null, 2)}
+    ` : ''}
     
     Analysér omhyggeligt HTML-indholdet med fokus på:
     
@@ -188,11 +238,9 @@ export async function finalAnalysis(
     - Hvis data mangler, brug tom streng ("").
     - Ingen tekst udenfor JSON.
 
-    Dokument 1 (første HTML):
-    """${firstHtml.substring(0, 8000)}"""
 
     ${secondHtml ? `Dokument 2 (anden HTML):
-    """${secondHtml.substring(0, 8000)}"""` : ''}
+    """${secondHtml}"""` : ''}
   `;
 
   console.log("Making request to OpenAI API for final analysis...");

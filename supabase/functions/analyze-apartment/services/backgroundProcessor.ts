@@ -92,7 +92,7 @@ export async function processListingInBackground(
       // 5. Phase #2: Combine first + second HTML in final analysis
       console.log(`[${listingId}] Starting final AI analysis...`);
       try {
-        const finalJson = await finalAnalysis(firstHtml, secondHtml);
+        const finalJson = await finalAnalysis(firstHtml, secondHtml, partialAnalysis);
         console.log(`[${listingId}] Final analysis complete:`, finalJson);
 
         // 6. Mark DB => "Analyse fuldført" + store the final result

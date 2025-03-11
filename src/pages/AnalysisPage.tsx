@@ -33,12 +33,17 @@ const getIconComponent = (iconName: string) => {
   return iconMap[iconName?.toLowerCase()] || <Lightbulb className="h-5 w-5" />;
 };
 
-const getCategoryIcon = (icon: string) => {
-  if (icon && icon.length <= 2) {
-    return icon;
-  }
+const getCategoryIcon = (category: string) => {
+  const categoryIcons: Record<string, React.ReactNode> = {
+    'Energi': <Lightbulb className="h-4 w-4" />,
+    'Tilstand': <Home className="h-4 w-4" />,
+    'Økonomi': <PiggyBank className="h-4 w-4" />,
+    'Beliggenhed': <Map className="h-4 w-4" />,
+    'Juridisk': <Scale className="h-4 w-4" />,
+    'Andet': <AlertTriangle className="h-4 w-4" />
+  };
   
-  return getIconComponent(icon);
+  return categoryIcons[category] || <AlertTriangle className="h-4 w-4" />;
 };
 
 const AnalysisPage = () => {
@@ -286,7 +291,7 @@ const AnalysisPage = () => {
       details.push({
         label: "Totalpris",
         value: property.price,
-        subValue: property.pricePerSqm ? `${property.pricePerSqm} per m²` : null
+        subValue: property.pricePerM2 ? `${property.pricePerM2} per m²` : null
       });
     }
     
@@ -294,6 +299,14 @@ const AnalysisPage = () => {
       details.push({
         label: "Udbudspris",
         value: property.askingPrice,
+        subValue: null
+      });
+    }
+    
+    if (property.buyingExpenses) {
+      details.push({
+        label: "Købsomkostninger",
+        value: property.buyingExpenses,
         subValue: null
       });
     }
@@ -313,6 +326,14 @@ const AnalysisPage = () => {
         subValue: null
       });
     }
+
+    if (property.boligType) {
+      details.push({
+        label: "Boligtype",
+        value: property.boligType,
+        subValue: null
+      });
+    }
     
     if (property.floor) {
       details.push({
@@ -322,10 +343,18 @@ const AnalysisPage = () => {
       });
     }
     
-    if (property.yearBuilt) {
+    if (property.yearBuilt || property.byggeaar) {
       details.push({
         label: "Byggeår",
-        value: property.yearBuilt,
+        value: property.yearBuilt || property.byggeaar,
+        subValue: null
+      });
+    }
+
+    if (property.energiMaerke) {
+      details.push({
+        label: "Energimærke",
+        value: property.energiMaerke,
         subValue: null
       });
     }
@@ -348,6 +377,23 @@ const AnalysisPage = () => {
         subValue: null
       });
     }
+    
+    // Include any other fields not explicitly handled above
+    const handledFields = [
+      'price', 'askingPrice', 'buyingExpenses', 'monthlyFee', 'size', 'boligType',
+      'floor', 'yearBuilt', 'byggeaar', 'energiMaerke', 'otherDetails',
+      'address', 'images', 'timeAgo', 'pricePerM2'
+    ];
+    
+    Object.entries(property).forEach(([key, value]) => {
+      if (!handledFields.includes(key) && typeof value === 'string' && value.trim() !== '') {
+        details.push({
+          label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+          value: value,
+          subValue: null
+        });
+      }
+    });
     
     return details;
   };
@@ -420,7 +466,7 @@ const AnalysisPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {risksWithIds.map((risk) => (
                           <div key={risk.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{risk.icon || "⚠️"}</div>
+                            <div className="text-2xl mb-1">{getCategoryIcon(risk.category)}</div>
                             <div className="text-xs leading-tight">{risk.title}</div>
                           </div>
                         ))}
@@ -434,7 +480,7 @@ const AnalysisPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {highlightsWithIds.map((highlight) => (
                           <div key={highlight.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{highlight.icon || "✨"}</div>
+                            <div className="text-2xl mb-1">{highlight.icon ? getIconComponent(highlight.icon) : "✨"}</div>
                             <div className="text-xs leading-tight">{highlight.title}</div>
                           </div>
                         ))}
@@ -475,8 +521,8 @@ const AnalysisPage = () => {
                         )}
                         
                         <div className="flex items-center gap-2 mb-4">
-                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/70">
-                            {risk.categoryIcon || risk.icon || "⚠️"} {risk.category}
+                          <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/70 flex items-center gap-1">
+                            {getCategoryIcon(risk.category)} {risk.category}
                           </span>
                         </div>
                         
@@ -488,6 +534,20 @@ const AnalysisPage = () => {
                             <p className="text-sm font-medium text-purple">
                               "{risk.recommendations[0].prompt || risk.question}"
                             </p>
+                            {risk.recommendations.length > 1 && (
+                              <div className="mt-2 pt-2 border-t border-border/50">
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  Flere spørgsmål:
+                                </div>
+                                <ul className="space-y-1 text-sm">
+                                  {risk.recommendations.slice(1).map((rec, idx) => (
+                                    <li key={`rec-${risk.id}-${idx}`} className="text-purple">
+                                      "{rec.prompt}"
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -512,7 +572,7 @@ const AnalysisPage = () => {
                       <div key={highlight.id} className="border border-border rounded-lg p-6">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="text-2xl">
-                            {highlight.icon || "✨"}
+                            {highlight.icon ? getIconComponent(highlight.icon) : "✨"}
                           </div>
                           <h3 className="text-lg font-medium">
                             {highlight.title}
