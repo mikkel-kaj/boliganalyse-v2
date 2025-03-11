@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       apartment_listings: {
         Row: {
+          analysis: Json | null
           created_at: string
           html_content: string | null
           id: string
@@ -20,6 +21,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          analysis?: Json | null
           created_at?: string
           html_content?: string | null
           id?: string
@@ -29,6 +31,7 @@ export type Database = {
           url: string
         }
         Update: {
+          analysis?: Json | null
           created_at?: string
           html_content?: string | null
           id?: string
