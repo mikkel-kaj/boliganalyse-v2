@@ -34,7 +34,6 @@ const HomePage = () => {
     }
 
     // In a mock version, we'll just redirect to the analysis page
-    // In reality, you'd send this URL to your backend for processing
     navigate('/analyse/demo');
   };
 
@@ -44,7 +43,7 @@ const HomePage = () => {
         <section className="py-16 md:py-24 lg:py-32 container text-center">
           <div className="max-w-3xl mx-auto">
             <div className="inline-block mb-6 px-4 py-1.5 bg-secondary rounded-full">
-              <span className="text-sm font-medium">AI for boligkøb</span>
+              <span className="text-sm font-medium">AI til boligkøb</span>
             </div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
@@ -59,7 +58,7 @@ const HomePage = () => {
             <div className="flex items-center justify-center gap-4 mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary rounded-full">
                 <span className="text-purple text-sm">❤️</span>
-                <span className="text-sm font-medium">Nå med støtte for nybygg og fritidsboliger!</span>
+                <span className="text-sm font-medium">Nu med støtte til nybyggeri og fritidsboliger!</span>
               </div>
             </div>
             
@@ -72,7 +71,7 @@ const HomePage = () => {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   className="pl-28 h-12"
-                  placeholder="Lim ind Finn-kode eller Finn-lenke..."
+                  placeholder="Indsæt link til boligannonce..."
                 />
               </div>
               <Button type="submit" className="bg-purple hover:bg-purple-dark h-12 px-6">
@@ -82,14 +81,14 @@ const HomePage = () => {
             </form>
             
             <p className="text-xs text-muted-foreground mt-4 max-w-2xl mx-auto">
-              Boliganalyse.ai er et støtteverktøy for boligkjøp, men erstatter ikke profesjonell rådgivning. 
-              Alle beslutninger bør baseres på egen research og befaring - vi tar ikke ansvar for eventuelle feil i analysen.
+              Boliganalyse.ai er et støtteværktøj til boligkøb, men erstatter ikke professionel rådgivning. 
+              Alle beslutninger bør baseres på egen research og besigtigelse - vi tager ikke ansvar for eventuelle fejl i analysen.
             </p>
           </div>
         </section>
         
         <section className="py-12 md:py-16 container">
-          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Nylig analyserte boliger</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Nyligt analyserede boliger</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {recentProperties.map((property, index) => (
@@ -161,7 +160,7 @@ const HomePage = () => {
 const recentProperties = [
   {
     address: "Mågevej 12, 2400 København",
-    price: "2 995 000",
+    price: "2.995.000",
     size: "75",
     image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80",
     timeAgo: "5 min",
@@ -176,7 +175,7 @@ const recentProperties = [
   },
   {
     address: "Vesterbrogade 67, 1620 København",
-    price: "4 250 000",
+    price: "4.250.000",
     size: "92",
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
     timeAgo: "2 timer",
@@ -191,7 +190,7 @@ const recentProperties = [
   },
   {
     address: "Amagerbrogade 123, 2300 København",
-    price: "3 495 000",
+    price: "3.495.000",
     size: "81",
     image: "https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
     timeAgo: "1 dag",
@@ -201,12 +200,12 @@ const recentProperties = [
     ],
     highlights: [
       { label: "Altan", icon: "🏠", color: "highlight-default" },
-      { label: "Ingen dokumentavgift", icon: "💰", color: "highlight-financial" },
+      { label: "Ingen dokumentafgift", icon: "💰", color: "highlight-financial" },
     ]
   },
   {
     address: "Østerbrogade 45, 2100 København",
-    price: "5 750 000",
+    price: "5.750.000",
     size: "110",
     image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
     timeAgo: "3 dage",

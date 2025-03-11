@@ -21,10 +21,10 @@ const AnalysisPage = () => {
     address: "Strømsveien 20, 0657 Oslo",
     timeAgo: "3 min",
     image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80",
-    totalPrice: "2 799 073",
-    pricePerSqm: "186 515",
-    askingPrice: "2 200 000",
-    monthlyFee: "5 660",
+    totalPrice: "2.799.073",
+    pricePerSqm: "186.515",
+    askingPrice: "2.200.000",
+    monthlyFee: "5.660",
     size: "15",
     sizeType: "BRA-i",
     floor: "2",
@@ -33,98 +33,98 @@ const AnalysisPage = () => {
       {
         id: "1",
         icon: "🏗️",
-        title: "Sprekt gulvflis i entré",
-        description: "Det er påvist en sprekt gulvflis i entré, noe som kan medføre behov for utbedringer.",
-        quote: '"Det er avvik: Det er påvist en sprekt gulvflis i entré."',
-        category: "Byggteknisk",
+        title: "Sprækket gulvflise i entré",
+        description: "Der er påvist en sprækket gulvflise i entréen, hvilket kan medføre behov for udbedringer.",
+        quote: '"Der er afvigelse: Der er påvist en sprækket gulvflise i entréen."',
+        category: "Byggeteknisk",
         categoryIcon: "🏗️",
         categoryColor: "risk-building",
-        question: "Hva vil det koste å utbedre den sprukne flisen?"
+        question: "Hvad vil det koste at udbedre den sprukne flise?"
       },
       {
         id: "2",
         icon: "🔧",
-        title: "Membran på badet",
-        description: "Mer enn halvparten av forventet brukstid har passert på membranløsningen i badet.",
-        quote: '"Mer enn halvparten av forventet brukstid er passert på membranløsningen."',
-        category: "Byggteknisk",
+        title: "Membran på badeværelset",
+        description: "Mere end halvdelen af den forventede brugstid er passeret på membranløsningen i badeværelset.",
+        quote: '"Mere end halvdelen af den forventede brugstid er passeret på membranløsningen."',
+        category: "Byggeteknisk",
         categoryIcon: "🔧",
         categoryColor: "risk-technical",
-        question: "Når må membranen sannsynligvis skiftes, og hva vil kostnadene være?"
+        question: "Hvornår skal membranen sandsynligvis udskiftes, og hvad vil omkostningerne være?"
       },
       {
         id: "3",
         icon: "🚨",
-        title: "Ingen komfyrvakt installert",
-        description: "Det er ikke montert komfyrvakt på kjøkkenet, noe som bryter med dagens forskrifter.",
-        quote: '"Det er ikke montert komfyrvakt i kjøkkenet som er krav på dette kjøkkenet."',
-        category: "Sikkerhet",
+        title: "Ingen komfurvagt installeret",
+        description: "Der er ikke monteret komfurvagt i køkkenet, hvilket bryder med nuværende forskrifter.",
+        quote: '"Der er ikke monteret komfurvagt i køkkenet, hvilket er et krav for dette køkken."',
+        category: "Sikkerhed",
         categoryIcon: "🚨",
         categoryColor: "risk-safety",
-        question: "Hvilke konsekvenser kan det få å ikke ha komfyrvakt på plass?"
+        question: "Hvilke konsekvenser kan det få ikke at have komfurvagt på plads?"
       },
       {
         id: "4",
         icon: "💨",
-        title: "Naturlig ventilasjon på bad",
-        description: "Badet har kun naturlig ventilasjon, noe som kan være utilstrekkelig.",
-        quote: '"Rommet har kun naturlig ventilasjon."',
-        category: "Ventilasjon",
+        title: "Naturlig ventilation på badeværelse",
+        description: "Badeværelset har kun naturlig ventilation, hvilket kan være utilstrækkeligt.",
+        quote: '"Rummet har kun naturlig ventilation."',
+        category: "Ventilation",
         categoryIcon: "💨",
         categoryColor: "risk-ventilation",
-        question: "Er det mulig å installere en mekanisk ventilasjonsløsning, og hvordan kan dette gjøres?"
+        question: "Er det muligt at installere en mekanisk ventilationsløsning, og hvordan kan dette gøres?"
       },
       {
         id: "5",
         icon: "🏛️",
-        title: "Eldre bygning med ukjent vedlikeholdshistorikk",
-        description: "Bygningen er fra 1931 og har ikke en fullstendig vedlikeholdshistorikk.",
-        quote: '"Forhold som har fått TG2 og TG3 må gjennomgås spesielt nøye."',
-        category: "Bygningshistorikk",
+        title: "Ældre bygning med ukendt vedligeholdelseshistorik",
+        description: "Bygningen er fra 1931 og har ikke en fuldstændig vedligeholdelseshistorik.",
+        quote: '"Forhold, der har fået TG2 og TG3, skal gennemgås særligt omhyggeligt."',
+        category: "Bygningshistorik",
         categoryIcon: "🏛️",
         categoryColor: "risk-history",
-        question: "Hvilke større oppgraderinger eller vedlikehold har blitt gjort på bygningen de siste årene?"
+        question: "Hvilke større opgraderinger eller vedligeholdelse er blevet udført på bygningen de seneste år?"
       }
     ],
     highlights: [
       {
         id: "1",
         icon: "🚌",
-        title: "Nærhet til kollektivtransport",
-        description: "Tett på flere busslinjer og T-banestasjon innen 5 minutters gange.",
+        title: "Tæt på offentlig transport",
+        description: "Tæt på flere buslinjer og metrostation inden for 5 minutters gang.",
         category: "Transport",
         categoryColor: "highlight-transport"
       },
       {
         id: "2",
         icon: "🍽️",
-        title: "Moderne kjøkkenløsning",
-        description: "Nyere kjøkken med induksjonstopp, innbygget stekeovn og oppvaskmaskin.",
-        category: "Kjøkken",
+        title: "Moderne køkkenløsning",
+        description: "Nyere køkken med induktionskomfur, indbygget ovn og opvaskemaskine.",
+        category: "Køkken",
         categoryColor: "highlight-kitchen"
       },
       {
         id: "3",
         icon: "💰",
-        title: "Ingen dokumentavgift",
-        description: "Borettslag uten dokumentavgift ved kjøp, som kan spare omkring 45.000 kr.",
+        title: "Ingen tinglysningsafgift",
+        description: "Andelsbolig uden tinglysningsafgift ved køb, hvilket kan spare omkring 45.000 kr.",
         category: "Økonomi",
         categoryColor: "highlight-financial"
       },
       {
         id: "4",
         icon: "🏘️",
-        title: "Godt tilrettelagt for pendlere",
-        description: "Sentral beliggenhet med gode transportmuligheter til og fra jobb.",
-        category: "Beliggenhet",
+        title: "Velegnet til pendlere",
+        description: "Central beliggenhed med gode transportmuligheder til og fra arbejde.",
+        category: "Beliggenhed",
         categoryColor: "highlight-community"
       },
       {
         id: "5",
         icon: "🚲",
-        title: "Fellesarealer med fasiliteter",
-        description: "Felles gårdsrom, sykkelparkering og vaskerom til beboernes disposisjon.",
-        category: "Fasiliteter",
+        title: "Fællesarealer med faciliteter",
+        description: "Fælles gårdareal, cykelparkering og vaskeri til beboernes disposition.",
+        category: "Faciliteter",
         categoryColor: "highlight-facilities"
       }
     ]
@@ -133,16 +133,16 @@ const AnalysisPage = () => {
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     toast({
-      title: "Link kopiert",
-      description: "Analyselinket er kopiert til utklippstavlen.",
+      title: "Link kopieret",
+      description: "Analyselinket er kopieret til udklipsholderen.",
       duration: 3000,
     });
   };
 
   const handleAskQuestion = (question: string) => {
     toast({
-      title: "Spørsmål notert",
-      description: "Dette spørsmålet er lagt til i din liste over spørsmål å stille eiendomsmegleren.",
+      title: "Spørgsmål noteret",
+      description: "Dette spørgsmål er tilføjet til din liste over spørgsmål at stille ejendomsmægleren.",
       duration: 3000,
     });
   };
@@ -165,10 +165,10 @@ const AnalysisPage = () => {
             
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <ExternalLink className="h-4 w-4" /> Annonse
+                <ExternalLink className="h-4 w-4" /> Annonce
               </Button>
               <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <ExternalLink className="h-4 w-4" /> Kart
+                <ExternalLink className="h-4 w-4" /> Kort
               </Button>
               <Button variant="outline" size="sm" onClick={handleShare} className="flex items-center gap-1">
                 <Share2 className="h-4 w-4" /> Del analyse
@@ -196,26 +196,26 @@ const AnalysisPage = () => {
                         <p className="text-xs text-muted-foreground">{property.pricePerSqm} kr per m²</p>
                       </div>
                       <div>
-                        <h3 className="text-sm text-muted-foreground">Prisantydning</h3>
+                        <h3 className="text-sm text-muted-foreground">Udbudspris</h3>
                         <p className="text-xl font-bold">kr {property.askingPrice}</p>
                       </div>
                       <div>
-                        <h3 className="text-sm text-muted-foreground">Felleskost/mnd</h3>
+                        <h3 className="text-sm text-muted-foreground">Fællesudgift/md</h3>
                         <p className="text-xl font-bold">kr {property.monthlyFee}</p>
                       </div>
                       <div>
-                        <h3 className="text-sm text-muted-foreground">Internt bruksareal</h3>
+                        <h3 className="text-sm text-muted-foreground">Internt boligareal</h3>
                         <p className="text-xl font-bold">{property.size} m² {property.sizeType}</p>
                       </div>
                       <div>
-                        <h3 className="text-sm text-muted-foreground">Etasje</h3>
+                        <h3 className="text-sm text-muted-foreground">Etage</h3>
                         <p className="text-xl font-bold">{property.floor}</p>
                       </div>
                     </div>
                     
                     <div className="mb-8">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-base font-medium">Risikoer <span className="text-sm text-muted-foreground">(klikk for detaljer)</span></h3>
+                        <h3 className="text-base font-medium">Risici <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {property.risks.map((risk) => (
@@ -229,7 +229,7 @@ const AnalysisPage = () => {
                     
                     <div className="mb-4">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-base font-medium">Høydepunkter <span className="text-sm text-muted-foreground">(klikk for detaljer)</span></h3>
+                        <h3 className="text-base font-medium">Højdepunkter <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {property.highlights.map((highlight) => (
@@ -253,7 +253,7 @@ const AnalysisPage = () => {
                   </div>
                   
                   <p className="text-sm text-muted-foreground mb-6">
-                    Basert på AI-analyse av boligens salgsoppgave.
+                    Baseret på AI-analyse af boligens salgsopslag.
                   </p>
                   
                   <div className="space-y-6">
@@ -276,7 +276,7 @@ const AnalysisPage = () => {
                         </div>
                         
                         <div className="border-t border-border pt-3 mt-3">
-                          <div className="text-xs text-muted-foreground uppercase mb-1">SPØR MEGLER</div>
+                          <div className="text-xs text-muted-foreground uppercase mb-1">SPØRG MÆGLEREN</div>
                           <p className="text-sm font-medium text-purple">"{risk.question}"</p>
                         </div>
                       </div>
@@ -289,19 +289,19 @@ const AnalysisPage = () => {
             <div>
               <Card>
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-medium mb-4">Gi tilbakemelding</h2>
+                  <h2 className="text-lg font-medium mb-4">Giv feedback</h2>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Hjelp oss å forbedre våre analyser ved å sende tilbakemelding om denne rapporten.
+                    Hjælp os med at forbedre vores analyser ved at sende feedback om denne rapport.
                   </p>
                   
                   <div className="space-y-4">
                     <textarea 
                       className="w-full h-32 p-3 border rounded-md bg-background resize-none"
-                      placeholder="Skriv din tilbakemelding her..."
+                      placeholder="Skriv din feedback her..."
                     />
                     
                     <Button className="w-full">
-                      <Send className="h-4 w-4 mr-2" /> Send tilbakemelding
+                      <Send className="h-4 w-4 mr-2" /> Send feedback
                     </Button>
                   </div>
                 </CardContent>
@@ -309,9 +309,9 @@ const AnalysisPage = () => {
               
               <Card className="mt-6">
                 <CardContent className="p-6">
-                  <h2 className="text-lg font-medium mb-4">Spørsmål til megler</h2>
+                  <h2 className="text-lg font-medium mb-4">Spørgsmål til mægleren</h2>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Her er forslag til spørsmål du kan stille eiendomsmegleren.
+                    Her er forslag til spørgsmål, du kan stille ejendomsmægleren.
                   </p>
                   
                   <div className="space-y-3">
@@ -324,7 +324,7 @@ const AnalysisPage = () => {
                   </div>
                   
                   <Button variant="outline" className="w-full mt-4">
-                    <Check className="h-4 w-4 mr-2" /> Marker som stilt
+                    <Check className="h-4 w-4 mr-2" /> Markér som spurgt
                   </Button>
                 </CardContent>
               </Card>
@@ -332,12 +332,12 @@ const AnalysisPage = () => {
               <Card className="mt-6">
                 <CardContent className="p-6 text-xs text-muted-foreground">
                   <p className="mb-4">
-                    Boliganalyse.ai er et verktøy for å hjelpe deg med boligkjøp, men erstatter ikke profesjonell rådgivning. 
-                    Informasjonen som gis er kun for veiledende formål og er ikke juridisk eller profesjonell rådgivning.
+                    Boliganalyse.ai er et værktøj til at hjælpe dig med boligkøb, men erstatter ikke professionel rådgivning. 
+                    Informationen, der gives, er kun til vejledende formål og er ikke juridisk eller professionel rådgivning.
                   </p>
                   <p>
-                    Alle kjøpsbeslutninger bør baseres på egen research, befaring og profesjonell rådgivning. 
-                    Vi tar ikke ansvar for eventuelle feil eller mangler i analysen.
+                    Alle købsbeslutninger bør baseres på egen research, besigtigelse og professionel rådgivning. 
+                    Vi tager ikke ansvar for eventuelle fejl eller mangler i analysen.
                   </p>
                 </CardContent>
               </Card>

@@ -7,7 +7,7 @@ const RecentAnalysesPage = () => {
     {
       id: "demo1",
       address: "Mågevej 12, 2400 København",
-      price: "2 995 000",
+      price: "2.995.000",
       size: "75",
       image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80",
       timeAgo: "5 min",
@@ -23,7 +23,7 @@ const RecentAnalysesPage = () => {
     {
       id: "demo2",
       address: "Vesterbrogade 67, 1620 København",
-      price: "4 250 000",
+      price: "4.250.000",
       size: "92",
       image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
       timeAgo: "2 timer",
@@ -39,7 +39,7 @@ const RecentAnalysesPage = () => {
     {
       id: "demo3",
       address: "Amagerbrogade 123, 2300 København",
-      price: "3 495 000",
+      price: "3.495.000",
       size: "81",
       image: "https://images.unsplash.com/photo-1628744448840-55bdb2497bd4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
       timeAgo: "1 dag",
@@ -49,13 +49,13 @@ const RecentAnalysesPage = () => {
       ],
       highlights: [
         { label: "Altan", icon: "🏠", color: "highlight-default" },
-        { label: "Ingen dokumentavgift", icon: "💰", color: "highlight-financial" },
+        { label: "Ingen dokumentafgift", icon: "💰", color: "highlight-financial" },
       ]
     },
     {
       id: "demo4",
       address: "Østerbrogade 45, 2100 København",
-      price: "5 750 000",
+      price: "5.750.000",
       size: "110",
       image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
       timeAgo: "3 dage",
@@ -71,7 +71,7 @@ const RecentAnalysesPage = () => {
     {
       id: "demo5",
       address: "Nørrebrogade 142, 2200 København",
-      price: "3 295 000",
+      price: "3.295.000",
       size: "68",
       image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
       timeAgo: "1 uge",
@@ -87,7 +87,7 @@ const RecentAnalysesPage = () => {
     {
       id: "demo6",
       address: "Frederiksberg Allé 8, 1820 Frederiksberg",
-      price: "6 795 000",
+      price: "6.795.000",
       size: "145",
       image: "https://images.unsplash.com/photo-1554995207-c18c203602cb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80",
       timeAgo: "2 uger",
