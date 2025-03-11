@@ -1,202 +1,53 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   ArrowLeft, Share2, AlertTriangle, 
-  Check, HelpCircle, Star, Send, ExternalLink, Loader2
+  Check, HelpCircle, Star, Send, ExternalLink, Loader2,
+  Building, Home, Map, PiggyBank, Scale, Key, Heart, Award, ThumbsUp, Lightbulb, Flag, Search
 } from "lucide-react";
 
-// Fallback function in case the analysis is missing from the database
-const generateAnalysis = (htmlContent: string | null, propertyId: string) => {
-  // This is where you would use AI to analyze the HTML content
-  // For now, we'll return mock data
-  return {
-    property: {
-      id: propertyId,
-      address: extractAddress(htmlContent),
-      image: extractImage(htmlContent) || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80",
-      totalPrice: extractPrice(htmlContent, 'totalPrice'),
-      pricePerSqm: extractPrice(htmlContent, 'pricePerSqm'),
-      askingPrice: extractPrice(htmlContent, 'askingPrice'),
-      monthlyFee: extractPrice(htmlContent, 'monthlyFee'),
-      size: extractSize(htmlContent),
-      sizeType: "BRA",
-      floor: extractFloor(htmlContent),
-      yearBuilt: extractYearBuilt(htmlContent),
-    },
-    risks: generateRisks(htmlContent),
-    highlights: generateHighlights(htmlContent)
+// Map icon names from API to Lucide React components
+const getIconComponent = (iconName: string) => {
+  const iconMap: Record<string, React.ReactNode> = {
+    'check': <Check className="h-5 w-5" />,
+    'star': <Star className="h-5 w-5" />,
+    'flag': <Flag className="h-5 w-5" />,
+    'heart': <Heart className="h-5 w-5" />,
+    'thumbs-up': <ThumbsUp className="h-5 w-5" />,
+    'home': <Home className="h-5 w-5" />,
+    'key': <Key className="h-5 w-5" />,
+    'search': <Search className="h-5 w-5" />,
+    'lightbulb': <Lightbulb className="h-5 w-5" />,
+    'award': <Award className="h-5 w-5" />,
+    'building': <Building className="h-5 w-5" />,
+    'map': <Map className="h-5 w-5" />,
+    'piggy-bank': <PiggyBank className="h-5 w-5" />,
+    'scale': <Scale className="h-5 w-5" />
   };
+  
+  // Default to Lightbulb if the icon name is not found
+  return iconMap[iconName?.toLowerCase()] || <Lightbulb className="h-5 w-5" />;
 };
 
-// Helper functions to extract data from HTML content
-function extractAddress(htmlContent: string | null): string {
-  if (!htmlContent) return "Adresse ikke tilgængelig";
-  
-  try {
-    // Basic extraction attempt - in a real implementation you would use 
-    // more sophisticated parsing
-    const addressMatch = htmlContent.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    return addressMatch ? addressMatch[1].trim() : "Adresse ikke fundet";
-  } catch (error) {
-    console.error("Error extracting address:", error);
-    return "Adresse ikke tilgængelig";
+// Emoji fallback for when icon names are provided as emoji
+const getCategoryIcon = (icon: string) => {
+  // If it's an emoji (usually a single character), return it directly
+  if (icon && icon.length <= 2) {
+    return icon;
   }
-}
-
-function extractImage(htmlContent: string | null): string | null {
-  if (!htmlContent) return null;
   
-  try {
-    // Look for image URLs in the HTML
-    const imgMatch = htmlContent.match(/src="(https:\/\/[^"]*\.(jpg|jpeg|png|webp))/i);
-    return imgMatch ? imgMatch[1] : null;
-  } catch (error) {
-    console.error("Error extracting image:", error);
-    return null;
-  }
-}
-
-function extractPrice(htmlContent: string | null, priceType: string): string {
-  if (!htmlContent) return "N/A";
-  
-  try {
-    // Different price patterns to look for
-    let priceMatch = null;
-    
-    if (priceType === 'totalPrice') {
-      priceMatch = htmlContent.match(/kontantpris:?\s*([\d\.]+)/i);
-    } else if (priceType === 'askingPrice') {
-      priceMatch = htmlContent.match(/udbudspris:?\s*([\d\.]+)/i);
-    } else if (priceType === 'monthlyFee') {
-      priceMatch = htmlContent.match(/[måned|md]\.?\s*[udgift|bidrag]:?\s*([\d\.]+)/i);
-    } else if (priceType === 'pricePerSqm') {
-      priceMatch = htmlContent.match(/pris pr\. m²:?\s*([\d\.]+)/i);
-    }
-    
-    return priceMatch ? priceMatch[1].trim() : "N/A";
-  } catch (error) {
-    console.error(`Error extracting ${priceType}:`, error);
-    return "N/A";
-  }
-}
-
-function extractSize(htmlContent: string | null): string {
-  if (!htmlContent) return "N/A";
-  
-  try {
-    const sizeMatch = htmlContent.match(/boligareal:?\s*([\d]+)\s*m²/i);
-    return sizeMatch ? sizeMatch[1].trim() : "N/A";
-  } catch (error) {
-    console.error("Error extracting size:", error);
-    return "N/A";
-  }
-}
-
-function extractFloor(htmlContent: string | null): string {
-  if (!htmlContent) return "N/A";
-  
-  try {
-    const floorMatch = htmlContent.match(/etage:?\s*(\d+)/i);
-    return floorMatch ? floorMatch[1].trim() : "st";
-  } catch (error) {
-    console.error("Error extracting floor:", error);
-    return "N/A";
-  }
-}
-
-function extractYearBuilt(htmlContent: string | null): string {
-  if (!htmlContent) return "N/A";
-  
-  try {
-    const yearMatch = htmlContent.match(/bygge[år|aar]:?\s*(\d{4})/i);
-    return yearMatch ? yearMatch[1].trim() : "N/A";
-  } catch (error) {
-    console.error("Error extracting year built:", error);
-    return "N/A";
-  }
-}
-
-function generateRisks(htmlContent: string | null): any[] {
-  // This would be where AI would analyze the HTML to find actual risks
-  // For now, we'll return some generic risks
-  return [
-    {
-      id: "1",
-      icon: "🏗️",
-      title: "Ældre bygning",
-      description: "Bygningen er ældre og kan have vedligeholdelsesbehov.",
-      quote: '"Boligen er opført før 1950 og kan have ældre installationer."',
-      category: "Byggeteknisk",
-      categoryIcon: "🏗️",
-      categoryColor: "risk-building",
-      question: "Hvad er de største vedligeholdelsesudgifter i de seneste 5 år?"
-    },
-    {
-      id: "2",
-      icon: "🔧",
-      title: "Potentielle fugtproblemer",
-      description: "Der kan være tegn på fugtproblemer som bør undersøges nærmere.",
-      quote: '"Der kan være tegn der indikerer tidligere fugtskader."',
-      category: "Byggeteknisk",
-      categoryIcon: "🔧",
-      categoryColor: "risk-technical",
-      question: "Er der konstateret fugtproblemer i boligen tidligere?"
-    },
-    {
-      id: "3",
-      icon: "💰",
-      title: "Kommende større udgifter",
-      description: "Der kan være planlagt større renoveringer i ejendommen.",
-      quote: '"Ejerforeningen har varslet kommende projekter."',
-      category: "Økonomi",
-      categoryIcon: "💰",
-      categoryColor: "risk-financial",
-      question: "Hvilke større projekter er planlagt i foreningen og hvad er den økonomiske konsekvens?"
-    }
-  ];
-}
-
-function generateHighlights(htmlContent: string | null): any[] {
-  // This would be where AI would analyze the HTML to find actual highlights
-  // For now, we'll return some generic highlights
-  return [
-    {
-      id: "1",
-      icon: "🚌",
-      title: "God infrastruktur",
-      description: "Tæt på offentlig transport og indkøbsmuligheder.",
-      category: "Beliggenhed",
-      categoryColor: "highlight-location"
-    },
-    {
-      id: "2",
-      icon: "☀️",
-      title: "Gode lysforhold",
-      description: "Boligen har gode lysforhold med vinduer i flere retninger.",
-      category: "Boligen",
-      categoryColor: "highlight-property"
-    },
-    {
-      id: "3",
-      icon: "🏙️",
-      title: "Attraktivt område",
-      description: "Beliggende i et attraktivt område med god efterspørgsel.",
-      category: "Marked",
-      categoryColor: "highlight-market"
-    }
-  ];
-}
+  // Otherwise try to map to a Lucide icon
+  return getIconComponent(icon);
+};
 
 const AnalysisPage = () => {
   const { id } = useParams();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [listing, setListing] = useState<any>(null);
   const [property, setProperty] = useState<any>(null);
@@ -230,8 +81,67 @@ const AnalysisPage = () => {
             floor: "2",
             yearBuilt: "1931",
           });
-          setRisks(generateRisks(null));
-          setHighlights(generateHighlights(null));
+          setRisks([
+            {
+              id: "1",
+              icon: "🏗️",
+              title: "Ældre bygning",
+              description: "Bygningen er ældre og kan have vedligeholdelsesbehov.",
+              quote: '"Boligen er opført før 1950 og kan have ældre installationer."',
+              category: "Byggeteknisk",
+              categoryIcon: "🏗️",
+              categoryColor: "risk-building",
+              question: "Hvad er de største vedligeholdelsesudgifter i de seneste 5 år?"
+            },
+            {
+              id: "2",
+              icon: "🔧",
+              title: "Potentielle fugtproblemer",
+              description: "Der kan være tegn på fugtproblemer som bør undersøges nærmere.",
+              quote: '"Der kan være tegn der indikerer tidligere fugtskader."',
+              category: "Byggeteknisk",
+              categoryIcon: "🔧",
+              categoryColor: "risk-technical",
+              question: "Er der konstateret fugtproblemer i boligen tidligere?"
+            },
+            {
+              id: "3",
+              icon: "💰",
+              title: "Kommende større udgifter",
+              description: "Der kan være planlagt større renoveringer i ejendommen.",
+              quote: '"Ejerforeningen har varslet kommende projekter."',
+              category: "Økonomi",
+              categoryIcon: "💰",
+              categoryColor: "risk-financial",
+              question: "Hvilke større projekter er planlagt i foreningen og hvad er den økonomiske konsekvens?"
+            }
+          ]);
+          setHighlights([
+            {
+              id: "1",
+              icon: "🚌",
+              title: "God infrastruktur",
+              description: "Tæt på offentlig transport og indkøbsmuligheder.",
+              category: "Beliggenhed",
+              categoryColor: "highlight-location"
+            },
+            {
+              id: "2",
+              icon: "☀️",
+              title: "Gode lysforhold",
+              description: "Boligen har gode lysforhold med vinduer i flere retninger.",
+              category: "Boligen",
+              categoryColor: "highlight-property"
+            },
+            {
+              id: "3",
+              icon: "🏙️",
+              title: "Attraktivt område",
+              description: "Beliggende i et attraktivt område med god efterspørgsel.",
+              category: "Marked",
+              categoryColor: "highlight-market"
+            }
+          ]);
           setLoading(false);
           return;
         }
@@ -256,31 +166,22 @@ const AnalysisPage = () => {
         setListing(data);
         
         // Check if we have an analysis in the JSONB column and it's properly structured
-        if (data.analysis && 
-            typeof data.analysis === 'object' && 
-            'property' in data.analysis && 
-            'risks' in data.analysis && 
-            'highlights' in data.analysis) {
-          console.log("Using stored analysis from database:", data.analysis);
+        if (data.analysis_json && 
+            typeof data.analysis_json === 'object' && 
+            'property' in data.analysis_json && 
+            'risks' in data.analysis_json && 
+            'highlights' in data.analysis_json) {
+          console.log("Using stored analysis from database:", data.analysis_json);
           
-          const analysisData = data.analysis as {
-            property: any;
-            risks: any[];
-            highlights: any[];
-          };
+          const analysisData = data.analysis_json;
           
           // Use the stored analysis
           setProperty(analysisData.property);
           setRisks(analysisData.risks || []);
           setHighlights(analysisData.highlights || []);
         } else {
-          console.log("No valid stored analysis found, generating analysis from HTML content");
-          
-          // Generate analysis from the HTML content
-          const analyzedData = generateAnalysis(data.html_content, data.id);
-          setProperty(analyzedData.property);
-          setRisks(analyzedData.risks);
-          setHighlights(analyzedData.highlights);
+          console.log("No valid stored analysis found or analysis is incomplete");
+          setError("Analysen er ikke fuldført endnu eller indeholder ikke den forventede data.");
         }
         
       } catch (err) {
@@ -355,6 +256,22 @@ const AnalysisPage = () => {
 
   const originalUrl = listing?.url || "";
   const timeAgoDisplay = listing ? "Lige nu" : property.timeAgo || "Lige nu";
+  
+  // Ensure we display the primary image
+  const mainImage = property.images && property.images.length > 0 
+    ? property.images[0] 
+    : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
+
+  // Add ID to risks and highlights if they don't have one
+  const risksWithIds = risks.map((risk, index) => ({
+    ...risk,
+    id: risk.id || `risk-${index}`,
+  }));
+
+  const highlightsWithIds = highlights.map((highlight, index) => ({
+    ...highlight,
+    id: highlight.id || `highlight-${index}`,
+  }));
 
   return (
     <div className="min-h-screen pb-12">
@@ -397,7 +314,7 @@ const AnalysisPage = () => {
               <Card>
                 <CardContent className="p-0">
                   <img 
-                    src={property.image} 
+                    src={mainImage}
                     alt={property.address}
                     className="w-full h-[300px] object-cover rounded-t-lg"
                   />
@@ -407,25 +324,37 @@ const AnalysisPage = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
                       <div>
                         <h3 className="text-sm text-muted-foreground">Totalpris</h3>
-                        <p className="text-xl font-bold">kr {property.totalPrice}</p>
-                        <p className="text-xs text-muted-foreground">{property.pricePerSqm} kr per m²</p>
+                        <p className="text-xl font-bold">kr {property.price || property.totalPrice || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">{property.pricePerSqm || "N/A"} kr per m²</p>
                       </div>
                       <div>
                         <h3 className="text-sm text-muted-foreground">Udbudspris</h3>
-                        <p className="text-xl font-bold">kr {property.askingPrice}</p>
+                        <p className="text-xl font-bold">kr {property.askingPrice || "N/A"}</p>
                       </div>
                       <div>
                         <h3 className="text-sm text-muted-foreground">Fællesudgift/md</h3>
-                        <p className="text-xl font-bold">kr {property.monthlyFee}</p>
+                        <p className="text-xl font-bold">kr {property.monthlyFee || "N/A"}</p>
                       </div>
                       <div>
                         <h3 className="text-sm text-muted-foreground">Internt boligareal</h3>
-                        <p className="text-xl font-bold">{property.size} m² {property.sizeType}</p>
+                        <p className="text-xl font-bold">{property.size || "N/A"} m² {property.sizeType || ""}</p>
                       </div>
                       <div>
                         <h3 className="text-sm text-muted-foreground">Etage</h3>
-                        <p className="text-xl font-bold">{property.floor}</p>
+                        <p className="text-xl font-bold">{property.floor || "N/A"}</p>
                       </div>
+                      {property.yearBuilt && (
+                        <div>
+                          <h3 className="text-sm text-muted-foreground">Byggeår</h3>
+                          <p className="text-xl font-bold">{property.yearBuilt}</p>
+                        </div>
+                      )}
+                      {property.otherDetails && Object.entries(property.otherDetails).map(([key, value]: [string, any]) => (
+                        <div key={key}>
+                          <h3 className="text-sm text-muted-foreground">{key}</h3>
+                          <p className="text-xl font-bold">{value}</p>
+                        </div>
+                      ))}
                     </div>
                     
                     <div className="mb-8">
@@ -433,9 +362,9 @@ const AnalysisPage = () => {
                         <h3 className="text-base font-medium">Risici <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {risks.map((risk) => (
+                        {risksWithIds.map((risk) => (
                           <div key={risk.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{risk.icon}</div>
+                            <div className="text-2xl mb-1">{risk.icon || "⚠️"}</div>
                             <div className="text-xs leading-tight">{risk.title}</div>
                           </div>
                         ))}
@@ -447,9 +376,9 @@ const AnalysisPage = () => {
                         <h3 className="text-base font-medium">Højdepunkter <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {highlights.map((highlight) => (
+                        {highlightsWithIds.map((highlight) => (
                           <div key={highlight.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{highlight.icon}</div>
+                            <div className="text-2xl mb-1">{highlight.icon || "✨"}</div>
                             <div className="text-xs leading-tight">{highlight.title}</div>
                           </div>
                         ))}
@@ -472,7 +401,7 @@ const AnalysisPage = () => {
                   </p>
                   
                   <div className="space-y-6">
-                    {risks.map((risk, index) => (
+                    {risksWithIds.map((risk, index) => (
                       <div key={risk.id} className="border border-border rounded-lg p-6">
                         <div className="flex items-start gap-2 mb-3">
                           <h3 className="text-lg font-medium">
@@ -481,23 +410,72 @@ const AnalysisPage = () => {
                         </div>
                         
                         <p className="text-sm mb-2">
-                          {risk.description}
+                          {risk.details || risk.description}
                         </p>
                         
-                        <div className="bg-muted p-3 rounded-md italic text-sm mb-3">
-                          {risk.quote}
-                        </div>
+                        {risk.excerpt && (
+                          <div className="bg-muted p-3 rounded-md italic text-sm mb-3">
+                            {risk.excerpt}
+                          </div>
+                        )}
                         
                         <div className="flex items-center gap-2 mb-4">
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/70">
-                            {risk.categoryIcon} {risk.category}
+                            {risk.categoryIcon || risk.icon || "⚠️"} {risk.category}
                           </span>
                         </div>
                         
-                        <div className="border-t border-border pt-3 mt-3">
-                          <div className="text-xs text-muted-foreground uppercase mb-1">SPØRG MÆGLEREN</div>
-                          <p className="text-sm font-medium text-purple">"{risk.question}"</p>
+                        {risk.recommendations && risk.recommendations.length > 0 && (
+                          <div className="border-t border-border pt-3 mt-3">
+                            <div className="text-xs text-muted-foreground uppercase mb-1">
+                              {risk.recommendations[0].promptTitle || "SPØRG MÆGLEREN"}
+                            </div>
+                            <p className="text-sm font-medium text-purple">
+                              "{risk.recommendations[0].prompt || risk.question}"
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Highlights section */}
+              <Card className="mt-6">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    <h2 className="text-xl font-bold">Højdepunkter</h2>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Disse er de vigtigste fordele ved boligen.
+                  </p>
+                  
+                  <div className="space-y-6">
+                    {highlightsWithIds.map((highlight, index) => (
+                      <div key={highlight.id} className="border border-border rounded-lg p-6">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="text-2xl">
+                            {highlight.icon || "✨"}
+                          </div>
+                          <h3 className="text-lg font-medium">
+                            {highlight.title}
+                          </h3>
                         </div>
+                        
+                        <p className="text-sm">
+                          {highlight.details}
+                        </p>
+                        
+                        {highlight.category && (
+                          <div className="flex items-center gap-2 mt-4">
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/70">
+                              {highlight.category}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -534,10 +512,14 @@ const AnalysisPage = () => {
                   </p>
                   
                   <div className="space-y-3">
-                    {risks.slice(0, 3).map(risk => (
+                    {risksWithIds.slice(0, 3).map(risk => (
                       <div key={`q-${risk.id}`} className="p-3 bg-secondary rounded-lg">
                         <p className="text-sm font-medium">Vedrørende {risk.title.toLowerCase()}:</p>
-                        <p className="text-sm">"{risk.question}"</p>
+                        {risk.recommendations && risk.recommendations.length > 0 ? (
+                          <p className="text-sm">"{risk.recommendations[0].prompt}"</p>
+                        ) : (
+                          <p className="text-sm">"{risk.question || 'Hvad kan du fortælle om dette?'}"</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -547,6 +529,39 @@ const AnalysisPage = () => {
                   </Button>
                 </CardContent>
               </Card>
+              
+              {/* Gallery if we have multiple images */}
+              {property.images && property.images.length > 1 && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Galleri</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-2 gap-2">
+                      {property.images.slice(1, 5).map((image: string, index: number) => (
+                        <img 
+                          key={`img-${index}`}
+                          src={image}
+                          alt={`${property.address} - billede ${index + 2}`}
+                          className="w-full h-24 object-cover rounded-md"
+                        />
+                      ))}
+                      {property.images.length > 5 && (
+                        <div className="relative">
+                          <img
+                            src={property.images[5]}
+                            alt={`${property.address} - billede 6`}
+                            className="w-full h-24 object-cover rounded-md opacity-70"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-md text-white font-medium">
+                            +{property.images.length - 5} mere
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               <Card className="mt-6">
                 <CardContent className="p-6 text-xs text-muted-foreground">
