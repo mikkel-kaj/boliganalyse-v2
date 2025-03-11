@@ -255,16 +255,26 @@ const AnalysisPage = () => {
         
         setListing(data);
         
-        // Check if we have an analysis in the new JSONB column
-        if (data.analysis) {
+        // Check if we have an analysis in the JSONB column and it's properly structured
+        if (data.analysis && 
+            typeof data.analysis === 'object' && 
+            'property' in data.analysis && 
+            'risks' in data.analysis && 
+            'highlights' in data.analysis) {
           console.log("Using stored analysis from database:", data.analysis);
           
+          const analysisData = data.analysis as {
+            property: any;
+            risks: any[];
+            highlights: any[];
+          };
+          
           // Use the stored analysis
-          setProperty(data.analysis.property);
-          setRisks(data.analysis.risks || []);
-          setHighlights(data.analysis.highlights || []);
+          setProperty(analysisData.property);
+          setRisks(analysisData.risks || []);
+          setHighlights(analysisData.highlights || []);
         } else {
-          console.log("No stored analysis found, generating analysis from HTML content");
+          console.log("No valid stored analysis found, generating analysis from HTML content");
           
           // Generate analysis from the HTML content
           const analyzedData = generateAnalysis(data.html_content, data.id);
