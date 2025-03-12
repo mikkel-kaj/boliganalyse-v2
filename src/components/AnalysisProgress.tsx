@@ -90,7 +90,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
           <p className="text-sm text-center mb-6 max-w-md">
             {isError 
               ? "Der opstod desværre en fejl under analysen. Prøv igen senere eller kontakt kundeservice."
-              : "Vi analyserer boligen grundigt. Dette kan tage op til 30 sekunder."}
+              : "Vi analyserer boligen grundigt. Dette plejer at tage omkring et minuts tid."}
           </p>
         )}
         

@@ -27,26 +27,7 @@ export const Navbar = () => {
     <header className="w-full py-4 border-b border-border">
       <div className="container flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2" aria-label="Boliganalyse.ai - Hjem">
-          {/* Logo with theme switching */}
-          <div className="h-10 w-auto">
-            {theme === 'dark' ? (
-              <img 
-                src="/logo-dark.svg" 
-                alt="Boliganalyse.ai logo" 
-                className="h-full w-auto"
-                width="200"
-                height="50"
-              />
-            ) : (
-              <img 
-                src="/logo.svg" 
-                alt="Boliganalyse.ai logo" 
-                className="h-full w-auto"
-                width="200"
-                height="50"
-              />
-            )}
-          </div>
+          <span className="text-xl font-bold">Bolig<span className="text-purple">analyse</span>.ai</span>
         </Link>
         
         <div className="flex items-center gap-4">
