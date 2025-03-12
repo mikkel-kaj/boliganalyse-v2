@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import {
   Send, ExternalLink, Loader2, Star, Check
 } from "lucide-react";
 import { getIconComponent, getCategoryIcon, RiskIcon, HighlightIcon } from "@/components/IconMapper";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { Badge } from "@/components/ui/badge";
 import SEO from "@/components/SEO";
 
 const AnalysisPage = () => {
@@ -136,7 +138,6 @@ const AnalysisPage = () => {
     });
   };
 
-  // Show loading spinner only for initial load
   if (loading && !listing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -464,14 +465,36 @@ const AnalysisPage = () => {
                       
                       <div className="mb-8">
                         <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-base font-medium">Risici <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
+                          <h3 className="text-base font-medium">Risikoer <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {risksWithIds.map((risk) => (
-                            <div key={risk.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                              <div className="text-2xl mb-1">{getCategoryIcon(risk.category, 5)}</div>
-                              <div className="text-xs leading-tight">{risk.title}</div>
-                            </div>
+                            <HoverCard key={risk.id} openDelay={100} closeDelay={100}>
+                              <HoverCardTrigger asChild>
+                                <div 
+                                  className="bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 px-3 py-2 rounded-md flex items-center gap-1.5 cursor-pointer transition-colors"
+                                >
+                                  <div className="text-amber-500 dark:text-amber-400">
+                                    {getCategoryIcon(risk.category, 4)}
+                                  </div>
+                                  <span className="text-xs font-medium text-amber-950 dark:text-amber-100">{risk.title}</span>
+                                  <span className="text-xs">▸</span>
+                                </div>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-80 p-4">
+                                <div>
+                                  <h4 className="font-medium mb-2">{risk.title}</h4>
+                                  <p className="text-sm mb-3">{risk.details || risk.description}</p>
+                                  
+                                  {risk.recommendations && risk.recommendations.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-border">
+                                      <h5 className="text-xs font-semibold uppercase text-muted-foreground mb-1">Spørg mægler</h5>
+                                      <p className="text-sm italic">"{risk.recommendations[0].prompt || risk.question || 'Hvad kan du fortælle om dette?'}"</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
                           ))}
                         </div>
                       </div>
@@ -482,10 +505,25 @@ const AnalysisPage = () => {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {highlightsWithIds.map((highlight) => (
-                            <div key={highlight.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                              <div className="text-2xl mb-1">{getIconComponent(highlight.icon || 'lightbulb', 6)}</div>
-                              <div className="text-xs leading-tight">{highlight.title}</div>
-                            </div>
+                            <HoverCard key={highlight.id} openDelay={100} closeDelay={100}>
+                              <HoverCardTrigger asChild>
+                                <div 
+                                  className="bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 px-3 py-2 rounded-md flex items-center gap-1.5 cursor-pointer transition-colors"
+                                >
+                                  <div className="text-emerald-500 dark:text-emerald-400">
+                                    {getIconComponent(highlight.icon || 'lightbulb', 4)}
+                                  </div>
+                                  <span className="text-xs font-medium text-emerald-950 dark:text-emerald-100">{highlight.title}</span>
+                                  <span className="text-xs">▸</span>
+                                </div>
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-80 p-4">
+                                <div>
+                                  <h4 className="font-medium mb-2">{highlight.title}</h4>
+                                  <p className="text-sm">{highlight.details}</p>
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
                           ))}
                         </div>
                       </div>
@@ -506,53 +544,45 @@ const AnalysisPage = () => {
                     
                     <div className="space-y-6">
                       {risksWithIds.map((risk, index) => (
-                        <div key={risk.id} className="border border-border rounded-lg p-6">
-                          <div className="flex items-start gap-2 mb-3">
-                            <h3 className="text-lg font-medium">
-                              {index + 1}. {risk.title}
-                            </h3>
+                        <div key={risk.id} className="border border-border rounded-lg p-5">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="text-xl mt-1">
+                              {getCategoryIcon(risk.category, 5)}
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-medium">
+                                {risk.title}
+                              </h3>
+                              
+                              <p className="text-sm mt-2 mb-2">
+                                {risk.details || risk.description}
+                              </p>
+                              
+                              {risk.excerpt && (
+                                <div className="bg-muted p-3 rounded-md italic text-sm mb-3">
+                                  {risk.excerpt}
+                                </div>
+                              )}
+                            </div>
                           </div>
                           
-                          <p className="text-sm mb-2">
-                            {risk.details || risk.description}
-                          </p>
-                          
-                          {risk.excerpt && (
-                            <div className="bg-muted p-3 rounded-md italic text-sm mb-3">
-                              {risk.excerpt}
+                          {risk.recommendations && risk.recommendations.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-border">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Send className="h-4 w-4 text-muted-foreground" />
+                                <h4 className="text-sm font-medium">Spørg mægler</h4>
+                              </div>
+                              <p className="text-sm italic ml-6">
+                                "{risk.recommendations[0].prompt || risk.question || 'Hvad kan du fortælle om dette?'}"
+                              </p>
                             </div>
                           )}
                           
-                          <div className="flex items-center gap-2 mb-4">
+                          <div className="flex items-center gap-2 mt-4">
                             <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/70 flex items-center gap-1">
                               <RiskIcon risk={risk} />
                             </span>
                           </div>
-                          
-                          {risk.recommendations && risk.recommendations.length > 0 && (
-                            <div className="border-t border-border pt-3 mt-3">
-                              <div className="text-xs text-muted-foreground uppercase mb-1">
-                                {risk.recommendations[0].promptTitle || "SPØRG MÆGLEREN"}
-                              </div>
-                              <p className="text-sm font-medium text-purple">
-                                "{risk.recommendations[0].prompt || risk.question}"
-                              </p>
-                              {risk.recommendations.length > 1 && (
-                                <div className="mt-2 pt-2 border-t border-border/50">
-                                  <div className="text-xs text-muted-foreground mb-1">
-                                    Flere spørgsmål:
-                                  </div>
-                                  <ul className="space-y-1 text-sm">
-                                    {risk.recommendations.slice(1).map((rec, idx) => (
-                                      <li key={`rec-${risk.id}-${idx}`} className="text-purple">
-                                        "{rec.prompt}"
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
@@ -572,19 +602,21 @@ const AnalysisPage = () => {
                     
                     <div className="space-y-6">
                       {highlightsWithIds.map((highlight, index) => (
-                        <div key={highlight.id} className="border border-border rounded-lg p-6">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="text-2xl">
-                              {getIconComponent(highlight.icon || 'lightbulb', 6)}
+                        <div key={highlight.id} className="border border-border rounded-lg p-5">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="text-xl mt-1">
+                              {getIconComponent(highlight.icon || 'lightbulb', 5)}
                             </div>
-                            <h3 className="text-lg font-medium">
-                              {highlight.title}
-                            </h3>
+                            <div>
+                              <h3 className="text-lg font-medium">
+                                {highlight.title}
+                              </h3>
+                              
+                              <p className="text-sm mt-2">
+                                {highlight.details}
+                              </p>
+                            </div>
                           </div>
-                          
-                          <p className="text-sm">
-                            {highlight.details}
-                          </p>
                           
                           {highlight.category && (
                             <div className="flex items-center gap-2 mt-4">
