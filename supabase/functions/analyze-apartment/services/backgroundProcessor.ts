@@ -1,5 +1,5 @@
-
 import { ingestHtmlForLink, finalAnalysis } from "./aiAnalyzer.ts";
+import { validateBoligsideUrl } from "../utils/validation.ts";
 
 // Helper function to update listing status with proper update timestamp
 async function updateListingStatus(
@@ -76,6 +76,16 @@ export async function processListingInBackground(
   console.log(`[${listingId}] Starting background process for URL: ${normalizedUrl}`);
 
   try {
+    // First validate the URL before proceeding
+    const urlValidation = validateBoligsideUrl(normalizedUrl);
+    if (!urlValidation.valid) {
+      console.error(`[${listingId}] Invalid URL: ${normalizedUrl}. Error: ${urlValidation.error}`);
+      await updateListingStatus(supabase, listingId, "Fejl", {
+        error_details: `Invalid URL: ${urlValidation.error}`
+      });
+      return { success: false, error: urlValidation.error };
+    }
+    
     // 1. Update DB: status => "Søger efter salgsopslag"
     await updateListingStatus(supabase, listingId, "Søger efter salgsopslag");
 

@@ -1,13 +1,27 @@
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.1";
 import { corsHeaders } from "../utils/cors.ts";
 import { processListingInBackground } from "../services/backgroundProcessor.ts";
+import { validateBoligsideUrl } from "../utils/validation.ts";
 
 /**
  * Handles the listing request - checks for existing listings or creates a new one
  */
 export async function handleListing(url: string, normalizedUrl: string): Promise<Response> {
   try {
+    // Validate the URL before processing
+    const urlValidation = validateBoligsideUrl(url);
+    if (!urlValidation.valid) {
+      console.error(`Invalid URL: ${url}. Error: ${urlValidation.error}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid URL", 
+          details: urlValidation.error,
+          code: "INVALID_URL"
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseKey);

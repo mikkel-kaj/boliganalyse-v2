@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -22,9 +21,6 @@ export const Navbar = () => {
         </Link>
         
         <div className="flex items-center gap-4">
-          <Link to="/ny-analyse" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Ny analyse
-          </Link>
           <Link to="/analyseret" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Analyserede boliger
           </Link>

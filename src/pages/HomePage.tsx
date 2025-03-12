@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
+import { validateBoligsideUrl } from '../utils/validators';
 
 const HomePage = () => {
   const [url, setUrl] = useState('');
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingStatus, setAnalyzingStatus] = useState('');
   const [listingId, setListingId] = useState<string | null>(null);
@@ -72,19 +73,13 @@ const HomePage = () => {
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!url.trim()) {
-      toast({
-        title: "Angiv venligst URL",
-        description: "Du skal indsætte et link til en boligannonce for at fortsætte.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!url.includes('bolig') && !url.includes('ejendom')) {
+    // Validate URL
+    const validation = validateBoligsideUrl(url);
+    if (!validation.valid) {
+      setUrlError(validation.error || "Ugyldig URL");
       toast({
         title: "Ugyldig URL",
-        description: "URL'en ser ikke ud til at være en boligliste. Kontroller og prøv igen.",
+        description: validation.error || "URL'en ser ikke ud til at være en gyldig Boligsiden URL.",
         variant: "destructive"
       });
       return;
@@ -181,8 +176,11 @@ const HomePage = () => {
                 </div>
                 <Input 
                   value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  className="pl-28 h-12"
+                  onChange={(e) => {
+                    setUrl(e.target.value);
+                    setUrlError(null); // Clear errors on input change
+                  }}
+                  className={`pl-28 h-12 ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder="Indsæt link til boligannonce..."
                   disabled={isAnalyzing}
                 />
@@ -206,7 +204,15 @@ const HomePage = () => {
               </Button>
             </form>
             
+            {urlError && (
+              <p className="text-xs text-red-500 mt-2">
+                {urlError}
+              </p>
+            )}
+            
             <p className="text-xs text-muted-foreground mt-4 max-w-2xl mx-auto">
+              Indsæt en URL fra <strong>Boligsiden</strong> - f.eks. https://www.boligsiden.dk/adresse/kapelvej-27-3700-roenne
+              <br />
               Boliganalyse.ai er et støtteværktøj til boligkøb, men erstatter ikke professionel rådgivning. 
               Alle beslutninger bør baseres på egen research og besigtigelse - vi tager ikke ansvar for eventuelle fejl i analysen.
             </p>
