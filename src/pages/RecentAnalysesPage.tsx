@@ -72,7 +72,19 @@ const RecentAnalysesPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {recentProperties.map((property) => {
           const analysis = property.analysis ? (property.analysis as any) : null;
-          if (!analysis?.property) return null;
+          if (!analysis?.property && property.status !== "Opslag fundet!" && property.status !== "Første fase analyse gennemført") return null;
+
+          // Determine the best image to display
+          let imageUrl = '/placeholder.svg';
+          
+          // First try to use the property_image_url
+          if (property.property_image_url) {
+            imageUrl = property.property_image_url;
+          }
+          // Then try the images from analysis if available
+          else if (analysis?.images && analysis.images.length > 0) {
+            imageUrl = analysis.images[0].url;
+          }
 
           return (
             <Link 
@@ -82,24 +94,35 @@ const RecentAnalysesPage = () => {
             >
               <div className="relative">
                 <img 
-                  src={analysis.property.images?.[0] || '/placeholder.svg'} 
-                  alt={analysis.property.address} 
+                  src={imageUrl} 
+                  alt={analysis?.property?.address || "Bolig under analyse"} 
                   className="w-full h-48 object-cover"
                 />
                 <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-xs px-2 py-1 rounded-full">
                   {new Date(property.created_at).toLocaleDateString('da-DK')}
                 </div>
+                {!analysis?.property && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="text-sm font-medium text-white bg-purple px-3 py-1 rounded-full">
+                      {property.status}
+                    </span>
+                  </div>
+                )}
               </div>
               
               <div className="p-4">
-                <h3 className="font-medium mb-1">{analysis.property.address}</h3>
-                <p className="text-lg font-bold mb-2">{analysis.property.price}</p>
+                <h3 className="font-medium mb-1">
+                  {analysis?.property?.address || "Bolig under analyse"}
+                </h3>
+                <p className="text-lg font-bold mb-2">
+                  {analysis?.property?.price || "Analyserer..."}
+                </p>
                 
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                  <span>{analysis.property.size}</span>
+                  <span>{analysis?.property?.size || ""}</span>
                 </div>
                 
-                {analysis.risks && analysis.risks.length > 0 && (
+                {analysis?.risks && analysis.risks.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1">RISIKOFAKTORER</h4>
                     <div className="flex flex-wrap gap-2">
@@ -112,7 +135,7 @@ const RecentAnalysesPage = () => {
                   </div>
                 )}
                 
-                {analysis.highlights && analysis.highlights.length > 0 && (
+                {analysis?.highlights && analysis.highlights.length > 0 && (
                   <div className="mt-4 space-y-2">
                     <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1">HØJDEPUNKTER</h4>
                     <div className="flex flex-wrap gap-2">

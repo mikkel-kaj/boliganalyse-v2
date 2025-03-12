@@ -27,6 +27,45 @@ async function updateListingStatus(
 }
 
 /**
+ * Extract the first image URL from HTML content
+ */
+async function extractFirstImageUrl(htmlContent: string): Promise<string | null> {
+  if (!htmlContent) return null;
+  
+  try {
+    // Look for image tags with src attributes
+    const imgRegex = /<img\s+[^>]*src="([^"]+)"[^>]*>/gi;
+    const matches = [...htmlContent.matchAll(imgRegex)];
+    
+    // Filter for likely property images (exclude tiny icons, logos, etc.)
+    const propertyImages = matches
+      .map(match => match[1])
+      .filter(src => {
+        // Filter out SVGs, base64 images, and common UI elements
+        const isLikelyPropertyImage = 
+          !src.includes('base64') && 
+          !src.includes('.svg') &&
+          !src.includes('icon') &&
+          !src.includes('logo') &&
+          src.includes('http');
+        
+        return isLikelyPropertyImage;
+      });
+    
+    if (propertyImages.length > 0) {
+      console.log(`Found ${propertyImages.length} potential property images, using the first one`);
+      return propertyImages[0];
+    }
+    
+    console.log("No suitable property images found in HTML");
+    return null;
+  } catch (error) {
+    console.error("Error extracting image from HTML:", error);
+    return null;
+  }
+}
+
+/**
  * Orchestrates the entire background process with multiple statuses in Danish
  */
 export async function processListingInBackground(
@@ -50,8 +89,15 @@ export async function processListingInBackground(
     const firstHtml = await response.text();
     console.log(`[${listingId}] Successfully fetched HTML, length=${firstHtml.length}`);
 
+    // Extract the first property image before AI processing
+    const propertyImageUrl = await extractFirstImageUrl(firstHtml);
+    console.log(`[${listingId}] Extracted property image URL: ${propertyImageUrl || 'none found'}`);
+
     // 2. "Opslag fundet!"
-    await updateListingStatus(supabase, listingId, "Opslag fundet!", { html_content: firstHtml });
+    await updateListingStatus(supabase, listingId, "Opslag fundet!", { 
+      html_content: firstHtml,
+      property_image_url: propertyImageUrl
+    });
 
     // 3. Phase #1: Use AI to extract an "originalLink" from the first HTML
     console.log(`[${listingId}] Starting AI parsing for link extraction...`);

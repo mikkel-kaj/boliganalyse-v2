@@ -19,17 +19,20 @@ interface AnalysisProgressProps {
   status: string;
   backgroundImage?: string;
   errorMessage?: string;
+  propertyImageUrl?: string;
 }
 
 const AnalysisProgress: React.FC<AnalysisProgressProps> = ({ 
   status, 
   backgroundImage,
-  errorMessage 
+  errorMessage,
+  propertyImageUrl
 }) => {
   const { message, progress, isError } = statusMessages[status] || 
     { message: "Analyserer bolig...", progress: 50 };
   
-  const defaultImage = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
+  // Use property image if available, fallback to background image or default
+  const imageUrl = propertyImageUrl || backgroundImage || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
   
   // Show toast for error if we have an error message and error status
   React.useEffect(() => {
@@ -44,17 +47,30 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
 
   return (
     <div className="relative w-full h-[400px] mb-6 overflow-hidden rounded-lg">
-      {/* Background image with blur */}
+      {/* Property image with blur */}
       <div 
         className="absolute inset-0 bg-cover bg-center blur-sm"
         style={{ 
-          backgroundImage: `url(${backgroundImage || defaultImage})`,
+          backgroundImage: `url(${imageUrl})`,
           filter: 'brightness(0.7) blur(4px)'
         }}
       />
       
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/40" />
+      
+      {/* Property image (non-blurred) in the center if available */}
+      {propertyImageUrl && (
+        <div className="absolute left-1/2 top-0 -translate-x-1/2 h-full flex items-center justify-center p-6 z-10">
+          <div className="relative max-w-[250px] max-h-[200px] rounded-lg overflow-hidden shadow-xl">
+            <img 
+              src={propertyImageUrl}
+              alt="Bolig billede"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      )}
       
       {/* Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white">
