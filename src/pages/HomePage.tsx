@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
 import { validateBoligsideUrl } from '../utils/validators';
 import { RiskIcon, HighlightIcon } from '@/components/IconMapper';
+import SEO from '@/components/SEO';
 
 const HomePage = () => {
   const [url, setUrl] = useState('');
@@ -17,6 +18,19 @@ const HomePage = () => {
   const [listingId, setListingId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // SEO schema for homepage
+  const homePageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Boliganalyse.ai",
+    "url": "https://boliganalyse.ai",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://boliganalyse.ai?url={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
 
   const { data: recentListings } = useQuery({
     queryKey: ['recent-listings'],
@@ -147,6 +161,7 @@ const HomePage = () => {
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col">
+      <SEO schema={homePageSchema} />
       <main className="flex-1">
         <section className="py-16 md:py-24 lg:py-32 container text-center">
           <div className="max-w-3xl mx-auto">

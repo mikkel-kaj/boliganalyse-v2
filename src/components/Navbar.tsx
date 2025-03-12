@@ -1,10 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { MoonIcon, SunIcon } from "lucide-react";
 
 export const Navbar = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Initialize theme from system preference
+  useEffect(() => {
+    // Check if the user prefers dark mode
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = prefersDark ? 'dark' : 'light';
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle('light', initialTheme === 'light');
+    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+  }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -16,8 +26,27 @@ export const Navbar = () => {
   return (
     <header className="w-full py-4 border-b border-border">
       <div className="container flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold">Bolig<span className="text-purple">analyse</span>.ai</span>
+        <Link to="/" className="flex items-center gap-2" aria-label="Boliganalyse.ai - Hjem">
+          {/* Logo with theme switching */}
+          <div className="h-10 w-auto">
+            {theme === 'dark' ? (
+              <img 
+                src="/logo-dark.svg" 
+                alt="Boliganalyse.ai logo" 
+                className="h-full w-auto"
+                width="200"
+                height="50"
+              />
+            ) : (
+              <img 
+                src="/logo.svg" 
+                alt="Boliganalyse.ai logo" 
+                className="h-full w-auto"
+                width="200"
+                height="50"
+              />
+            )}
+          </div>
         </Link>
         
         <div className="flex items-center gap-4">

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- House icon -->
+  <path d="M30 10L50 25V45H40V30H20V45H10V25L30 10Z" fill="#8B5CF6" />
+  
+  <!-- Magnifying glass (analysis) -->
+  <circle cx="35" cy="25" r="8" stroke="#8B5CF6" stroke-width="4" fill="none" />
+  <path d="M41 31L47 37" stroke="#8B5CF6" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Text part - light colored for dark mode -->
+  <text x="60" y="30" font-family="Arial, sans-serif" font-weight="bold" font-size="18" fill="#FFFFFF">
+    <tspan>Bolig</tspan><tspan fill="#8B5CF6">analyse</tspan><tspan>.ai</tspan>
+  </text>
+</svg> 

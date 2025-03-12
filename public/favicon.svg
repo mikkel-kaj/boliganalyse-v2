@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- House icon -->
+  <rect width="64" height="64" rx="12" fill="white"/>
+  <path d="M32 12L52 28V52H42V36H22V52H12V28L32 12Z" fill="#6D28D9" />
+  
+  <!-- Magnifying glass (analysis) -->
+  <circle cx="38" cy="28" r="8" stroke="#6D28D9" stroke-width="4" fill="white" />
+  <path d="M44 34L50 40" stroke="#6D28D9" stroke-width="4" stroke-linecap="round" />
+</svg> 

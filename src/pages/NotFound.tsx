@@ -1,8 +1,8 @@
-
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { HomeIcon } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const NotFound = () => {
   const location = useLocation();
@@ -16,6 +16,11 @@ const NotFound = () => {
 
   return (
     <div className="container flex items-center justify-center min-h-[calc(100vh-80px)]">
+      <SEO 
+        title="404 - Side ikke fundet | Boliganalyse.ai"
+        description="Denne side blev ikke fundet. Besøg vores hjemmeside for at analysere boliger med AI-teknologi."
+        ogType="website"
+      />
       <div className="max-w-md text-center">
         <h1 className="text-6xl font-bold text-purple mb-6">404</h1>
         <p className="text-xl mb-8">Ups! Siden blev ikke fundet</p>
