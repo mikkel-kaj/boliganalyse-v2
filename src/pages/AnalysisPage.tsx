@@ -202,9 +202,6 @@ const AnalysisPage = () => {
   if (!property || status !== "Analyse fuldført") {
     // Try to get property address if available in the analysis
     const address = property?.address || "Boligadresse";
-    const firstImage = property?.images && property.images.length > 0 
-      ? property.images[0] 
-      : null;
       
     return (
       <div className="container py-12">
@@ -218,7 +215,7 @@ const AnalysisPage = () => {
           
           <AnalysisProgress 
             status={status} 
-            backgroundImage={firstImage}
+            propertyImageUrl={listing?.property_image_url}
           />
           
           <Card>
@@ -268,9 +265,8 @@ const AnalysisPage = () => {
   const originalUrl = listing?.url || "";
   const timeAgoDisplay = listing ? "Lige nu" : property.timeAgo || "Lige nu";
   
-  const mainImage = property.images && property.images.length > 0 
-    ? property.images[0] 
-    : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
+  // Use the property_image_url from the listing as the main image
+  const mainImage = listing?.property_image_url || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
 
   const risksWithIds = risks.map((risk, index) => ({
     ...risk,

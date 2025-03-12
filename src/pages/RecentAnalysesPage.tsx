@@ -74,16 +74,11 @@ const RecentAnalysesPage = () => {
           const analysis = property.analysis ? (property.analysis as any) : null;
           if (!analysis?.property && property.status !== "Opslag fundet!" && property.status !== "Første fase analyse gennemført") return null;
 
-          // Determine the best image to display
+          // Determine the best image to display - prioritize property_image_url
           let imageUrl = '/placeholder.svg';
           
-          // First try to use the property_image_url
           if (property.property_image_url) {
             imageUrl = property.property_image_url;
-          }
-          // Then try the images from analysis if available
-          else if (analysis?.images && analysis.images.length > 0) {
-            imageUrl = analysis.images[0].url;
           }
 
           return (
