@@ -8,43 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import { 
   ArrowLeft, Share2, AlertTriangle, 
-  Check, HelpCircle, Star, Send, ExternalLink, Loader2,
-  Building, Home, Map, PiggyBank, Scale, Key, Heart, Award, ThumbsUp, Lightbulb, Flag, Search
+  Check, HelpCircle, Star, Send, ExternalLink, Loader2
 } from "lucide-react";
-
-const getIconComponent = (iconName: string) => {
-  const iconMap: Record<string, React.ReactNode> = {
-    'check': <Check className="h-5 w-5" />,
-    'star': <Star className="h-5 w-5" />,
-    'flag': <Flag className="h-5 w-5" />,
-    'heart': <Heart className="h-5 w-5" />,
-    'thumbs-up': <ThumbsUp className="h-5 w-5" />,
-    'home': <Home className="h-5 w-5" />,
-    'key': <Key className="h-5 w-5" />,
-    'search': <Search className="h-5 w-5" />,
-    'lightbulb': <Lightbulb className="h-5 w-5" />,
-    'award': <Award className="h-5 w-5" />,
-    'building': <Building className="h-5 w-5" />,
-    'map': <Map className="h-5 w-5" />,
-    'piggy-bank': <PiggyBank className="h-5 w-5" />,
-    'scale': <Scale className="h-5 w-5" />
-  };
-  
-  return iconMap[iconName?.toLowerCase()] || <Lightbulb className="h-5 w-5" />;
-};
-
-const getCategoryIcon = (category: string) => {
-  const categoryIcons: Record<string, React.ReactNode> = {
-    'Energi': <Lightbulb className="h-4 w-4" />,
-    'Tilstand': <Home className="h-4 w-4" />,
-    'Økonomi': <PiggyBank className="h-4 w-4" />,
-    'Beliggenhed': <Map className="h-4 w-4" />,
-    'Juridisk': <Scale className="h-4 w-4" />,
-    'Andet': <AlertTriangle className="h-4 w-4" />
-  };
-  
-  return categoryIcons[category] || <AlertTriangle className="h-4 w-4" />;
-};
+import { getIconComponent, getCategoryIcon, RiskIcon, HighlightIcon } from "@/components/IconMapper";
 
 const AnalysisPage = () => {
   const { id } = useParams();
@@ -462,7 +428,7 @@ const AnalysisPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {risksWithIds.map((risk) => (
                           <div key={risk.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{getCategoryIcon(risk.category)}</div>
+                            <div className="text-2xl mb-1">{getCategoryIcon(risk.category, 5)}</div>
                             <div className="text-xs leading-tight">{risk.title}</div>
                           </div>
                         ))}
@@ -476,7 +442,7 @@ const AnalysisPage = () => {
                       <div className="flex flex-wrap gap-2">
                         {highlightsWithIds.map((highlight) => (
                           <div key={highlight.id} className="bg-secondary/50 p-3 rounded-lg flex flex-col items-center text-center w-[calc(20%-8px)] min-w-[100px] cursor-pointer hover:bg-secondary transition-colors">
-                            <div className="text-2xl mb-1">{highlight.icon ? getIconComponent(highlight.icon) : "✨"}</div>
+                            <div className="text-2xl mb-1">{getIconComponent(highlight.icon || 'lightbulb', 6)}</div>
                             <div className="text-xs leading-tight">{highlight.title}</div>
                           </div>
                         ))}
@@ -518,7 +484,7 @@ const AnalysisPage = () => {
                         
                         <div className="flex items-center gap-2 mb-4">
                           <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary/70 flex items-center gap-1">
-                            {getCategoryIcon(risk.category)} {risk.category}
+                            <RiskIcon risk={risk} />
                           </span>
                         </div>
                         
@@ -568,7 +534,7 @@ const AnalysisPage = () => {
                       <div key={highlight.id} className="border border-border rounded-lg p-6">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="text-2xl">
-                            {highlight.icon ? getIconComponent(highlight.icon) : "✨"}
+                            {getIconComponent(highlight.icon || 'lightbulb', 6)}
                           </div>
                           <h3 className="text-lg font-medium">
                             {highlight.title}

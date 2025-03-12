@@ -7,6 +7,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
 import { validateBoligsideUrl } from '../utils/validators';
+import { RiskIcon, HighlightIcon } from '@/components/IconMapper';
 
 const HomePage = () => {
   const [url, setUrl] = useState('');
@@ -263,10 +264,8 @@ const HomePage = () => {
                         <div className="space-y-2">
                           <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1">RISIKOFAKTORER</h4>
                           <div className="flex flex-wrap gap-2">
-                            {analysis.risks.slice(0, 2).map((risk: any, idx: number) => (
-                              <span key={idx} className="risk-badge bg-risk-default">
-                                {risk.icon || '⚠️'} {risk.title}
-                              </span>
+                            {analysis.risks.slice(0, 4).map((risk: any, idx: number) => (
+                              <RiskIcon key={idx} risk={risk} size={3} />
                             ))}
                           </div>
                         </div>
@@ -276,10 +275,8 @@ const HomePage = () => {
                         <div className="mt-4 space-y-2">
                           <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1">HØJDEPUNKTER</h4>
                           <div className="flex flex-wrap gap-2">
-                            {analysis.highlights.slice(0, 2).map((highlight: any, idx: number) => (
-                              <span key={idx} className="highlight-badge bg-highlight-default/20 text-highlight-default">
-                                {highlight.icon || '✨'} {highlight.title}
-                              </span>
+                            {analysis.highlights.slice(0, 4).map((highlight: any, idx: number) => (
+                              <HighlightIcon key={idx} highlight={highlight} size={3} />
                             ))}
                           </div>
                         </div>
