@@ -7,8 +7,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import { 
-  ArrowLeft, Share2, AlertTriangle, 
-  Check, HelpCircle, Star, Send, ExternalLink, Loader2
+  ArrowLeft, Share2, AlertTriangle,
+  Send, ExternalLink, Loader2
 } from "lucide-react";
 import { getIconComponent, getCategoryIcon, RiskIcon, HighlightIcon } from "@/components/IconMapper";
 
