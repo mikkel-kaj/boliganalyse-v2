@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import { 
   ArrowLeft, Share2, AlertTriangle,
-  Send, ExternalLink, Loader2
+  Send, ExternalLink, Loader2, Star, Check
 } from "lucide-react";
 import { getIconComponent, getCategoryIcon, RiskIcon, HighlightIcon } from "@/components/IconMapper";
 
