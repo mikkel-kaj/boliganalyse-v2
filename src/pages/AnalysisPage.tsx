@@ -56,7 +56,6 @@ const AnalysisPage = () => {
       if (data.analysis && 
           typeof data.analysis === 'object' && 
           'property' in data.analysis) {
-        console.log("Using stored analysis from database:", data.analysis);
         
         const analysisData = data.analysis;
         
