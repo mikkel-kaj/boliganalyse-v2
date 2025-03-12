@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -221,6 +222,12 @@ const HomePage = () => {
                 const analysis = listing.analysis as any;
                 if (!analysis?.property) return null;
 
+                // Use property_image_url if available, otherwise fallback
+                let imageUrl = '/placeholder.svg';
+                if (listing.property_image_url) {
+                  imageUrl = listing.property_image_url;
+                }
+
                 return (
                   <Link
                     key={listing.id}
@@ -229,7 +236,7 @@ const HomePage = () => {
                   >
                     <div className="relative">
                       <img 
-                        src={analysis.property.images?.[0] || '/placeholder.svg'} 
+                        src={imageUrl} 
                         alt={analysis.property.address} 
                         className="w-full h-40 object-cover"
                       />
@@ -297,4 +304,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
