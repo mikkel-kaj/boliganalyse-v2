@@ -18,6 +18,7 @@ export type Database = {
           id: string
           normalized_url: string
           partial_analysis: Json | null
+          property_image_url: string | null
           status: string
           updated_at: string
           url: string
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           normalized_url: string
           partial_analysis?: Json | null
+          property_image_url?: string | null
           status?: string
           updated_at?: string
           url: string
@@ -42,6 +44,7 @@ export type Database = {
           id?: string
           normalized_url?: string
           partial_analysis?: Json | null
+          property_image_url?: string | null
           status?: string
           updated_at?: string
           url?: string
