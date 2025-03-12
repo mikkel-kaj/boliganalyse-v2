@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import { 
@@ -14,6 +14,7 @@ import { getIconComponent, getCategoryIcon, RiskIcon, HighlightIcon } from "@/co
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { Badge } from "@/components/ui/badge";
 import SEO from "@/components/SEO";
+import FeedbackForm from "@/components/FeedbackForm";
 
 const AnalysisPage = () => {
   const { id } = useParams();
@@ -685,16 +686,10 @@ const AnalysisPage = () => {
                       Hjælp os med at forbedre vores analyser ved at sende feedback om denne rapport.
                     </p>
                     
-                    <div className="space-y-4">
-                      <textarea 
-                        className="w-full h-32 p-3 border rounded-md bg-background resize-none"
-                        placeholder="Skriv din feedback her..."
-                      />
-                      
-                      <Button variant="outline" className="w-full">
-                        <Send className="h-4 w-4 mr-2" /> Send feedback
-                      </Button>
-                    </div>
+                    <FeedbackForm 
+                      propertyId={id}
+                      propertyAddress={property?.address}
+                    />
                   </CardContent>
                 </Card>
                 
