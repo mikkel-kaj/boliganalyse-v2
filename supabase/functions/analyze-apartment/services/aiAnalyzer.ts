@@ -172,7 +172,7 @@ export async function ingestHtmlForLink(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4.5-preview",
       messages: [{ role: "system", content: prompt }],
       max_tokens: 4096,
       temperature: 0.5,
@@ -333,13 +333,14 @@ export async function finalAnalysis(
     
     Returnér JSON i dette format:
     {
+      "summary": "Kort beskrivelse af din analyse på vegne af en potentiel boligkøber, lav en kort beskrivelse af hvad du har fundet, hvad du mener og hvad du anbefaler.",
       "property": {
         "address": "...",
         "price": "...", 
         "udbetaling": "...",
         "pricePerM2": "...",
         "size": "...",
-        "rooms": "...", 
+        "værelser": "...", 
         "floor": "...",
         "boligType": "...",
         "ejerform": "...",
@@ -353,7 +354,7 @@ export async function finalAnalysis(
           "category": "Energi|Tilstand|Økonomi|Beliggenhed|Juridisk|Andet",
           "title": "Kort præcis titel",
           "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
-          "excerpt": "Kort tekstuddrag fra annoncen der understøtter dette (hvis relevant)",
+          "excerpt": "Kort tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
           "recommendations": [
             {"promptTitle": "Spørg megler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
           ]
@@ -392,7 +393,7 @@ export async function finalAnalysis(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4.5-preview",
       messages: [{ role: "system", content: prompt }],
       max_tokens: 4096,
       temperature: 0.5,

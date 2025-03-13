@@ -23,6 +23,7 @@ const AnalysisPage = () => {
   const [listing, setListing] = useState<any>(null);
   const [property, setProperty] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<any | null>(null);
   const [risks, setRisks] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
   const [status, setStatus] = useState<string>("Starter analyse");
@@ -63,7 +64,8 @@ const AnalysisPage = () => {
         const analysisData = data.analysis;
         
         setProperty(analysisData.property);
-        
+        setSummary(analysisData.summary);
+
         const risksArray = Array.isArray(analysisData.risks) ? analysisData.risks : [];
         const highlightsArray = Array.isArray(analysisData.highlights) ? analysisData.highlights : [];
         
@@ -101,10 +103,22 @@ const AnalysisPage = () => {
         (payload) => {
           console.log('Change received!', payload);
           
-          // Directly update the status without refetching the entire listing
-          if (payload.new && payload.new.status) {
-            console.log('New status:', payload.new.status);
-            setStatus(payload.new.status);
+          // Update state with new data from payload
+          if (payload.new) {
+            // Update status if it changed
+            if (payload.new.status) {
+              console.log('New status:', payload.new.status);
+              setStatus(payload.new.status);
+            }
+            
+            // Update listing with property_image_url if it's available
+            if (payload.new.property_image_url) {
+              console.log('New property image URL:', payload.new.property_image_url);
+              setListing(prevListing => ({
+                ...prevListing,
+                property_image_url: payload.new.property_image_url
+              }));
+            }
             
             // If the analysis is completed, fetch the full listing with analysis data
             if (payload.new.status === "Analyse fuldført") {
@@ -493,7 +507,14 @@ const AnalysisPage = () => {
                         </div>
                       ))}
                     </div>
-                      
+
+                    {listing.summary && listing.summary.trim() !== '' && (
+                      <div className='mb-6'>
+                        <h3 className='text-base font-medium'>AI-opsummering</h3>
+                        <p className='text-sm text-muted-foreground'>{property.summary}</p>
+                      </div>
+                    )}
+                    
                     <div className="mb-6">
                       <div className="flex justify-between items-center mb-3">
                         <h3 className="text-base font-medium">Risikoer <span className="text-sm text-muted-foreground">(klik for detaljer)</span></h3>
