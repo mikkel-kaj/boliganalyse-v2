@@ -85,7 +85,8 @@ export async function processListingInBackground(
       });
       return { success: false, error: urlValidation.error };
     }
-    
+    console.log(`[${listingId}] Starting background process for URL: ${normalizedUrl}`);
+
     // 1. Update DB: status => "Søger efter salgsopslag"
     await updateListingStatus(supabase, listingId, "Søger efter salgsopslag");
 
