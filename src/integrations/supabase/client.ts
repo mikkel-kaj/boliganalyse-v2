@@ -2,15 +2,21 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://hdsyqsrxjffogesoceev.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhkc3lxc3J4amZmb2dlc29jZWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MDIxNzEsImV4cCI6MjA1NzI3ODE3MX0.BvPVOYcyN0z--In4VsfrjtfiEbI8Ov-GliMOo-xn3Qs";
+
+const supabaseUrl = import.meta.env.DEV 
+  ? 'http://127.0.0.1:64321'
+  : import.meta.env.VITE_APP_URL;
+
+const supabaseKey = import.meta.env.DEV
+  ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+  : import.meta.env.VITE_APP_ANON_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(
-  SUPABASE_URL, 
-  SUPABASE_PUBLISHABLE_KEY,
+  supabaseUrl, 
+  supabaseKey,
   {
     realtime: {
       params: {
