@@ -53,7 +53,13 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
 
       const { error } = await supabase
         .from('feedback')
-        .insert([data]);
+        .insert([{
+          feedback_type: data.feedbackType,
+          message: data.message,
+          email: data.email,
+          property_id: data.propertyId,
+          property_address: data.propertyAddress
+        }]);
 
       if (error) throw error;
 
