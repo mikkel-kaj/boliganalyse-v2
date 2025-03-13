@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import { 
   ArrowLeft, Share2, AlertTriangle,
-  Send, ExternalLink, Loader2, Star, Check
+  Send, ExternalLink, Loader2, Star, Check, FileText
 } from "lucide-react";
 import { getIconComponent, getCategoryIcon, RiskIcon, HighlightIcon } from "@/components/IconMapper";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
@@ -508,10 +508,21 @@ const AnalysisPage = () => {
                       ))}
                     </div>
 
-                    {listing.summary && listing.summary.trim() !== '' && (
-                      <div className='mb-6'>
-                        <h3 className='text-base font-medium'>AI-opsummering</h3>
-                        <p className='text-sm text-muted-foreground'>{property.summary}</p>
+                    {summary && summary.trim() !== '' && (
+                      <div className="mb-6 border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/20 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="text-purple-500 dark:text-purple-400 mt-1">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium mb-2">
+                              AI-opsummering
+                            </h3>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {summary}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
                     
