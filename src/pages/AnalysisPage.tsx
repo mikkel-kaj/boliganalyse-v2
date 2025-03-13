@@ -729,11 +729,11 @@ const AnalysisPage = () => {
                   <CardContent className="p-4 text-xs text-muted-foreground">
                     <p className="mb-2">
                       Boliganalyse.ai er et værktøj til at hjælpe dig med boligkøb, men erstatter ikke professionel rådgivning. 
-                      Informationen, der gives, er kun til vejledende formål.
+                      Informationen, der gives, er kun til vejledende formål. 
                     </p>
                     <p>
-                      Alle købsbeslutninger bør baseres på egen research og besigtigelse. 
-                      Vi tager ikke ansvar for eventuelle fejl eller mangler i analysen.
+                      Alle købsbeslutninger skal baseres på egen research og besigtigelse. 
+                      Vi tager ikke ansvar for fejl, mangler eller råd givet i analysen.
                     </p>
                   </CardContent>
                 </Card>
