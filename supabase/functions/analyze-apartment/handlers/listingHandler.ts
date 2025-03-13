@@ -24,6 +24,8 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    console.log("SUPABASE_URL:", supabaseUrl);
+    console.log("SUPABASE_SERVICE_ROLE_KEY:", supabaseKey);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 1) Check if listing already exists
@@ -80,10 +82,17 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
 
     // Add error handling for background job
     try {
-      // Kick off background job
-      EdgeRuntime.waitUntil(
-        processListingInBackground(newListing.id, normalizedUrl, supabase),
-      );
+      const isLocalDev = supabaseUrl.includes('kong');
+
+      if (!isLocalDev) {
+        console.log("Calling function in production");
+        EdgeRuntime.waitUntil(
+          processListingInBackground(newListing.id, normalizedUrl, supabase),
+        );
+      } else {
+        console.log("Calling function directly in local development");
+        await processListingInBackground(newListing.id, normalizedUrl, supabase);
+      }
       console.log(`Background processing started for listing: ${newListing.id}`);
     } catch (bgError) {
       console.error(`Failed to start background processing: ${bgError}`);
