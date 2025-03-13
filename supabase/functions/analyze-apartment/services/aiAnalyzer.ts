@@ -1,4 +1,3 @@
-
 // deno-lint-ignore-file no-explicit-any
 /**
  * Two-phase AI analysis:
@@ -13,6 +12,9 @@ declare const Deno: {
   };
 };
 
+// @ts-ignore - deno-dom is configured in deno.json imports
+import { DOMParser, Element } from "deno-dom";
+
 const openAiApiUrl = "https://api.openai.com/v1/chat/completions";
 
 /**
@@ -23,15 +25,25 @@ async function extractEnergyRating(htmlContent: string): Promise<string | undefi
   if (!htmlContent) return undefined;
   
   try {
-    // Extract energy rating
-    // Look for the SVG with title "Energimærke X"
-    const energyRatingRegex = /<svg[^>]*><title>Energimærke\s+([A-G])<\/title>/i;
-    const energyMatch = htmlContent.match(energyRatingRegex);
+    // Parse HTML using deno-dom
+    const document = new DOMParser().parseFromString(htmlContent, "text/html");
+    if (!document) {
+      throw new Error("Failed to parse HTML");
+    }
     
-    if (energyMatch && energyMatch[1]) {
-      const energyRating = energyMatch[1];
-      console.log(`Extracted energy rating: ${energyRating}`);
-      return energyRating;
+    // Look for SVG title elements that might contain energy rating
+    const svgTitles = document.querySelectorAll("svg title");
+    
+    for (const title of svgTitles) {
+      const titleText = title.textContent;
+      
+      // Check if title contains "Energimærke X" pattern
+      const match = /Energimærke\s+([A-G])/i.exec(titleText);
+      if (match && match[1]) {
+        const energyRating = match[1];
+        console.log(`Extracted energy rating: ${energyRating}`);
+        return energyRating;
+      }
     }
     
     return undefined;
@@ -49,67 +61,29 @@ async function extractTextFromHtml(htmlContent: string): Promise<string> {
   if (!htmlContent) return "";
   
   try {
-    // Use a simple regex-based approach instead of DOM parsing
-    // This is less elegant but avoids the module import issues
-    
-    // Remove scripts, styles, and other non-content elements
-    let cleanedHtml = htmlContent
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, " ")
-      .replace(/<noscript\b[^<]*(?:(?!<\/noscript>)<[^<]*)*<\/noscript>/gi, " ")
-      .replace(/<svg\b[^<]*(?:(?!<\/svg>)<[^<]*)*<\/svg>/gi, " ")
-      .replace(/<path\b[^<]*(?:(?!<\/path>)<[^<]*)*<\/path>/gi, " ")
-      .replace(/<!--[\s\S]*?-->/g, " "); // Remove comments
-      
-    // Extract links and preserve them
-    const linkRegex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)<\/a>/gi;
-    const links: {url: string, text: string}[] = [];
-    let linkMatch;
-    
-    while ((linkMatch = linkRegex.exec(cleanedHtml)) !== null) {
-      links.push({
-        url: linkMatch[1],
-        text: linkMatch[2].replace(/<[^>]+>/g, '').trim()
-      });
+    // Parse HTML using deno-dom
+    const document = new DOMParser().parseFromString(htmlContent, "text/html");
+    if (!document) {
+      throw new Error("Failed to parse HTML");
     }
     
-    // Replace all HTML tags with spaces or line breaks
-    cleanedHtml = cleanedHtml
-      .replace(/<(\/)?h[1-6][^>]*>/gi, "\n# ") // Headings
-      .replace(/<(\/)?p[^>]*>/gi, "\n\n") // Paragraphs
-      .replace(/<(\/)?div[^>]*>/gi, "\n") // Divs
-      .replace(/<(\/)?tr[^>]*>/gi, "\n") // Table rows
-      .replace(/<(\/)?li[^>]*>/gi, "\n• ") // List items
-      .replace(/<br\s*\/?>/gi, "\n") // Line breaks
-      .replace(/<hr\s*\/?>/gi, "\n---\n") // Horizontal rules
-      .replace(/<[^>]+>/g, " ") // Any other tags
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, "\"")
-      .replace(/&apos;/g, "'");
+    // Remove non-content elements
+    const elementsToRemove = ["script", "style", "iframe", "noscript", "svg", "path"];
+    elementsToRemove.forEach(tag => {
+      const elements = document.querySelectorAll(tag);
+      elements.forEach(el => el.remove());
+    });
+    
+    // Get all text content from body
+    let textContent = document.body?.textContent || "";
     
     // Clean up whitespace
-    let textContent = cleanedHtml
-      .replace(/\n{3,}/g, "\n\n")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-    
-    // Append links at the end for reference
-    if (links.length > 0) {
-      textContent += "\n\nLinks found in document:\n";
-      links.forEach(link => {
-        textContent += `- ${link.text || 'Link'}: ${link.url}\n`;
-      });
-    }
-    
+    textContent = textContent.replace(/\s+/g, " ").trim();
+    console.log(textContent)
     return textContent;
   } catch (error) {
     console.error("Error extracting text from HTML:", error);
-    // Fallback to substring of raw HTML
-    return htmlContent.substring(0, 10000);
+    throw error;
   }
 }
 
