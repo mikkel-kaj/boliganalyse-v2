@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -64,7 +63,7 @@ const AnalysisPage = () => {
           ) : content ? (
             type === 'json' ? (
               <pre className="whitespace-pre-wrap font-mono text-sm">
-                {typeof content === 'string' ? JSON.stringify(JSON.parse(content), null, 2) : JSON.stringify(content, null, 2)}
+                {JSON.stringify(JSON.parse(content as string), null, 2)}
               </pre>
             ) : (
               <p>{content}</p>
@@ -98,12 +97,8 @@ const AnalysisPage = () => {
         {renderAnalysisSection("Normalized URL", analysisData?.normalized_url)}
         {renderAnalysisSection("Property Image URL", analysisData?.property_image_url)}
         {renderAnalysisSection("Error Message", analysisData?.error_message)}
-        {renderAnalysisSection("Partial Analysis", 
-          analysisData?.partial_analysis ? JSON.stringify(analysisData?.partial_analysis) : null, 
-          'json')}
-        {renderAnalysisSection("Analysis", 
-          analysisData?.analysis ? JSON.stringify(analysisData?.analysis) : null, 
-          'json')}
+        {renderAnalysisSection("Partial Analysis", analysisData?.partial_analysis, 'json')}
+        {renderAnalysisSection("Analysis", analysisData?.analysis, 'json')}
 
         {analysisData && (
           <div className="mt-12">
