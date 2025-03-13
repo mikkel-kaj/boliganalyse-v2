@@ -13,11 +13,11 @@ import { Send, Loader2 } from "lucide-react";
 type FeedbackType = 'idea' | 'problem' | 'other';
 
 interface FeedbackFormData {
-  feedback_type: FeedbackType;
+  feedbackType: FeedbackType;
   message: string;
   email?: string;
-  property_id?: string;
-  property_address?: string;
+  propertyId?: string;
+  propertyAddress?: string;
 }
 
 interface FeedbackFormProps {
@@ -30,11 +30,11 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
   const { toast } = useToast();
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FeedbackFormData>({
     defaultValues: {
-      feedback_type: 'idea',
+      feedbackType: 'idea',
       message: '',
       email: '',
-      property_id: propertyId,
-      property_address: propertyAddress
+      propertyId,
+      propertyAddress
     }
   });
 
@@ -42,9 +42,18 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
     setIsSubmitting(true);
 
     try {
+      // Add property information if available
+      if (propertyId) {
+        data.propertyId = propertyId;
+      }
+      
+      if (propertyAddress) {
+        data.propertyAddress = propertyAddress;
+      }
+
       const { error } = await supabase
         .from('feedback')
-        .insert(data);
+        .insert([data]);
 
       if (error) throw error;
 
@@ -56,11 +65,11 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
 
       // Reset form
       reset({
-        feedback_type: 'idea',
+        feedbackType: 'idea',
         message: '',
         email: '',
-        property_id: propertyId,
-        property_address: propertyAddress
+        propertyId,
+        propertyAddress
       });
     } catch (error) {
       console.error("Error submitting feedback:", error);
@@ -86,7 +95,7 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
             <RadioGroupItem 
               value="idea" 
               id="option-idea" 
-              {...register('feedback_type', { required: true })}
+              {...register('feedbackType', { required: true })}
             />
             <Label htmlFor="option-idea" className="cursor-pointer">
               💡 Idé
@@ -97,7 +106,7 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
             <RadioGroupItem 
               value="problem" 
               id="option-problem" 
-              {...register('feedback_type', { required: true })}
+              {...register('feedbackType', { required: true })}
             />
             <Label htmlFor="option-problem" className="cursor-pointer">
               ⚠️ Problem
@@ -108,7 +117,7 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
             <RadioGroupItem 
               value="other" 
               id="option-other" 
-              {...register('feedback_type', { required: true })}
+              {...register('feedbackType', { required: true })}
             />
             <Label htmlFor="option-other" className="cursor-pointer">
               💬 Andet

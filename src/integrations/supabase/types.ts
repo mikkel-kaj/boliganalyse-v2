@@ -51,36 +51,6 @@ export type Database = {
         }
         Relationships: []
       }
-      feedback: {
-        Row: {
-          created_at: string
-          email: string | null
-          feedback_type: string
-          id: string
-          message: string
-          property_address: string | null
-          property_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          feedback_type: string
-          id?: string
-          message: string
-          property_address?: string | null
-          property_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          feedback_type?: string
-          id?: string
-          message?: string
-          property_address?: string | null
-          property_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
