@@ -8,7 +8,6 @@ import { validateBoligsideUrl } from "../utils/validation.ts";
  */
 export async function handleListing(url: string, normalizedUrl: string): Promise<Response> {
   try {
-    // Validate the URL before processing
     const urlValidation = validateBoligsideUrl(url);
     if (!urlValidation.valid) {
       console.error(`Invalid URL: ${url}. Error: ${urlValidation.error}`);
@@ -28,7 +27,6 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
     console.log("SUPABASE_SERVICE_ROLE_KEY:", supabaseKey);
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 1) Check if listing already exists
     const { data: existingListing, error: lookupError } = await supabase
       .from("apartment_listings")
       .select("*")
@@ -44,7 +42,6 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
     }
 
     if (existingListing) {
-      // If found, don't reprocess
       console.log("Listing already in DB:", existingListing.id);
       return new Response(
         JSON.stringify({
@@ -56,14 +53,12 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
       );
     }
 
-    // 2) Insert new row with initial status = "Starter analyse"
     const { data: newListing, error: insertError } = await supabase
       .from("apartment_listings")
       .insert([
         {
           url,
           normalized_url: normalizedUrl,
-          // Danish statuses:
           status: "Starter analyse"
         },
       ])
@@ -80,26 +75,15 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
 
     console.log("Created new listing:", newListing.id);
 
-    // Add error handling for background job
     try {
-      const isLocalDev = supabaseUrl.includes('kong');
-
-      if (!isLocalDev) {
-        console.log("Calling function in production");
-        EdgeRuntime.waitUntil(
-          processListingInBackground(newListing.id, normalizedUrl, supabase),
-        );
-      } else {
-        console.log("Calling function directly in local development");
-        await processListingInBackground(newListing.id, normalizedUrl, supabase);
-      }
+      EdgeRuntime.waitUntil(
+        processListingInBackground(newListing.id, normalizedUrl, supabase),
+      );
       console.log(`Background processing started for listing: ${newListing.id}`);
     } catch (bgError) {
       console.error(`Failed to start background processing: ${bgError}`);
-      // Still return success to client, since we created the listing entry
     }
 
-    // Return quickly to the caller
     return new Response(
       JSON.stringify({
         message: "Analysis started",
