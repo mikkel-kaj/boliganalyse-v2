@@ -58,19 +58,7 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
       
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/40" />
-      
-      {/* Property image (non-blurred) in the center if available */}
-      {propertyImageUrl && (
-        <div className="absolute left-1/2 top-0 -translate-x-1/2 h-full flex items-center justify-center p-6 z-10">
-          <div className="relative max-w-[250px] max-h-[200px] rounded-lg overflow-hidden shadow-xl">
-            <img 
-              src={propertyImageUrl}
-              alt="Bolig billede"
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      )}
+    
       
       {/* Content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white">
