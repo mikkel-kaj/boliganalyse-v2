@@ -551,9 +551,18 @@ const AnalysisPage = () => {
                                 <p className="text-sm mb-3">{risk.details || risk.description}</p>
                                 
                                 {risk.recommendations && risk.recommendations.length > 0 && (
-                                  <div className="mt-3 pt-3 border-t border-border">
-                                    <h5 className="text-xs font-semibold uppercase text-muted-foreground mb-1">Spørg mægler</h5>
-                                    <p className="text-sm italic">"{risk.recommendations[0].prompt || risk.question || 'Hvad kan du fortælle om dette?'}"</p>
+                                  <div className="mt-4 border border-dashed border-amber-200 dark:border-amber-900/50 rounded-lg p-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-900/10 dark:to-transparent backdrop-blur-sm">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="bg-amber-100 dark:bg-amber-900/30 rounded-full p-1">
+                                        <Send className="h-4 w-4 text-amber-500" />
+                                      </div>
+                                      <span className="font-medium text-sm text-amber-900 dark:text-amber-100">Spørg mægler</span>
+                                    </div>
+                                    <p className="text-sm text-amber-950 dark:text-amber-50 pl-6 relative">
+                                      <span className="absolute left-0 top-0 text-amber-400 dark:text-amber-500">"</span>
+                                      {risk.recommendations[0].prompt || risk.question || 'Hvad kan du fortælle om dette?'}
+                                      <span className="text-amber-400 dark:text-amber-500">"</span>
+                                    </p>
                                   </div>
                                 )}
                               </div>
@@ -646,13 +655,17 @@ const AnalysisPage = () => {
                                   )}
                                   
                                   {risk.recommendations && risk.recommendations.length > 0 && (
-                                    <div className="mt-4 border border-dashed border-amber-200 dark:border-amber-900/50 rounded-lg p-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors">
+                                    <div className="mt-4 border border-dashed border-amber-200 dark:border-amber-900/50 rounded-lg p-3 hover:border-amber-300 dark:hover:border-amber-800 transition-colors bg-gradient-to-b from-amber-50/50 to-transparent dark:from-amber-900/10 dark:to-transparent backdrop-blur-sm">
                                       <div className="flex items-center gap-2 mb-2">
-                                        <Send className="h-4 w-4 text-amber-500" />
-                                        <span className="font-medium text-sm">Spørg mægler</span>
+                                        <div className="bg-amber-100 dark:bg-amber-900/30 rounded-full p-1">
+                                          <Send className="h-4 w-4 text-amber-500" />
+                                        </div>
+                                        <span className="font-medium text-sm text-amber-900 dark:text-amber-100">Spørg mægler</span>
                                       </div>
-                                      <p className="text-sm text-muted-foreground pl-6">
-                                        "{risk.recommendations[0].prompt || risk.question || 'Hvad kan du fortælle om dette?'}"
+                                      <p className="text-sm text-amber-950 dark:text-amber-50 pl-6 relative">
+                                        <span className="text-amber-400 dark:text-amber-500">"</span>
+                                        {risk.recommendations[0].prompt || risk.question || 'Hvad kan du fortælle om dette?'}
+                                        <span className="text-amber-400 dark:text-amber-500">"</span>
                                       </p>
                                     </div>
                                   )}
