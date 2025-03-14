@@ -41,7 +41,12 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
       );
     }
 
-    if (existingListing) {
+    // Check if the status indicates an error - if so, allow reanalysis
+    const hasError = existingListing && existingListing.status && 
+                    (existingListing.status.toLowerCase().includes('fejl') || 
+                      existingListing.status.toLowerCase().includes('error'));
+
+    if (existingListing && !hasError) {
       console.log("Listing already in DB:", existingListing.id);
       return new Response(
         JSON.stringify({
