@@ -117,22 +117,21 @@ export async function ingestHtmlForLink(
   // 1) Prompt: find the original posting link
   console.log("Preparing prompt for OpenAI...");
   const prompt = `
-    Du modtager første del af tekst fra en boligannonce. 
-    Din opgave i denne fase er at uddrage så meget relevant information som muligt:
+    1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
+    
+    Din opgave er at analysere boligannoncer grundigt og identificere både risici og fordele for en potentiel køber.
+    
+    Analysér omhyggeligt teksten med fokus på:
 
-    1) Uddrag ALLE relevante detaljer om boligen:
+    1) BASAL INFORMATION: Vær opmærksom på følgende områder:
       - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
       - Bygningsdetaljer: byggeår, renoveringsår, energimærke, tag, vægge, konstruktionsmateriale
       - Økonomi: udbetaling, månedlig ydelse, ejerudgift, boligafgift, grundskyld, fællesudgifter
       - Tilstand: stand, energimærke, vedligeholdelsesrapport, tilstandsrapport, el-rapport
       - Området: beskrivelse af kvarteret, afstand til transport, institutioner, indkøb
       - Historik: tidligere priser, tid på markedet, prisændringer, tidligere salg
-      - Plantegninger: information om rumfordeling
-      - Ejendomsmægler: navn, kontaktinfo, webside, "vis mere info" links
-
-    2) Originallink: Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL.
-
-    3) Risici: Identificer potentielle bekymringspunkter ud fra:
+      
+    2) RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
       - Prishistorik (mange prisfald?)
       - Bygningens alder og stand
       - Energimærkning (dårlig = højere varmeudgifter)
@@ -141,26 +140,68 @@ export async function ingestHtmlForLink(
       - Månedlige udgifter (høje fællesudgifter?)
       - Juridiske forhold (andel: bestyrelsens økonomi?, forpligtelser?)
       - Tid på markedet (lang tid = potentielle problemer?)
-      
-    Returnér JSON:
+      - For hver risiko, inkluder konkrete handlingsanbefalinger (hvad køber bør spørge om/undersøge)
+    
+    3) FORDELE: Fremhæv 8-10 positive aspekter ved boligen:
+      - Beliggenhed og område
+      - Indretning og planløsning
+      - Potentiale og muligheder
+      - Energieffektivitet og bæredygtighed
+      - Stand og kvalitet
+      - Økonomi og værdi
+      - Vælg passende ikoner fra listen i output-skabelonen
+
+    4) ORIGINALLINK: Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL.
+    
+    Returnér JSON i dette format:
     {
-      "originalLink": "... or null if not found",
-      "fact": [
+      "originalLink": "...",
+      "summary": "Kort beskrivelse af din analyse på vegne af en potentiel boligkøber, lav en kort beskrivelse af hvad du har fundet, hvad du mener og hvad du anbefaler.",
+      "property": {
+        "address": "...",
+        "price": "...", 
+        "udbetaling": "...",
+        "pricePerM2": "...",
+        "size": "...",
+        "værelser": "...", 
+        "floor": "...",
+        "boligType": "...",
+        "ejerform": "...",
+        "energiMaerke": "${energyRating || '...'}",
+        "byggeaar": "...",
+        "renoveringsaar": "...",
+        "maanedligeUdgift": "..."
+      },
+      "risks": [
         {
-          "label": "...",
-          "value": "..."
-        },
-        ...
+          "category": "Energi|Tilstand|Økonomi|Beliggenhed|Juridisk|Andet",
+          "title": "Kort præcis titel",
+          "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
+          "excerpt": "Tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
+          "recommendations": [
+            {"promptTitle": "Spørg megler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
+          ]
+        }
       ],
-      "potentialRisks": ["Liste af potentielle risikoemner du har bemærket i teksten"]
+      "highlights": [
+        {
+          "icon": "home|building|map|key|piggy-bank|scale|star|heart|award|lightbulb|thumbs-up|check|flag|search",
+          "title": "Kort præcis fordel",
+          "details": "Uddybet forklaring (2-3 sætninger)"
+        }
+      ]
     }
+    
+    VIGTIG VEJLEDNING:
     - Svar på dansk.
     - Være grundig og fokuser på fakta frem for salgssprog.
+    - Vær grundig med RISICI - dette er den vigtigste del! Medtag også mindre risici.
+    - FORDELE skal fremhæve det positive, men må ikke ignorere sandheden.
     - Udtræk så mange relevante informationer som muligt.
-    - Ingen ekstra tekst udenfor JSON.
-    ${energyRating ? `\n    - Bemærk: Jeg har identificeret energimærke ${energyRating} i annoncen.` : ''}
-    
-    Annoncetekst:
+    - Hvis data mangler, brug tom streng ("").
+    - Ingen tekst udenfor JSON.
+
+    Annonce tekst:
     """${textContent}"""
   `;
 
@@ -347,14 +388,14 @@ export async function finalAnalysis(
         "energiMaerke": "${energyRating || '...'}",
         "byggeaar": "...",
         "renoveringsaar": "...",
-        "monthlyExpenses": "..."
+        "maanedligeUdgift": "..."
       },
       "risks": [
         {
           "category": "Energi|Tilstand|Økonomi|Beliggenhed|Juridisk|Andet",
           "title": "Kort præcis titel",
           "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
-          "excerpt": "Kort tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
+          "excerpt": "Tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
           "recommendations": [
             {"promptTitle": "Spørg megler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
           ]
@@ -377,9 +418,6 @@ export async function finalAnalysis(
     - Udtræk så mange relevante informationer som muligt.
     - Hvis data mangler, brug tom streng ("").
     - Ingen tekst udenfor JSON.
-
-    Dokument 1 (første annonce):
-    """${firstText}"""
 
     ${secondText ? `Dokument 2 (anden annonce):
     """${secondText}"""` : ''}
