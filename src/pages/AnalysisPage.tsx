@@ -27,6 +27,7 @@ const AnalysisPage = () => {
   const [risks, setRisks] = useState<any[]>([]);
   const [highlights, setHighlights] = useState<any[]>([]);
   const [status, setStatus] = useState<string>("Starter analyse");
+  const placeholderImage = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
   
   // Function to fetch listing data
   const fetchListing = async () => {
@@ -248,7 +249,7 @@ const AnalysisPage = () => {
   const timeAgoDisplay = listing ? "Lige nu" : property.timeAgo || "Lige nu";
   
   // Use the property_image_url from the listing as the main image
-  const mainImage = listing?.property_image_url || "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2075&q=80";
+  const mainImage = listing?.property_image_url || placeholderImage;
 
   const risksWithIds = risks.map((risk, index) => ({
     ...risk,

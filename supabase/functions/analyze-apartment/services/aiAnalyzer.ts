@@ -172,7 +172,7 @@ export async function ingestHtmlForLink(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4.5-preview",
+      model: "o3-mini-2025-01-31",
       messages: [{ role: "system", content: prompt }],
       max_tokens: 4096,
       temperature: 0.5,
@@ -393,7 +393,7 @@ export async function finalAnalysis(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4.5-preview",
+      model: "o3-mini-2025-01-31",
       messages: [{ role: "system", content: prompt }],
       max_tokens: 4096,
       temperature: 0.5,
