@@ -36,10 +36,9 @@ Deno.test({
       const statusUpdated = await repository.updateStatus(listing.id, "Testing status");
       assertEquals(statusUpdated, true, "Status update should succeed");
       
-      // 4. Test updating metadata
+      // 4. Test updating metadata with just image URL
       const metadataUpdated = await repository.updateListingMetadata(
         listing.id, 
-        "A", 
         "https://example.com/test-image.jpg"
       );
       assertEquals(metadataUpdated, true, "Metadata update should succeed");
@@ -63,7 +62,7 @@ Deno.test({
       try {
         // This should cause an error due to invalid data type
         // @ts-ignore - Intentionally passing invalid data for testing
-        await repository.updateListingMetadata(listing.id, { invalid: "object" }, null);
+        await repository.updateListingMetadata(listing.id, { invalid: "object" });
       } catch (error) {
         // This is expected to fail, but should properly format the error
         logger.info("Caught expected error from invalid data test");

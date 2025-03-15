@@ -88,11 +88,10 @@ export class ListingAnalyzerService {
       const parseResult = await provider.parseHtml(htmlContent);
       
       // Update metadata
-      if (parseResult.energyRating || parseResult.imageUrl) {
+      if (parseResult.energyRating || parseResult.property_image_url) {
         await this.repository.updateListingMetadata(
           listing.id,
-          parseResult.energyRating,
-          parseResult.imageUrl
+          parseResult.property_image_url
         );
       }
       
@@ -102,7 +101,6 @@ export class ListingAnalyzerService {
         await this.repository.updateStatus(
           listing.id, 
           "Henter original kilde", 
-          { original_source_url: parseResult.originalLink }
         );
         
         // Fetch original source HTML

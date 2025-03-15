@@ -151,15 +151,13 @@ export class ListingRepository {
   }
   
   /**
-   * Update listing with energy rating and image URL
+   * Update listing with image URL
    * @param id Listing ID
-   * @param energyRating Energy rating
    * @param imageUrl Image URL
    * @returns Success indicator
    */
   async updateListingMetadata(
     id: string, 
-    energyRating?: string, 
     imageUrl?: string
   ): Promise<boolean> {
     try {
@@ -167,12 +165,8 @@ export class ListingRepository {
         updated_at: new Date().toISOString()
       };
       
-      if (energyRating) {
-        updateData.energy_rating = energyRating;
-      }
-      
       if (imageUrl) {
-        updateData.image_url = imageUrl;
+        updateData.property_image_url = imageUrl;
       }
       
       const { error } = await this.supabase

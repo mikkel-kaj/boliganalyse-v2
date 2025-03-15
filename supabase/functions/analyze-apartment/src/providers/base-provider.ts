@@ -42,7 +42,8 @@ export abstract class BaseProvider implements ProviderInfo {
   abstract extractSpecificFields(htmlContent: string): Promise<Record<string, any>>;
   
   /**
-   * Extract energy rating from the HTML if available
+   * Extract energy rating from the HTML if available 
+   * Used for AI analysis input, not stored directly in database
    * @param htmlContent HTML content to parse
    */
   async extractEnergyRating(htmlContent: string): Promise<string | undefined> {
