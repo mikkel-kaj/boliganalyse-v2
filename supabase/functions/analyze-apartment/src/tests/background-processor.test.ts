@@ -30,7 +30,6 @@ Deno.test({
     // Call the function under test
     await processListingInBackground(
         listing.id,
-        testUrl,
         normalizedUrl,
         repository
     )

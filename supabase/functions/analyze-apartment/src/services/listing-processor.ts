@@ -103,10 +103,9 @@ export class ListingProcessorService {
       // Update status for AI analysis
       await this.repository.updateStatus(listingId, "Laver AI-analyse");
 
-      var analysisResult = await this.aiAnalyzer.analyzeMultipleTexts(
+      const analysisResult = await this.aiAnalyzer.analyzeMultipleTexts(
         parseResult,
-        originalSourceResult,
-        parseResult.partialAnalysis,
+        originalSourceResult
       );
 
       // Add source information

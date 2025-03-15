@@ -193,10 +193,18 @@ export class AIAnalyzerService {
    */
   async analyzeMultipleTexts(
     primaryText: HTMLParseResult,
-    secondaryText: HTMLParseResult
+    secondaryText: HTMLParseResult | undefined
   ): Promise<AnalysisResult> {
     try {
       // Combine the texts for analysis
+      if (!secondaryText) {
+        logger.warn("Secondary text content is missing, analyzing primary text only");
+
+        const analysis = await this.analyzeText(`${primaryText});`);
+
+        return this.convertToAnalysisResult(analysis);
+      }
+
       const combinedText = `${primaryText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText}`;
       
       // Perform the analysis
