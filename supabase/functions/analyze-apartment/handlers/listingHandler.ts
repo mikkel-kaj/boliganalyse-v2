@@ -81,6 +81,7 @@ export async function handleListing(url: string, normalizedUrl: string): Promise
     console.log("Created new listing:", newListing.id);
 
     try {
+      // @ts-expect-error - EdgeRuntime is available in Supabase Edge Functions
       EdgeRuntime.waitUntil(
         processListingInBackground(newListing.id, normalizedUrl, supabase),
       );

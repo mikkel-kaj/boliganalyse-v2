@@ -53,7 +53,7 @@ export class ListingAnalyzerService {
       let listing = await this.repository.findByNormalizedUrl(normalizedUrl);
       
       // If listing exists and we're not forcing reanalysis, return it
-      if (listing && !options.forceReanalysis && listing.analysis_result) {
+      if (listing && !options.forceReanalysis && listing.analysis) {
         logger.info(`Using existing analysis for ${normalizedUrl}`);
         return listing;
       }

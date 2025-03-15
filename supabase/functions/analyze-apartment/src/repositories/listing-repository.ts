@@ -127,13 +127,13 @@ export class ListingRepository {
   async saveAnalysisResult(
     id: string, 
     analysisResult: AnalysisResult, 
-    status = "Analyse gennemført"
+    status = "Analyse fuldført"
   ): Promise<boolean> {
     try {
       const { error } = await this.supabase
         .from(this.tableName)
         .update({ 
-          analysis_result: analysisResult,
+          analysis: analysisResult,
           status,
           updated_at: new Date().toISOString()
         })

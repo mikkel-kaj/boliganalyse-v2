@@ -3,8 +3,7 @@ import * as htmlUtils from "../utils/html.ts";
 import { createLogger } from "../utils/logger.ts";
 
 // Import DOMParser using the exact import path from deno.json
-// @ts-ignore - Fix for deno-dom import
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { DOMParser } from "deno-dom";
 
 const logger = createLogger("BaseProvider");
 
@@ -39,7 +38,7 @@ export abstract class BaseProvider implements ProviderInfo {
    * Extract any specific fields that are unique to this provider
    * @param htmlContent HTML content to parse
    */
-  abstract extractSpecificFields(htmlContent: string): Promise<Record<string, any>>;
+  abstract extractSpecificFields(htmlContent: string): Promise<Record<string, object>>;
   
   /**
    * Extract energy rating from the HTML if available 

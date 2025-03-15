@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { toast } from '@/components/ui/use-toast';
 
-// Map database status values to user-friendly Danish messages
 const statusMessages: Record<string, { message: string, progress: number, isError?: boolean }> = {
   "Starter analyse": { message: "Forbereder analyse...", progress: 5 },
   "Søger efter salgsopslag": { message: "Finder boligannoncen...", progress: 20 },

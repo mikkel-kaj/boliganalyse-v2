@@ -9,7 +9,7 @@ export interface ListingData {
   status: string;
   original_source_url?: string;
   property_image_url?: string;
-  analysis_result?: AnalysisResult;
+  analysis?: AnalysisResult;
   created_at?: string;
   updated_at?: string;
 }
