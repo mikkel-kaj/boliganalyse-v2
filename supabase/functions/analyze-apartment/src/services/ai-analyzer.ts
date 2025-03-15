@@ -5,13 +5,14 @@ import { createLogger } from "../utils/logger.ts";
 const logger = createLogger("AIAnalyzer");
 
 /**
- * Service for performing AI analysis on real estate listings
+ * Service for performing AI analysis on text from real estate listings
+ * This service ONLY handles text analysis, not HTML parsing
  */
 export class AIAnalyzerService {
   private apiKey: string;
   private apiEndpoint: string;
   private model: string;
-  
+
   /**
    * Create a new AI analyzer service
    * @param options Configuration options
@@ -20,33 +21,30 @@ export class AIAnalyzerService {
     this.apiKey = options.apiKey;
     this.apiEndpoint = options.apiEndpoint || config.openai.endpoint;
     this.model = options.model || config.openai.model;
-    
+
     if (!this.apiKey) {
       throw new Error("OpenAI API key is required");
     }
   }
   
   /**
-   * Analyze HTML content for listings - first phase to extract original link
-   * @param htmlContent HTML content to analyze
-   * @returns Result with original link and partial analysis
+   * Analyze plain text to extract initial information including original link
+   * @param textContent Plain text content to analyze
+   * @param energyRating Optional energy rating to include in the prompt
+   * @returns Analysis with original link and partial data
    */
-  async ingestHtmlForLink(
-    htmlContent: string,
+  async analyzeText(
+    textContent: string,
     energyRating?: string
   ): Promise<{ originalLink?: string; partialAnalysis?: Record<string, any> }> {
-    logger.info("Starting ingestHtmlForLink with HTML length: " + (htmlContent?.length || 0));
+    logger.info("Starting analyzeTextForInitialData with text length: " + (textContent?.length || 0));
     
-    if (!htmlContent) {
-      logger.warn("No HTML content provided to ingestHtmlForLink");
-      return { originalLink: undefined, partialAnalysis: { error: "No HTML" } };
+    if (!textContent) {
+      logger.warn("No text content provided for initial analysis");
+      return { originalLink: undefined, partialAnalysis: { error: "No content" } };
     }
 
-    // Extract readable text content from HTML
-    const textContent = await this.extractTextFromHtml(htmlContent);
-    logger.info("Extracted text content length for initial analysis: " + textContent.length);
-
-    // 1) Prompt: find the original posting link - use exact same prompt as original
+    // Use the exact same prompt as the original implementation
     const prompt = `
     1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
     
@@ -81,12 +79,9 @@ export class AIAnalyzerService {
       - Stand og kvalitet
       - Økonomi og værdi
       - Vælg passende ikoner fra listen i output-skabelonen
-
-    4) ORIGINALLINK: Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL.
     
     Returnér JSON i dette format:
     {
-      "originalLink": "...",
       "summary": "Kort beskrivelse af din analyse på vegne af en potentiel boligkøber, lav en kort beskrivelse af hvad du har fundet, hvad du mener og hvad du anbefaler.",
       "property": {
         "address": "...",
@@ -137,7 +132,7 @@ export class AIAnalyzerService {
     `;
 
     try {
-      logger.info("Making request to OpenAI API for initial analysis...");
+      logger.info("Making request to OpenAI API for text analysis...");
       const response = await fetch(this.apiEndpoint, {
         method: "POST",
         headers: {
@@ -145,7 +140,7 @@ export class AIAnalyzerService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini-2024-07-18", // Using the exact model from original implementation
+          model: this.model, // Using the exact model from original implementation
           messages: [{ role: "system", content: prompt }],
           max_tokens: 4096,
           temperature: 0.5,
@@ -154,22 +149,7 @@ export class AIAnalyzerService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error(`OpenAI API error: ${response.status}`, errorText);
-        
-        // Add more detailed error information
-        let errorDetails = `Status: ${response.status}, ${response.statusText}`;
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.error) {
-            errorDetails += `. Message: ${errorJson.error.message || 'Unknown error'}`;
-            logger.error("Detailed OpenAI error:", errorJson.error);
-          }
-        } catch (e) {
-          // If JSON parsing fails, use the raw error text
-          errorDetails += `. Raw error: ${errorText}`;
-        }
-        
-        throw new Error(`OpenAI error (phase1): ${errorDetails}`);
+        throw new Error(`OpenAI error (phase1): ${errorText}`);
       }
 
       const data = await response.json();
@@ -188,11 +168,9 @@ export class AIAnalyzerService {
         
         const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
         parsed = JSON.parse(jsonText);
-        
         logger.info("Successfully parsed JSON from response");
       } catch (error) {
         const parseError = error as Error;
-        logger.error("Error parsing JSON from response:", parseError);
         throw new Error(`Failed to parse response from OpenAI: ${parseError.message}`);
       }
       
@@ -201,72 +179,37 @@ export class AIAnalyzerService {
         partialAnalysis: parsed
       };
     } catch (error) {
-      logger.error("Error ingesting HTML for link:", error);
+      logger.error("Error analyzing text for initial data:", error);
       throw error;
     }
   }
   
   /**
-   * Analyze HTML content for listings
-   * @param htmlContent HTML content to analyze
+   * Analyze multiple text contents
+   * @param primaryText Primary text content
+   * @param secondaryText Secondary text content 
    * @param partialAnalysis Any partial analysis already done
    * @returns Analysis result
    */
-  async analyzeHtmlContent(
-    htmlContent: string,
+  async analyzeMultipleTexts(
+    primaryText: string,
+    secondaryText: string,
     partialAnalysis?: Record<string, any>
   ): Promise<AnalysisResult> {
     try {
-      const extractedText = await this.extractTextFromHtml(htmlContent);
-      
-      // If there's a partial analysis already, use the finalAnalysis method to get
-      // a proper result in the correct format
-      if (partialAnalysis && Object.keys(partialAnalysis).length > 0) {
-        // If we have just one HTML source, analyze it directly with our partial analysis
-        return this.convertToAnalysisResult(partialAnalysis);
-      }
-      
-      // Otherwise we'll do a full analysis from scratch
-      // First get initial analysis
-      const initial = await this.ingestHtmlForLink(htmlContent);
-      return this.convertToAnalysisResult(initial.partialAnalysis || {});
-    } catch (error) {
-      logger.error("Error analyzing HTML content", error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Analyze two HTML contents to extract more complete information
-   * This is the finalAnalysis from the original implementation
-   * @param firstHtml First HTML content
-   * @param secondHtml Second HTML content
-   * @param partialAnalysis Any partial analysis already done
-   * @returns Complete analysis result
-   */
-  async analyzeMultipleContents(
-    firstHtml: string,
-    secondHtml: string,
-    partialAnalysis?: Record<string, any>
-  ): Promise<AnalysisResult> {
-    try {
-      // Extract text from both HTML sources
-      const firstText = await this.extractTextFromHtml(firstHtml);
-      const secondText = await this.extractTextFromHtml(secondHtml);
-      
-      // Combine them for the analysis
-      const combinedText = `${firstText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondText}`;
-      
-      // Reuse our partial analysis if available
+      // If there's a partial analysis, use it
       if (partialAnalysis && Object.keys(partialAnalysis).length > 0) {
         return this.convertToAnalysisResult(partialAnalysis);
       }
       
-      // Otherwise get initial link analysis first
-      const initial = await this.ingestHtmlForLink(combinedText);
-      return this.convertToAnalysisResult(initial.partialAnalysis || {});
+      // Combine the texts for analysis
+      const combinedText = `${primaryText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText}`;
+      
+      // Perform the analysis
+      const initialAnalysis = await this.analyzeText(combinedText);
+      return this.convertToAnalysisResult(initialAnalysis.partialAnalysis || {});
     } catch (error) {
-      logger.error("Error analyzing multiple HTML contents", error);
+      logger.error("Error analyzing multiple text contents", error);
       throw error;
     }
   }

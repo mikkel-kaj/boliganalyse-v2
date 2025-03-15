@@ -21,7 +21,6 @@ if (missingConfig.length > 0) {
 export async function processListingInBackground(
   listingId: string,
   url: string,
-  normalizedUrl: string,
   repository: ListingRepository,
 ) {
   try {
@@ -29,29 +28,18 @@ export async function processListingInBackground(
     const processor = new ListingProcessorService(repository);
 
     // Process the listing
-    await processor.processListing(listingId, url, normalizedUrl);
+    await processor.processListing(listingId, url);
   } catch (error) {
     logger.error(
       `Background processing failed for listing ${listingId}`,
       error,
     );
-    try {
-      // Update status to indicate error
-      await repository.updateStatus(
-        listingId,
-        "Fejl",
-        {
-          "error_message": error instanceof Error
-            ? error.message
-            : String(error),
-        },
-      );
-    } catch (updateError) {
-      logger.error(
-        `Failed to update error status for listing ${listingId}`,
-        updateError,
-      );
-    }
+    // Update status to indicate error
+    await repository.updateStatus(listingId, "Fejl",
+  {
+        "error_message": error instanceof Error ? error.message : String(error),
+      },
+    );
   }
 }
 

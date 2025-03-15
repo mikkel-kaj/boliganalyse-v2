@@ -39,7 +39,7 @@ export class ListingProcessorService {
    * @param normalizedUrl Normalized URL
    * @returns Processing result
    */
-  async processListing(listingId: string, url: string, normalizedUrl: string): Promise<boolean> {
+  async processListing(listingId: string, url: string): Promise<boolean> {
     try {
       logger.info(`Starting processing for listing: ${listingId}`);
       
@@ -78,6 +78,7 @@ export class ListingProcessorService {
       
       // Check for original source URL
       let originalSourceHtml: string | undefined;
+
       if (parseResult.originalLink) {
         await this.repository.updateStatus(
           listingId, 
@@ -92,23 +93,13 @@ export class ListingProcessorService {
       await this.repository.updateStatus(listingId, "Laver AI-analyse");
       
       // Perform AI analysis
-      let analysisResult;
-      
-      if (originalSourceHtml) {
-        // If we have both original and aggregator HTML, analyze both
-        analysisResult = await this.aiAnalyzer.analyzeMultipleContents(
-          htmlContent,
-          originalSourceHtml,
-          parseResult.partialAnalysis
-        );
-      } else {
-        // Otherwise just analyze the main HTML
-        analysisResult = await this.aiAnalyzer.analyzeHtmlContent(
-          htmlContent,
-          parseResult.partialAnalysis
-        );
-      }
-      
+
+      var analysisResult = await this.aiAnalyzer.analyzeMultipleTexts(
+        htmlContent,
+        originalSourceHtml,
+        parseResult.partialAnalysis
+      );
+
       // Add source information
       analysisResult.source = provider.name;
       
