@@ -18,7 +18,7 @@ if (missingConfig.length > 0) {
 }
 
 // Define the background processor function
-async function processListingInBackground(
+export async function processListingInBackground(
   listingId: string, 
   url: string,
   normalizedUrl: string,

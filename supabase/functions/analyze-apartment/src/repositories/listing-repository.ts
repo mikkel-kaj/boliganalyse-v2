@@ -83,6 +83,25 @@ export class ListingRepository {
       throw error;
     }
   }
+
+  //Delete a listing by its url
+  async deleteByUrl(url: string): Promise<boolean> {
+      try {
+      const { error } = await this.supabase
+          .from(this.tableName)
+          .delete()
+          .eq("url", url);
+
+      if (error) {
+          throw error;
+      }
+
+      return true;
+      } catch (error) {
+      logger.error(`Error deleting listing by normalized URL: ${url}`, error);
+      throw error;
+      }
+  }
   
   /**
    * Update a listing's status
