@@ -23,7 +23,7 @@ const RecentAnalysesPage = () => {
         .from('apartment_listings')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(8);
       
       if (error) {
         console.error("Error fetching analyses:", error);

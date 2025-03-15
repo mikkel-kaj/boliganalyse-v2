@@ -12,7 +12,7 @@ declare const Deno: {
   };
 };
 
-import { DOMParser, Element } from "deno-dom";
+import { DOMParser } from "deno-dom";
 
 const openAiApiUrl = "https://api.openai.com/v1/chat/completions";
 

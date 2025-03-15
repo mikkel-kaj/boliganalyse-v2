@@ -44,24 +44,23 @@ export class ListingProcessorService {
       logger.info(`Starting processing for listing: ${listingId}`);
       
       // Update status to indicate processing has started
-      await this.repository.updateStatus(listingId, "Henter HTML indhold");
+      await this.repository.updateStatus(listingId, "Søger efter salgsopslag");
       
       // Fetch HTML content
       const htmlContent = await this.fetchHtmlContent(url);
       if (!htmlContent) {
-        await this.repository.updateStatus(listingId, "Fejl: Kunne ikke hente indhold");
+        await this.repository.updateStatus(listingId, "Fejl");
         throw new Error(`Failed to fetch HTML content for ${url}`);
       }
-      
+      await this.repository.updateStatus(listingId, "Opslag fundet!");
+
+
       // Find appropriate provider
       const provider = this.providerRegistry.getProviderForUrl(url);
       if (!provider) {
-        await this.repository.updateStatus(listingId, "Fejl: Ingen understøttet udbyder");
+        await this.repository.updateStatus(listingId, "Fejl");
         throw new Error(`No provider found for URL: ${url}`);
       }
-      
-      // Update status
-      await this.repository.updateStatus(listingId, "Analyserer indhold");
       
       // Parse HTML with provider
       const parseResult = await provider.parseHtml(htmlContent);

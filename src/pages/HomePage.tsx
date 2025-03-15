@@ -39,7 +39,7 @@ const HomePage = () => {
         .from('apartment_listings')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(3);
       
       if (error) throw error;
       return data;
