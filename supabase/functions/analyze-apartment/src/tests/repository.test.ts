@@ -1,5 +1,4 @@
-// Import works at runtime via deno.json import maps
-import { assertEquals, assertExists } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals, assertExists } from "std/testing/asserts";
 import { ListingRepository } from "../repositories/listing-repository.ts";
 import { createLogger } from "../utils/logger.ts";
 import { createLocalSupabaseClient } from "./utils/test-helpers.ts";

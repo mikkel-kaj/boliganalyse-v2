@@ -1,6 +1,3 @@
-
-// Import using import map style with @ts-ignore
-// @ts-ignore - Import works at runtime via deno.json import maps
 import { assertEquals } from "std/testing/asserts";
 import { normalizeUrl, extractDomain, isAbsoluteUrl, resolveUrl } from "../utils/url.ts";
 

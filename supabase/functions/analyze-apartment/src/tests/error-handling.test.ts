@@ -1,5 +1,5 @@
 // Using full URL imports instead of import maps
-import { assertEquals } from "https://deno.land/std@0.168.0/testing/asserts.ts";
+import { assertEquals } from "std/testing/asserts";
 import { createLogger } from "../utils/logger.ts";
 
 // Test suite for error handling
