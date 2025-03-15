@@ -1,5 +1,5 @@
 import { config } from "../config/config.ts";
-import { AnalysisResult, AnalyzerServiceOptions } from "../types/index.ts";
+import {AnalysisResult, AnalyzerServiceOptions, HTMLParseResult} from "../types/index.ts";
 import { createLogger } from "../utils/logger.ts";
 
 const logger = createLogger("AIAnalyzer");
@@ -36,12 +36,12 @@ export class AIAnalyzerService {
   async analyzeText(
     textContent: string,
     energyRating?: string
-  ): Promise<{ originalLink?: string; partialAnalysis?: Record<string, any> }> {
+  ): Promise<{ originalLink: string; analysis: Record<string, any> }> {
     logger.info("Starting analyzeTextForInitialData with text length: " + (textContent?.length || 0));
     
     if (!textContent) {
       logger.warn("No text content provided for initial analysis");
-      return { originalLink: undefined, partialAnalysis: { error: "No content" } };
+      throw new Error("No text content provided for analysis");
     }
 
     // Use the exact same prompt as the original implementation
@@ -176,7 +176,7 @@ export class AIAnalyzerService {
       
       return {
         originalLink: parsed.originalLink,
-        partialAnalysis: parsed
+        analysis: parsed
       };
     } catch (error) {
       logger.error("Error analyzing text for initial data:", error);
@@ -192,22 +192,17 @@ export class AIAnalyzerService {
    * @returns Analysis result
    */
   async analyzeMultipleTexts(
-    primaryText: string,
-    secondaryText: string,
-    partialAnalysis?: Record<string, any>
+    primaryText: HTMLParseResult,
+    secondaryText: HTMLParseResult
   ): Promise<AnalysisResult> {
     try {
-      // If there's a partial analysis, use it
-      if (partialAnalysis && Object.keys(partialAnalysis).length > 0) {
-        return this.convertToAnalysisResult(partialAnalysis);
-      }
-      
       // Combine the texts for analysis
       const combinedText = `${primaryText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText}`;
       
       // Perform the analysis
-      const initialAnalysis = await this.analyzeText(combinedText);
-      return this.convertToAnalysisResult(initialAnalysis.partialAnalysis || {});
+      const analysis = await this.analyzeText(combinedText);
+
+      return this.convertToAnalysisResult(analysis.analysis);
     } catch (error) {
       logger.error("Error analyzing multiple text contents", error);
       throw error;
