@@ -27,133 +27,209 @@ export class AIAnalyzerService {
   }
   
   /**
+   * Analyze HTML content for listings - first phase to extract original link
+   * @param htmlContent HTML content to analyze
+   * @returns Result with original link and partial analysis
+   */
+  async ingestHtmlForLink(
+    htmlContent: string,
+    energyRating?: string
+  ): Promise<{ originalLink?: string; partialAnalysis?: Record<string, any> }> {
+    logger.info("Starting ingestHtmlForLink with HTML length: " + (htmlContent?.length || 0));
+    
+    if (!htmlContent) {
+      logger.warn("No HTML content provided to ingestHtmlForLink");
+      return { originalLink: undefined, partialAnalysis: { error: "No HTML" } };
+    }
+
+    // Extract readable text content from HTML
+    const textContent = await this.extractTextFromHtml(htmlContent);
+    logger.info("Extracted text content length for initial analysis: " + textContent.length);
+
+    // 1) Prompt: find the original posting link - use exact same prompt as original
+    const prompt = `
+    1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
+    
+    Din opgave er at analysere boligannoncer grundigt og identificere både risici og fordele for en potentiel køber.
+    
+    Analysér omhyggeligt teksten med fokus på:
+
+    1) BASAL INFORMATION: Vær opmærksom på følgende områder:
+      - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
+      - Bygningsdetaljer: byggeår, renoveringsår, energimærke, tag, vægge, konstruktionsmateriale
+      - Økonomi: udbetaling, månedlig ydelse, ejerudgift, boligafgift, grundskyld, fællesudgifter
+      - Tilstand: stand, energimærke, vedligeholdelsesrapport, tilstandsrapport, el-rapport
+      - Området: beskrivelse af kvarteret, afstand til transport, institutioner, indkøb
+      - Historik: tidligere priser, tid på markedet, prisændringer, tidligere salg
+      
+    2) RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
+      - Prishistorik (mange prisfald?)
+      - Bygningens alder og stand
+      - Energimærkning (dårlig = højere varmeudgifter)
+      - Renoveringsbehov
+      - Område/beliggenhed (trafik, støj, fremtidig udvikling)
+      - Månedlige udgifter (høje fællesudgifter?)
+      - Juridiske forhold (andel: bestyrelsens økonomi?, forpligtelser?)
+      - Tid på markedet (lang tid = potentielle problemer?)
+      - For hver risiko, inkluder konkrete handlingsanbefalinger (hvad køber bør spørge om/undersøge)
+    
+    3) FORDELE: Fremhæv 8-10 positive aspekter ved boligen:
+      - Beliggenhed og område
+      - Indretning og planløsning
+      - Potentiale og muligheder
+      - Energieffektivitet og bæredygtighed
+      - Stand og kvalitet
+      - Økonomi og værdi
+      - Vælg passende ikoner fra listen i output-skabelonen
+
+    4) ORIGINALLINK: Hvis du ser et link til den "originale" boligannonce (f.eks. 'Vis mere info' link), giv mig den URL.
+    
+    Returnér JSON i dette format:
+    {
+      "originalLink": "...",
+      "summary": "Kort beskrivelse af din analyse på vegne af en potentiel boligkøber, lav en kort beskrivelse af hvad du har fundet, hvad du mener og hvad du anbefaler.",
+      "property": {
+        "address": "...",
+        "price": "...", 
+        "udbetaling": "...",
+        "pricePerM2": "...",
+        "size": "...",
+        "værelser": "...", 
+        "floor": "...",
+        "boligType": "...",
+        "ejerform": "...",
+        "energiMaerke": "${energyRating || '...'}",
+        "byggeaar": "...",
+        "renoveringsaar": "...",
+        "maanedligeUdgift": "..."
+      },
+      "risks": [
+        {
+          "category": "Energi|Tilstand|Økonomi|Beliggenhed|Juridisk|Andet",
+          "title": "Kort præcis titel",
+          "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
+          "excerpt": "Tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
+          "recommendations": [
+            {"promptTitle": "Spørg megler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
+          ]
+        }
+      ],
+      "highlights": [
+        {
+          "icon": "home|building|map|key|piggy-bank|scale|star|heart|award|lightbulb|thumbs-up|check|flag|search",
+          "title": "Kort præcis fordel",
+          "details": "Uddybet forklaring (2-3 sætninger)"
+        }
+      ]
+    }
+    
+    VIGTIG VEJLEDNING:
+    - Svar på dansk.
+    - Være grundig og fokuser på fakta frem for salgssprog.
+    - Vær grundig med RISICI - dette er den vigtigste del! Medtag også mindre risici.
+    - FORDELE skal fremhæve det positive, men må ikke ignorere sandheden.
+    - Udtræk så mange relevante informationer som muligt.
+    - Hvis data mangler, brug tom streng ("").
+    - Ingen tekst udenfor JSON.
+
+    Annonce tekst:
+    """${textContent}"""
+    `;
+
+    try {
+      logger.info("Making request to OpenAI API for initial analysis...");
+      const response = await fetch(this.apiEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini-2024-07-18", // Using the exact model from original implementation
+          messages: [{ role: "system", content: prompt }],
+          max_tokens: 4096,
+          temperature: 0.5,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`OpenAI API error: ${response.status}`, errorText);
+        
+        // Add more detailed error information
+        let errorDetails = `Status: ${response.status}, ${response.statusText}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error) {
+            errorDetails += `. Message: ${errorJson.error.message || 'Unknown error'}`;
+            logger.error("Detailed OpenAI error:", errorJson.error);
+          }
+        } catch (e) {
+          // If JSON parsing fails, use the raw error text
+          errorDetails += `. Raw error: ${errorText}`;
+        }
+        
+        throw new Error(`OpenAI error (phase1): ${errorDetails}`);
+      }
+
+      const data = await response.json();
+      const rawText = data?.choices?.[0]?.message?.content?.trim() || "";
+      
+      // Attempt to parse JSON
+      let parsed: Record<string, any> = {};
+      try {
+        // Extract JSON from the response - exact same code as original
+        const jsonStart = rawText.indexOf('{');
+        const jsonEnd = rawText.lastIndexOf('}');
+        
+        if (jsonStart === -1 || jsonEnd === -1) {
+          throw new Error("Could not find JSON in response");
+        }
+        
+        const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
+        parsed = JSON.parse(jsonText);
+        
+        logger.info("Successfully parsed JSON from response");
+      } catch (error) {
+        const parseError = error as Error;
+        logger.error("Error parsing JSON from response:", parseError);
+        throw new Error(`Failed to parse response from OpenAI: ${parseError.message}`);
+      }
+      
+      return {
+        originalLink: parsed.originalLink,
+        partialAnalysis: parsed
+      };
+    } catch (error) {
+      logger.error("Error ingesting HTML for link:", error);
+      throw error;
+    }
+  }
+  
+  /**
    * Analyze HTML content for listings
    * @param htmlContent HTML content to analyze
-   * @param extractedStructuredData Any structured data already extracted to assist the AI
+   * @param partialAnalysis Any partial analysis already done
    * @returns Analysis result
    */
   async analyzeHtmlContent(
     htmlContent: string,
-    extractedStructuredData?: Record<string, any>
+    partialAnalysis?: Record<string, any>
   ): Promise<AnalysisResult> {
     try {
-      // Prepare context for the AI by extracting relevant text content
-      let context = "";
+      const extractedText = await this.extractTextFromHtml(htmlContent);
       
-      // If we have structured data, include it as context
-      if (extractedStructuredData && Object.keys(extractedStructuredData).length > 0) {
-        context += "### Extracted Structured Data\n";
-        Object.entries(extractedStructuredData).forEach(([key, value]) => {
-          context += `${key}: ${value}\n`;
-        });
-        context += "\n";
+      // If there's a partial analysis already, use the finalAnalysis method to get
+      // a proper result in the correct format
+      if (partialAnalysis && Object.keys(partialAnalysis).length > 0) {
+        // If we have just one HTML source, analyze it directly with our partial analysis
+        return this.convertToAnalysisResult(partialAnalysis);
       }
       
-      // Prepare the HTML for analysis - extract only relevant text
-      // We'll prepare a DOMParser extraction in a separate utility
-      
-      // For now, let's use a simple regex to extract text and remove excessive whitespace
-      const extractedText = htmlContent
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s{2,}/g, ' ')
-        .trim();
-      
-      // Let's use a prompt that asks the AI to extract structured information
-      const messages = [
-        {
-          role: "system",
-          content: `Du er en specialiseret AI til at analysere boligannoncer fra danske boligportaler. 
-Din opgave er at analysere HTML-indholdet og ekstrahere strukturerede data. 
-Vær så præcis som muligt med priser, areal, antal rum, etc. 
-Hvis du er usikker på et svar, så angiv det som "ukendt" i stedet for at gætte.
-Returner dataene i følgende JSON-format:
-{
-  "address": "Fuld adresse inkl. postnummer og by",
-  "price": pris i danske kroner (numerisk værdi uden punktum som tusindtalsseparator),
-  "area": areal i kvadratmeter (numerisk værdi),
-  "rooms": antal værelser (numerisk værdi),
-  "energyRating": "Energimærke (A, B, C, D, E, F eller G)",
-  "constructionYear": byggeår (numerisk værdi),
-  "monthlyExpenses": månedlige udgifter (numerisk værdi),
-  "type": "boligtype (Lejlighed, Villa, Rækkehus, etc.)",
-  "description": "Kort beskrivelse af boligen (max 100 ord)",
-  "features": ["Liste", "af", "nøglefunktioner"]
-}`
-        },
-        {
-          role: "user",
-          content: `Analysér følgende boligannonce og uddrag de angivne felter i JSON-format:
-${context}\n
-### Uddrag fra boligannoncen:\n${extractedText.slice(0, 15000)}` // limit to avoid token issues
-        }
-      ];
-      
-      // Call OpenAI API
-      const response = await fetch(this.apiEndpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${this.apiKey}`
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages,
-          temperature: config.openai.temperature,
-          max_tokens: config.openai.maxTokens
-        })
-      });
-      
-      const responseData = await response.json();
-      
-      if (!response.ok) {
-        logger.error("OpenAI API error", responseData);
-        throw new Error(`OpenAI API error: ${responseData.error?.message || JSON.stringify(responseData)}`);
-      }
-      
-      // Extract the AI's response
-      const assistantMessage = responseData.choices?.[0]?.message?.content;
-      
-      if (!assistantMessage) {
-        throw new Error("No response content from OpenAI");
-      }
-      
-      // Try to extract the JSON from the response
-      const jsonMatch = assistantMessage.match(/```json\s*({[\s\S]*?})\s*```/) || 
-                        assistantMessage.match(/{[\s\S]*?}/);
-                        
-      if (!jsonMatch) {
-        throw new Error("Could not extract JSON from OpenAI response");
-      }
-      
-      // Parse the JSON
-      const analysisResult = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-      
-      // Convert numeric values to numbers
-      if (analysisResult.price && typeof analysisResult.price === 'string') {
-        analysisResult.price = Number(analysisResult.price.replace(/\./g, '').replace(/,/g, '.'));
-      }
-      
-      if (analysisResult.area && typeof analysisResult.area === 'string') {
-        analysisResult.area = Number(analysisResult.area.replace(/,/g, '.'));
-      }
-      
-      if (analysisResult.rooms && typeof analysisResult.rooms === 'string') {
-        analysisResult.rooms = Number(analysisResult.rooms);
-      }
-      
-      if (analysisResult.constructionYear && typeof analysisResult.constructionYear === 'string') {
-        analysisResult.constructionYear = Number(analysisResult.constructionYear);
-      }
-      
-      if (analysisResult.monthlyExpenses && typeof analysisResult.monthlyExpenses === 'string') {
-        analysisResult.monthlyExpenses = Number(
-          analysisResult.monthlyExpenses.replace(/\./g, '').replace(/,/g, '.')
-        );
-      }
-      
-      return analysisResult;
+      // Otherwise we'll do a full analysis from scratch
+      // First get initial analysis
+      const initial = await this.ingestHtmlForLink(htmlContent);
+      return this.convertToAnalysisResult(initial.partialAnalysis || {});
     } catch (error) {
       logger.error("Error analyzing HTML content", error);
       throw error;
@@ -162,7 +238,7 @@ ${context}\n
   
   /**
    * Analyze two HTML contents to extract more complete information
-   * Useful when dealing with multiple pages of a listing
+   * This is the finalAnalysis from the original implementation
    * @param firstHtml First HTML content
    * @param secondHtml Second HTML content
    * @param partialAnalysis Any partial analysis already done
@@ -173,17 +249,53 @@ ${context}\n
     secondHtml: string,
     partialAnalysis?: Record<string, any>
   ): Promise<AnalysisResult> {
-    // Similar implementation to analyzeHtmlContent but combines both HTML sources
-    // This is useful when we have content from both an aggregator and original source
     try {
-      // For the multi-content case, we'll use a simplified approach for now
-      // In a real implementation, you'd want to merge both HTML contents intelligently
+      // Extract text from both HTML sources
+      const firstText = await this.extractTextFromHtml(firstHtml);
+      const secondText = await this.extractTextFromHtml(secondHtml);
       
-      // First, try to analyze with any partial analysis we already have
-      return await this.analyzeHtmlContent(firstHtml + "\n\n" + secondHtml, partialAnalysis);
+      // Combine them for the analysis
+      const combinedText = `${firstText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondText}`;
+      
+      // Reuse our partial analysis if available
+      if (partialAnalysis && Object.keys(partialAnalysis).length > 0) {
+        return this.convertToAnalysisResult(partialAnalysis);
+      }
+      
+      // Otherwise get initial link analysis first
+      const initial = await this.ingestHtmlForLink(combinedText);
+      return this.convertToAnalysisResult(initial.partialAnalysis || {});
     } catch (error) {
       logger.error("Error analyzing multiple HTML contents", error);
       throw error;
     }
+  }
+  
+  /**
+   * Convert the partial/full analysis to our AnalysisResult type
+   * @param analysisData Any analysis data to convert
+   * @returns Standardized analysis result
+   */
+  private convertToAnalysisResult(analysisData: Record<string, any>): AnalysisResult {
+    // Extract core property data from the analysis
+    const property = analysisData.property || {};
+    
+    const result: AnalysisResult = {
+      address: property.address || "",
+      price: property.price ? Number(property.price.toString().replace(/\D/g, '')) : undefined,
+      area: property.size ? Number(property.size.toString().replace(/\D/g, '')) : undefined,
+      rooms: property.værelser ? Number(property.værelser) : undefined,
+      energyRating: property.energiMaerke || "",
+      constructionYear: property.byggeaar ? Number(property.byggeaar) : undefined,
+      monthlyExpenses: property.maanedligeUdgift ? Number(property.maanedligeUdgift.toString().replace(/\D/g, '')) : undefined,
+      description: analysisData.summary || "",
+      type: property.boligType || "",
+    };
+    
+    // Include all other data fields as-is
+    return {
+      ...result,
+      rawAnalysis: analysisData // Include the full raw analysis for reference
+    };
   }
 } 

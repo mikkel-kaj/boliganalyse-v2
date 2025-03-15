@@ -62,6 +62,9 @@ export class ListingProcessorService {
         throw new Error(`No provider found for URL: ${url}`);
       }
       
+      // Update status
+      await this.repository.updateStatus(listingId, "Leder efter fejl og mangler..");
+      
       // Parse HTML with provider
       const parseResult = await provider.parseHtml(htmlContent);
       
@@ -85,6 +88,9 @@ export class ListingProcessorService {
         originalSourceHtml = await this.fetchHtmlContent(parseResult.originalLink);
       }
       
+      // Update status for AI analysis
+      await this.repository.updateStatus(listingId, "Laver AI-analyse");
+      
       // Perform AI analysis
       let analysisResult;
       
@@ -105,6 +111,11 @@ export class ListingProcessorService {
       
       // Add source information
       analysisResult.source = provider.name;
+      
+      // If energy rating was extracted, add it to the analysis result
+      if (parseResult.energyRating && !analysisResult.energyRating) {
+        analysisResult.energyRating = parseResult.energyRating;
+      }
       
       // Save analysis result
       await this.repository.saveAnalysisResult(listingId, analysisResult);
