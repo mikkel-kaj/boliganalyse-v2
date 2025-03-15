@@ -124,7 +124,7 @@ export class BoligsidenProvider extends BaseProvider {
         throw new Error("Failed to parse HTML");
       }
 
-      const result: Record<string, object> = {};
+      const result: Record<string, any> = {};
 
       // Extract structured data if available (JSON-LD)
       const jsonLdElements = document.querySelectorAll(

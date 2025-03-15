@@ -12,7 +12,6 @@ declare const Deno: {
   };
 };
 
-// @ts-expect-error - deno-dom is configured in deno.json imports
 import { DOMParser, Element } from "deno-dom";
 
 const openAiApiUrl = "https://api.openai.com/v1/chat/completions";

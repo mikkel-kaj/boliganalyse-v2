@@ -1,9 +1,10 @@
 import { ingestHtmlForLink, finalAnalysis } from "./aiAnalyzer.ts";
 import { validateBoligsideUrl } from "../utils/validation.ts";
+import {SupabaseClient} from "@supabase/supabase-js";
 
 // Helper function to update listing status with proper update timestamp
 async function updateListingStatus(
-  supabase: any,
+  supabase: SupabaseClient,
   listingId: string,
   status: string,
   additionalFields: Record<string, any> = {}
@@ -71,7 +72,7 @@ async function extractFirstImageUrl(htmlContent: string): Promise<string | null>
 export async function processListingInBackground(
   listingId: string,
   normalizedUrl: string,
-  supabase: any,
+  supabase: SupabaseClient,
 ) {
   console.log(`[${listingId}] Starting background process for URL: ${normalizedUrl}`);
 
