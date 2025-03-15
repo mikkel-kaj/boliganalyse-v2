@@ -74,15 +74,14 @@ serve(async (req) => {
       );
     }
 
-    // Normalize URL by removing query parameters
     const normalizedUrl = normalizeUrl(url);
-    logger.info(`Normalized URL: ${normalizedUrl}`);
 
     // Initialize Supabase client
     const supabase = createClient(
       config.supabase.url,
       config.supabase.serviceRoleKey,
     );
+
     const repository = new ListingRepository(supabase);
 
     // Check if this listing already exists
@@ -113,7 +112,7 @@ serve(async (req) => {
     try {
       // @ts-expect-error - EdgeRuntime is available in Supabase Edge Functions
       EdgeRuntime.waitUntil(
-        processListingInBackground(listing.id, url, normalizedUrl, repository),
+        processListingInBackground(listing.id, normalizedUrl, repository),
       );
       logger.info(`Background processing started for listing: ${listing.id}`);
     } catch (bgError) {
@@ -126,6 +125,7 @@ serve(async (req) => {
       listing,
       isExisting: false,
     });
+
   } catch (error) {
     logger.error("Error processing request", error);
     return createErrorResponse(
