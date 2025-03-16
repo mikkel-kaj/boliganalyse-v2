@@ -104,6 +104,8 @@ export class ListingProcessorService {
       // Update status for AI analysis
       await this.repository.updateStatus(listingId, "Laver AI-analyse");
 
+      logger.info(`Compiled the full text which will be analyzed for listing: ${parseResult.extractedText} and ${originalSourceResult?.extractedText}`);
+
       const analysisResult = await this.aiAnalyzer.analyzeMultipleTexts(
         parseResult,
         originalSourceResult
