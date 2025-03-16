@@ -4,6 +4,7 @@ import {extractDomain} from "../utils/url.ts";
 import {createLogger} from "../utils/logger.ts";
 
 import {DOMParser} from "deno-dom";
+import * as htmlUtils from "../utils/html.ts";
 
 const logger = createLogger("BoligsidenProvider");
 
@@ -43,36 +44,19 @@ export class BoligsidenProvider extends BaseProvider {
         throw new Error("Failed to parse HTML");
       }
 
-      // Look for original listing URL
-      // Boligsiden aggregates listings from other sites and typically links to the original
-      const selectors = [
-        'a[href*="home.dk"]',
-        'a[href*="nybolig.dk"]',
-        'a[href*="edc.dk"]',
-        'a[href*="realmaeglerne.dk"]',
-        'a[href*="danbolig.dk"]',
-      ];
-
-      for (const selector of selectors) {
-        const link = document.querySelector(selector);
-        if (link) {
-          const href = link.getAttribute("href");
-          if (href && href.startsWith("http")) {
-            logger.info(`Found original source URL: ${href}`);
-            return href;
-          }
-        }
+      // Look for the caseUrl pattern which contains the direct link to the real estate agent's site
+      logger.info("Looking for caseUrl in HTML content");
+      const caseUrlPattern = /caseUrl\\\":\\\"(https?:\/\/[^\\\"]+)\\\"/;
+      const caseUrlMatch = htmlContent.match(caseUrlPattern);
+      
+      if (caseUrlMatch && caseUrlMatch[1]) {
+        const realEstateUrl = caseUrlMatch[1];
+        logger.info(`Found real estate agent URL: ${realEstateUrl}`);
+        return realEstateUrl;
       }
+      
 
-      // Check canonical link as a fallback
-      const canonical = document.querySelector('link[rel="canonical"]');
-      if (canonical) {
-        const href = canonical.getAttribute("href");
-        if (href && href.includes("boligsiden.dk")) {
-          return href;
-        }
-      }
-
+      logger.info("No real estate agent link found");
       return undefined;
     } catch (error) {
       logger.error("Failed to extract source URL", error);
@@ -89,7 +73,7 @@ export class BoligsidenProvider extends BaseProvider {
       // Extract basic fields that are common across providers
       const energyRating = await this.extractEnergyRating(htmlContent);
       const property_image_url = await this.extractImageUrl(htmlContent);
-      const extractedText = await this.extractText(htmlContent);
+      const extractedText = await htmlUtils.extractTextFromHtml(htmlContent);
       const originalLink = await this.extractSourceUrl(htmlContent);
 
       // Extract specific fields for this provider
