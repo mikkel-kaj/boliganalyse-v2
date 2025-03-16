@@ -432,7 +432,7 @@ const AnalysisPage = () => {
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <h3 className="text-sm text-muted-foreground mb-1">Boligareal</h3>
-                                                <p className="text-xl font-bold text-foreground">{property.size} m²</p>
+                                                <p className="text-xl font-bold text-foreground">{property.size}</p>
                                             </div>
                                             <div>
                                                 <h3 className="text-sm text-muted-foreground mb-1">Etage</h3>
