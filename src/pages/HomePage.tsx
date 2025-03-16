@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { validateBoligsideUrl } from '../utils/validators';
 import { RiskIcon, HighlightIcon } from '@/components/IconMapper';
 import SEO from '@/components/SEO';
+import { ListingPreview } from '@/components/ListingPreview';
 
 const HomePage = () => {
   const [url, setUrl] = useState('');
@@ -39,7 +40,7 @@ const HomePage = () => {
         .from('apartment_listings')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(8);
       
       if (error) throw error;
       return data;
@@ -240,66 +241,9 @@ const HomePage = () => {
             <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Nyligt analyserede boliger</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {recentListings.map((listing) => {
-                const analysis = listing.analysis as any;
-                if (!analysis?.property) return null;
-
-                // Use property_image_url if available, otherwise fallback
-                let imageUrl = '/placeholder.svg';
-                if (listing.property_image_url) {
-                  imageUrl = listing.property_image_url;
-                }
-
-                return (
-                  <Link
-                    key={listing.id}
-                    to={`/analyse/${listing.id}`}
-                    className="property-card bg-card rounded-xl overflow-hidden border border-border hover:border-purple/30 transition-all"
-                  >
-                    <div className="relative">
-                      <img 
-                        src={imageUrl} 
-                        alt={analysis.property.address} 
-                        className="w-full h-40 object-cover"
-                      />
-                      <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-xs px-2 py-1 rounded-full">
-                        {new Date(listing.created_at).toLocaleDateString('da-DK')}
-                      </div>
-                    </div>
-                    
-                    <div className="p-4">
-                      <h3 className="font-medium mb-1">{analysis.property.address}</h3>
-                      <p className="text-lg font-bold mb-2">{analysis.property.price}</p>
-                      
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                        <span>{analysis.property.size}</span>
-                      </div>
-                      
-                      {analysis.risks && analysis.risks.length > 0 && (
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1">RISIKOFAKTORER</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {analysis.risks.slice(0, 4).map((risk: any, idx: number) => (
-                              <RiskIcon key={idx} risk={risk} size={3} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {analysis.highlights && analysis.highlights.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                          <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1">HØJDEPUNKTER</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {analysis.highlights.slice(0, 4).map((highlight: any, idx: number) => (
-                              <HighlightIcon key={idx} highlight={highlight} size={3} />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
+              {recentListings.map((listing) => (
+                <ListingPreview key={listing.id} listing={listing} />
+              ))}
             </div>
           </section>
         )}
