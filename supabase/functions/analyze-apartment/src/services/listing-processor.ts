@@ -93,11 +93,11 @@ export class ListingProcessorService {
           parseResult.originalLink,
         );
 
-        const sourceProvider = this.providerRegistry.getProviderForUrl(url);
+        const sourceProvider = this.providerRegistry.getProviderForUrl(parseResult.originalLink);
 
         originalSourceResult = await sourceProvider.parseHtml(
-          originalSourceHtml,
-            parseResult.originalLink
+            parseResult.originalLink,
+            originalSourceHtml,
         );
       }
 

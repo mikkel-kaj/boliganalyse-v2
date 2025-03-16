@@ -2,6 +2,7 @@ import { BaseProvider } from "./base-provider.ts";
 import { BoligsidenProvider } from "./boligsiden-provider.ts";
 import { extractDomain } from "../utils/url.ts";
 import { createLogger } from "../utils/logger.ts";
+import {FallbackProvider} from "./fallback-provider.ts";
 
 const logger = createLogger("ProviderRegistry");
 
@@ -16,9 +17,10 @@ export class ProviderRegistry {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Register all available providers
+    // Register all available providers (Order matters here, fallback should be last.)
     this.registerProvider(new BoligsidenProvider());
-    
+    this.registerProvider(new FallbackProvider());
+
     // Note: Add new providers here as they're implemented
     // this.registerProvider(new HomeProvider());
     // this.registerProvider(new NyboligProvider());

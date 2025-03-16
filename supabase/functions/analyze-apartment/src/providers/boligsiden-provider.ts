@@ -62,7 +62,7 @@ export class BoligsidenProvider extends BaseProvider {
    * @param htmlContent HTML content to parse
    * @param url URL of the html content
    */
-  async parseHtml(htmlContent: string, url?: string): Promise<HTMLParseResult> {
+  async parseHtml(url: string, htmlContent: string): Promise<HTMLParseResult> {
     try {
       // Extract basic fields that are common across providers
       const energyRating = await this.extractEnergyRating(htmlContent);
