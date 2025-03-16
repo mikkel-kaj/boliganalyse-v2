@@ -75,7 +75,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-background">
             <SEO
                 title={`Boliganalyse af ${property.address} - ${property.zip_code} ${property.city}`}
                 description={`AI-analyse af ${property.address}. Identificerer potentielle risikofaktorer og højdepunkter ved boligen. Pris: ${property.price ? property.price.toLocaleString('da-DK') + ' kr.' : 'N/A'}, størrelse: ${property.size} m².`}
@@ -189,7 +189,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                             <span className="text-risk-default text-xl">⚠️</span>
                                             <span className="text-risk-default">Risikoer</span>
                                         </h2>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-col gap-2">
                                             {risksWithIds.map((risk) => (
                                                 <HoverCard key={risk.id} openDelay={100} closeDelay={100}>
                                                     <HoverCardTrigger asChild>
@@ -233,7 +233,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                             <span className="text-highlight-default text-xl">✨</span>
                                             <span className="text-highlight-default">Højdepunkter</span>
                                         </h2>
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-col gap-2">
                                             {highlightsWithIds.map((highlight) => (
                                                 <HoverCard key={highlight.id} openDelay={100} closeDelay={100}>
                                                     <HoverCardTrigger asChild>
