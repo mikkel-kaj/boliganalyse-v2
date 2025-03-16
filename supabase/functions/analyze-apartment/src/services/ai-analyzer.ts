@@ -127,7 +127,8 @@ export class AIAnalyzerService {
     - Hvis data mangler, brug tom streng ("").
     - Ingen tekst udenfor JSON.
 
-    Annonce tekst:
+    You have been provided with the following text from the real estate listing that you must analyze. The text is likely
+    to be malformed, and missing spaces. Never mention this in the output, but use your best judgement to analyze the text.
     """${textContent}"""
     `;
 
@@ -199,7 +200,7 @@ export class AIAnalyzerService {
 
         const analysis = await this.analyzeText(`${primaryText});`);
 
-        return this.convertToAnalysisResult(analysis);
+        return analysis;
       }
 
       const combinedText = `${primaryText.extractedText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText.extractedText}`;

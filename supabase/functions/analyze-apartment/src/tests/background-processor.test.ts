@@ -20,7 +20,7 @@ Deno.test({
     const repository = new ListingRepository(supabase);
 
     // Create a test listing to use
-    const testUrl = `https://www.boligsiden.dk/adresse/birkemosevej-8-8420-knebel-07060147___8_______?udbud=a5d7dc61-6da6-4969-97b6-1be8e8257bce`;
+    const testUrl = `https://www.boligsiden.dk/adresse/valdemarsgaard-6a-4320-lejre-03500934__6a_______?udbud=611cb735-e6bc-486b-a40f-180e42aad98d&fbclid=IwZXh0bgNhZW0CMTEAAR2Sdn7W7EbT5haOB7SQRbxEr5BJAxk5vaz0oDSBNEYo12AiMzk77mpFapA_aem_8keO2PBcGxD1nbWRT6zm2A`;
     const normalizedUrl = testUrl;
     const deleteIfExists = await repository.deleteByUrl(normalizedUrl);
     const listing = await repository.createListing(testUrl, normalizedUrl);
