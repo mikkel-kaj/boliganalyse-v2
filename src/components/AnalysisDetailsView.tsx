@@ -92,17 +92,17 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                 schema={generatePropertySchema()}
             />
 
-            <div className="container max-w-6xl mx-auto py-6 px-4">
+            <div className="container max-w-6xl mx-auto py-4 px-4 sm:py-6">
                 {/* Header Section */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                     <div className="flex items-center gap-4">
                         <Button asChild variant="ghost" size="icon" className="rounded-full">
                             <Link to="/"><ArrowLeft className="h-4 w-4"/></Link>
                         </Button>
                         <div>
-                            <h1 className="text-xl font-semibold">{property.address}</h1>
+                            <h1 className="text-lg sm:text-xl font-semibold">{property.address}</h1>
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <span>{property.zip_code} {property.city}</span>
+                                <span className="text-sm">{property.zip_code} {property.city}</span>
                                 <span className="text-xs">•</span>
                                 <span className="text-xs">Oprettet {timeAgoDisplay}</span>
                             </div>
@@ -206,7 +206,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
 
                             {/* Quick Overview Grid */}
                             <div className="border-t border-border pt-6">
-                                <div className="grid grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {/* Risks Overview */}
                                     <div>
                                         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
