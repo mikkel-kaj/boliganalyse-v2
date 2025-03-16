@@ -174,9 +174,17 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                             {/* Property Summary */}
                             {summary && summary.trim() !== '' && (
                                 <div className="border-t border-border pt-6 mb-6">
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                        {summary}
-                                    </p>
+                                    <div className="bg-muted/50 rounded-lg p-6">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="bg-background rounded-full p-2">
+                                                <span className="text-xl">🤖</span>
+                                            </div>
+                                            <h2 className="text-lg font-semibold">AI-genereret opsummering</h2>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            {summary}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 
