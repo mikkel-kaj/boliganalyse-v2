@@ -130,17 +130,9 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                         {/* Main Property Card */}
                         <div className="bg-card text-card-foreground rounded-xl p-6 mb-8">
                             {/* Property Image and Key Info */}
-                            <div className="flex gap-6 mb-8">
-                                {/* Left side - Image */}
-                                <div className="w-1/2">
-                                    <img
-                                        src={listing.property_image_url}
-                                        alt={property.address}
-                                        className="w-full h-[280px] object-cover rounded-lg"
-                                    />
-                                </div>
-                                {/* Right side - Key Information */}
-                                <div className="w-1/2">
+                            <div className="flex flex-col md:flex-row gap-6 mb-8">
+                                {/* Key Information - Will be full width on mobile, half width on desktop */}
+                                <div className="w-full md:w-1/2 order-1 md:order-2">
                                     <div className="space-y-6">
                                         <div>
                                             <h2 className="text-lg font-semibold mb-3">{property.address}</h2>
@@ -176,6 +168,15 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                             )}
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Image - Will be full width on mobile, half width on desktop */}
+                                <div className="w-full md:w-1/2 order-2 md:order-1">
+                                    <img
+                                        src={listing.property_image_url}
+                                        alt={property.address}
+                                        className="w-full h-[280px] object-cover rounded-lg"
+                                    />
                                 </div>
                             </div>
 
