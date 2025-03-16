@@ -203,7 +203,7 @@ export class AIAnalyzerService {
         return analysis;
       }
 
-      const combinedText = `${primaryText.extractedText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText.extractedText}`;
+      const combinedText = `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText}`;
       
       // Perform the analysis
       const analysis = await this.analyzeText(combinedText);
