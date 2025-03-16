@@ -174,16 +174,24 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                             {/* Property Summary */}
                             {summary && summary.trim() !== '' && (
                                 <div className="border-t border-border pt-6 mb-6">
-                                    <div className="bg-muted/50 rounded-lg p-6">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="bg-background rounded-full p-2">
-                                                <span className="text-xl">🤖</span>
+                                    <div className="bg-muted/50 rounded-lg p-6 relative overflow-hidden">
+                                        {/* Gradient effect in the background */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-purple/5 to-transparent" />
+                                        
+                                        <div className="relative">  {/* Added relative to keep content above gradient */}
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="bg-purple/10 rounded-full p-2.5 ring-1 ring-purple/20">
+                                                    <span className="text-xl">✨</span>
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-lg font-semibold">AI-genereret opsummering</h2>
+                                                    <p className="text-sm text-muted-foreground">Analyseret af vores AI-assistent</p>
+                                                </div>
                                             </div>
-                                            <h2 className="text-lg font-semibold">AI-genereret opsummering</h2>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                {summary}
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-muted-foreground leading-relaxed">
-                                            {summary}
-                                        </p>
                                     </div>
                                 </div>
                             )}
