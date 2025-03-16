@@ -55,6 +55,15 @@ export function validateBoligsideUrl(url: string): { valid: boolean; error?: str
         error: "Adressen i URL'en ser ikke gyldig ud" 
       };
     }
+
+    // Check for udbud parameter
+    const hasUdbudParam = parsedUrl.searchParams.has('udbud');
+    if (!hasUdbudParam) {
+      return {
+        valid: false,
+        error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
+      };
+    }
     
     return { valid: true };
   } catch (error) {

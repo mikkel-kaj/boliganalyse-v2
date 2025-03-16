@@ -21,6 +21,7 @@ export interface ValidationResult {
 interface DomainConfig {
   pathPrefix: string;
   minPathLength: number;
+  requiresUdbudParam: boolean;
 }
 
 /**
@@ -50,15 +51,18 @@ export function validateListingUrl(url: string): ValidationResult {
     const supportedDomains: SupportedDomains = {
       'boligsiden.dk': {
         pathPrefix: '/adresse/',
-        minPathLength: 2
+        minPathLength: 2,
+        requiresUdbudParam: true
       },
       'home.dk': {
         pathPrefix: '/ejerbolig/',
-        minPathLength: 3
+        minPathLength: 3,
+        requiresUdbudParam: false
       },
       'nybolig.dk': {
         pathPrefix: '/til-salg/',
-        minPathLength: 3
+        minPathLength: 3,
+        requiresUdbudParam: false
       }
       // Add more providers as needed
     };
@@ -90,13 +94,12 @@ export function validateListingUrl(url: string): ValidationResult {
         error: "Adressedelen af URL'en mangler eller er for kort" 
       };
     }
-    
-    // Basic check that the path part looks valid
-    // Danish addresses typically contain alphanumeric characters, hyphens, and possibly numbers
-    if (!pathPart.match(/^[a-zA-Z0-9æøåÆØÅ\-_\/]+/)) {
-      return { 
-        valid: false, 
-        error: "Adressen i URL'en ser ikke gyldig ud" 
+
+    // Check for udbud parameter if required
+    if (provider.requiresUdbudParam && !parsedUrl.searchParams.has('udbud')) {
+      return {
+        valid: false,
+        error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
       };
     }
     
