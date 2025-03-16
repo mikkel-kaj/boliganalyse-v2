@@ -105,7 +105,7 @@ export class AIAnalyzerService {
           "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
           "excerpt": "Tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
           "recommendations": [
-            {"promptTitle": "Spørg megler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
+            {"promptTitle": "Spørg mægler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
           ]
         }
       ],
