@@ -411,9 +411,8 @@ const AnalysisPage = () => {
                             <Link to="/"><ArrowLeft className="h-4 w-4"/></Link>
                         </Button>
                         <div>
-                            <h1 className="text-2xl font-bold">{property.address}</h1>
+                            <h1 className="text-xl font-semibold">{property.address}</h1>
                             <div className="flex items-center gap-2 text-muted-foreground">
-                                <MapPin className="h-4 w-4" />
                                 <span>{property.zip_code} {property.city}</span>
                             </div>
                         </div>
@@ -453,6 +452,10 @@ const AnalysisPage = () => {
                                 <div className="w-1/2">
                                     <div className="space-y-6">
                                         <div>
+                                            <h2 className="text-lg font-semibold mb-3">{property.address}</h2>
+                                            <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                                                <span>{property.zip_code} {property.city}</span>
+                                            </div>
                                             <h3 className="text-sm text-muted-foreground mb-1">Totalpris</h3>
                                             <p className="text-2xl font-bold text-foreground">{property.price}</p>
                                             {property.pricePerM2 && (
@@ -500,36 +503,36 @@ const AnalysisPage = () => {
                                     {/* Risks Overview */}
                                     <div>
                                         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                            <span className="text-risk-default text-xl">⚠️</span>
-                                            <span className="text-risk-default">Risikoer</span>
+                                            <span className="text-risk-default/70 text-xl">⚠️</span>
+                                            <span className="text-risk-default/70">Risikoer</span>
                                         </h2>
                                         <div className="flex flex-wrap gap-2">
                                             {risksWithIds.map((risk) => (
                                                 <HoverCard key={risk.id} openDelay={100} closeDelay={100}>
                                                     <HoverCardTrigger asChild>
-                                                        <div className="bg-risk-default/5 hover:bg-risk-default/10 px-3 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors">
+                                                        <div className="bg-risk-default/[0.03] hover:bg-risk-default/[0.07] px-3 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors">
                                                             <div className="flex items-center">
                                                                 {getCategoryIcon(risk.category, 4)}
                                                             </div>
-                                                            <span className="text-xs font-medium text-risk-default">{risk.title}</span>
-                                                            <span className="text-xs text-risk-default/70">▸</span>
+                                                            <span className="text-xs font-medium text-risk-default/70">{risk.title}</span>
+                                                            <span className="text-xs text-risk-default/50">▸</span>
                                                         </div>
                                                     </HoverCardTrigger>
-                                                    <HoverCardContent className="w-80 p-4 bg-popover text-popover-foreground border-risk-default/20">
+                                                    <HoverCardContent className="w-80 p-4 bg-popover text-popover-foreground border-risk-default/10">
                                                         <div>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 {getCategoryIcon(risk.category, 5)}
-                                                                <h4 className="font-medium text-risk-default">{risk.title}</h4>
+                                                                <h4 className="font-medium text-risk-default/70">{risk.title}</h4>
                                                             </div>
                                                             <p className="text-sm mb-3">{risk.details || risk.description}</p>
                                                             {risk.excerpt && (
-                                                                <blockquote className="mt-2 text-sm italic border-l-2 border-risk-default/30 pl-3 text-muted-foreground">
+                                                                <blockquote className="mt-2 text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
                                                                     {risk.excerpt}
                                                                 </blockquote>
                                                             )}
                                                             {risk.recommendations?.[0] && (
-                                                                <div className="mt-3 bg-risk-default/5 rounded-lg p-3">
-                                                                    <p className="text-sm font-medium text-risk-default">
+                                                                <div className="mt-3 bg-risk-default/[0.03] rounded-lg p-3">
+                                                                    <p className="text-sm font-medium text-risk-default/70">
                                                                         💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
                                                                     </p>
                                                                 </div>
@@ -544,26 +547,26 @@ const AnalysisPage = () => {
                                     {/* Highlights Overview */}
                                     <div>
                                         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                            <span className="text-highlight-default text-xl">✨</span>
-                                            <span className="text-highlight-default">Højdepunkter</span>
+                                            <span className="text-highlight-default/70 text-xl">✨</span>
+                                            <span className="text-highlight-default/70">Højdepunkter</span>
                                         </h2>
                                         <div className="flex flex-wrap gap-2">
                                             {highlightsWithIds.map((highlight) => (
                                                 <HoverCard key={highlight.id} openDelay={100} closeDelay={100}>
                                                     <HoverCardTrigger asChild>
-                                                        <div className="bg-highlight-default/5 hover:bg-highlight-default/10 px-3 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors">
+                                                        <div className="bg-highlight-default/[0.03] hover:bg-highlight-default/[0.07] px-3 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors">
                                                             <div className="flex items-center">
                                                                 {getIconComponent(highlight.icon || 'star', 4)}
                                                             </div>
-                                                            <span className="text-xs font-medium text-highlight-default">{highlight.title}</span>
-                                                            <span className="text-xs text-highlight-default/70">▸</span>
+                                                            <span className="text-xs font-medium text-highlight-default/70">{highlight.title}</span>
+                                                            <span className="text-xs text-highlight-default/50">▸</span>
                                                         </div>
                                                     </HoverCardTrigger>
-                                                    <HoverCardContent className="w-80 p-4 bg-popover text-popover-foreground border-highlight-default/20">
+                                                    <HoverCardContent className="w-80 p-4 bg-popover text-popover-foreground border-highlight-default/10">
                                                         <div>
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 {getIconComponent(highlight.icon || 'star', 5)}
-                                                                <h4 className="font-medium text-highlight-default">{highlight.title}</h4>
+                                                                <h4 className="font-medium text-highlight-default/70">{highlight.title}</h4>
                                                             </div>
                                                             <p className="text-sm">{highlight.details}</p>
                                                         </div>
@@ -578,7 +581,7 @@ const AnalysisPage = () => {
 
                         {/* Detailed Risks Section */}
                         <div className="bg-card text-card-foreground rounded-xl p-6 mb-8">
-                            <h2 className="text-xl font-semibold mb-6 text-risk-default flex items-center gap-2">
+                            <h2 className="text-xl font-semibold mb-6 text-risk-default/70 flex items-center gap-2">
                                 <span className="text-2xl">⚠️</span>
                                 Uddybende risikovurdering
                             </h2>
@@ -590,18 +593,18 @@ const AnalysisPage = () => {
                                                 {getCategoryIcon(risk.category, 5)}
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className="font-medium mb-2 text-risk-default">{risk.title}</h3>
+                                                <h3 className="font-medium mb-2 text-risk-default/70">{risk.title}</h3>
                                                 <p className="text-sm text-muted-foreground">{risk.details || risk.description}</p>
                                                 
                                                 {risk.excerpt && (
-                                                    <blockquote className="mt-3 text-sm italic border-l-2 border-risk-default/30 pl-3 text-muted-foreground">
+                                                    <blockquote className="mt-3 text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
                                                         {risk.excerpt}
                                                     </blockquote>
                                                 )}
 
                                                 {risk.recommendations?.[0] && (
-                                                    <div className="mt-4 bg-risk-default/5 rounded-lg p-4">
-                                                        <p className="text-sm font-medium text-risk-default">
+                                                    <div className="mt-4 bg-risk-default/[0.03] rounded-lg p-4">
+                                                        <p className="text-sm font-medium text-risk-default/70">
                                                             💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
                                                         </p>
                                                     </div>
@@ -615,7 +618,7 @@ const AnalysisPage = () => {
 
                         {/* Detailed Highlights Section */}
                         <div className="bg-card text-card-foreground rounded-xl p-6">
-                            <h2 className="text-xl font-semibold mb-6 text-highlight-default flex items-center gap-2">
+                            <h2 className="text-xl font-semibold mb-6 text-highlight-default/70 flex items-center gap-2">
                                 <span className="text-2xl">✨</span>
                                 Uddybende højdepunkter
                             </h2>
@@ -627,7 +630,7 @@ const AnalysisPage = () => {
                                                 {getIconComponent(highlight.icon || 'star', 5)}
                                             </div>
                                             <div className="flex-1">
-                                                <h3 className="font-medium mb-2 text-highlight-default">{highlight.title}</h3>
+                                                <h3 className="font-medium mb-2 text-highlight-default/70">{highlight.title}</h3>
                                                 <p className="text-sm text-muted-foreground">{highlight.details}</p>
                                             </div>
                                         </div>

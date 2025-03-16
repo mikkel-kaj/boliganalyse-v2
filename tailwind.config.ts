@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -69,17 +68,17 @@ export default {
 					light: '#B6A5F8'
 				},
 				risk: {
-					default: '#f97316',
-					building: '#cf7e38',
-					technical: '#8c6e5e',
-					safety: '#e74c3c',
+					default: '#fbbf24',
+					building: '#f59e0b',
+					technical: '#d97706',
+					safety: '#dc2626',
 					ventilation: '#3498db',
 					history: '#8e44ad'
 				},
 				highlight: {
-					default: '#2ecc71',
-					transport: '#27ae60',
-					kitchen: '#16a085',
+					default: '#22c55e',
+					transport: '#16a34a',
+					kitchen: '#15803d',
 					financial: '#f1c40f',
 					community: '#3498db',
 					facilities: '#2980b9'
