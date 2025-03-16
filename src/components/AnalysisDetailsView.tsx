@@ -110,7 +110,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.address)}`, '_blank')}>
-                            Kart
+                            Kort
                         </Button>
                         <Button variant="outline" size="sm" onClick={onShare}>
                             Del analyse
