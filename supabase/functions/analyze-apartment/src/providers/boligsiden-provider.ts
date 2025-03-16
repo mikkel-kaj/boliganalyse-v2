@@ -33,32 +33,24 @@ export class BoligsidenProvider extends BaseProvider {
   }
 
   /**
-   * Extract the original source URL from HTML content if available
-   * @param htmlContent HTML content to extract from
+   * Extract the original source URL from the Boligsiden URL
+   * @param url The Boligsiden URL containing the case ID
    */
-  async extractSourceUrl(htmlContent: string): Promise<string | undefined> {
+  async extractSourceUrl(url: string): Promise<string | undefined> {
     try {
-      const parser = new DOMParser();
-
-      const document = parser.parseFromString(htmlContent, "text/html");
-      if (!document) {
-        throw new Error("Failed to parse HTML");
+      // Extract the case ID from the URL query parameter
+      const caseIdMatch = url.match(/[?&]udbud=([^&]+)/);
+      if (!caseIdMatch || !caseIdMatch[1]) {
+        logger.info("No case ID found in URL");
+        return undefined;
       }
 
-      // Look for the caseUrl pattern which contains the direct link to the real estate agent's site
-      logger.info("Looking for caseUrl in HTML content");
-      const caseUrlPattern = /caseUrl\\\":\\\"(https?:\/\/[^\\\"]+)\\\"/;
-      const caseUrlMatch = htmlContent.match(caseUrlPattern);
+      const caseId = caseIdMatch[1];
+      const redirectUrl = `https://www.boligsiden.dk/viderestilling/${caseId}`;
       
-      if (caseUrlMatch && caseUrlMatch[1]) {
-        const realEstateUrl = caseUrlMatch[1];
-        logger.info(`Found real estate agent URL: ${realEstateUrl}`);
-        return realEstateUrl;
-      }
-      
+      logger.info(`Constructed redirect URL: ${redirectUrl}`);
+      return redirectUrl;
 
-      logger.info("No real estate agent link found");
-      return undefined;
     } catch (error) {
       logger.error("Failed to extract source URL", error);
       return undefined;
@@ -68,14 +60,15 @@ export class BoligsidenProvider extends BaseProvider {
   /**
    * Parse HTML content to extract structured data
    * @param htmlContent HTML content to parse
+   * @param url URL of the html content
    */
-  async parseHtml(htmlContent: string): Promise<HTMLParseResult> {
+  async parseHtml(htmlContent: string, url?: string): Promise<HTMLParseResult> {
     try {
       // Extract basic fields that are common across providers
       const energyRating = await this.extractEnergyRating(htmlContent);
       const property_image_url = await this.extractImageUrl(htmlContent);
       let extractedText = await htmlUtils.extractTextFromHtml(htmlContent);
-      const originalLink = await this.extractSourceUrl(htmlContent);
+      const originalLink = url ? await this.extractSourceUrl(url) : undefined;
 
       // Extract specific fields for this provider
       const specificFields = await this.extractSpecificFields(htmlContent);

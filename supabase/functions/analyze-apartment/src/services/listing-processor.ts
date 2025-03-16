@@ -69,7 +69,7 @@ export class ListingProcessorService {
       );
 
       // Parse HTML with provider
-      const parseResult = await provider.parseHtml(htmlContent);
+      const parseResult = await provider.parseHtml(url, htmlContent);
 
       // Update image URL if available
       if (parseResult.property_image_url) {
@@ -97,6 +97,7 @@ export class ListingProcessorService {
 
         originalSourceResult = await sourceProvider.parseHtml(
           originalSourceHtml,
+            parseResult.originalLink
         );
       }
 

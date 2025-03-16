@@ -30,9 +30,10 @@ export abstract class BaseProvider implements ProviderInfo {
   
   /**
    * Parse HTML content to extract structured data
+   * @param url
    * @param htmlContent HTML content to parse
    */
-  abstract parseHtml(htmlContent: string): Promise<HTMLParseResult>;
+  abstract parseHtml(url: string, htmlContent: string): Promise<HTMLParseResult>;
   
   /**
    * Extract any specific fields that are unique to this provider
