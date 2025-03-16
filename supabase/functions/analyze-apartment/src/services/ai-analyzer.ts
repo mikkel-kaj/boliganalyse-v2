@@ -142,7 +142,7 @@ export class AIAnalyzerService {
         body: JSON.stringify({
           model: this.model, // Using the exact model from original implementation
           messages: [{ role: "system", content: prompt }],
-          max_tokens: 4096,
+          max_tokens: 12000,
           temperature: 0.5,
         }),
       });

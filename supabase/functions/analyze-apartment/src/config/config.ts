@@ -22,9 +22,9 @@ export const config = {
   openai: {
     apiKey: Deno.env.get("OPENAI_API_KEY") || "",
     endpoint: "https://api.openai.com/v1/chat/completions",
-    model: "gpt-4-turbo-preview", // Default model, can be overridden
+    model: "gpt-4.5-preview-2025-02-27", // Default model, can be overridden
     maxTokens: 4000,
-    temperature: 0.1, // Low temperature for more consistent results
+    temperature: 1.2, // Low temperature for more consistent results
   },
   
   // Database table names
