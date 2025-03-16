@@ -239,6 +239,7 @@ const AnalysisPage = () => {
             propertyDetails={propertyDetails}
             onShare={handleShare}
             originalUrl={listing?.url || ""}
+            propertyId={id || ""}
         />
     );
 };

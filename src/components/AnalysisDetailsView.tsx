@@ -2,9 +2,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { ArrowLeft, Share2 } from "lucide-react";
+import { ArrowLeft, Share2, MessageSquare } from "lucide-react";
 import { getCategoryIcon, getIconComponent } from "@/components/IconMapper";
 import SEO from "@/components/SEO";
+import FeedbackForm from "@/components/FeedbackForm";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface PropertyDetail {
     label: string;
@@ -22,6 +28,7 @@ interface AnalysisDetailsViewProps {
     propertyDetails: PropertyDetail[];
     onShare: () => void;
     originalUrl: string;
+    propertyId: string;
 }
 
 const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
@@ -33,7 +40,8 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
     timeAgoDisplay,
     propertyDetails,
     onShare,
-    originalUrl
+    originalUrl,
+    propertyId
 }) => {
     // Add unique IDs to risks and highlights for mapping
     const risksWithIds = risks.map((risk, index) => ({
@@ -354,7 +362,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                         </div>
 
                         {property.images && property.images.length > 0 && (
-                            <div className="bg-card text-card-foreground rounded-xl p-6">
+                            <div className="bg-card text-card-foreground rounded-xl p-6 mb-8">
                                 <h2 className="text-lg font-semibold mb-4">Billeder</h2>
                                 <div className="grid grid-cols-2 gap-2">
                                     {property.images.slice(0, 6).map((image, index) => (
@@ -368,6 +376,24 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                 </div>
                             </div>
                         )}
+
+                        {/* Move FeedbackForm here */}
+                        <div className="bg-card text-card-foreground rounded-xl p-6">
+                            <Collapsible>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="outline" className="w-full flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        <span>Giv feedback på analysen</span>
+                                    </Button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="mt-4">
+                                    <FeedbackForm 
+                                        propertyId={propertyId}
+                                        propertyAddress={property.address}
+                                    />
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </div>
                     </div>
                 </div>
 
