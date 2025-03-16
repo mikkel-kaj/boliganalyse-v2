@@ -48,8 +48,22 @@ export class BoligsidenProvider extends BaseProvider {
       const caseId = caseIdMatch[1];
       const redirectUrl = `https://www.boligsiden.dk/viderestilling/${caseId}`;
       
-      logger.info(`Constructed redirect URL: ${redirectUrl}`);
-      return redirectUrl;
+      logger.info(`Following redirect URL: ${redirectUrl}`);
+
+      // Follow the redirect to get the final URL
+      const response = await fetch(redirectUrl, {
+        method: 'HEAD', // We only need the headers, not the body
+        redirect: 'follow',
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+      });
+
+      // Get the final URL after redirects
+      const finalUrl = response.url;
+      logger.info(`Resolved to final URL: ${finalUrl}`);
+      
+      return finalUrl;
 
     } catch (error) {
       logger.error("Failed to extract source URL", error);
