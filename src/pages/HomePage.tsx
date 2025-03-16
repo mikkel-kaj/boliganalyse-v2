@@ -164,29 +164,29 @@ const HomePage = () => {
     <div className="min-h-[calc(100vh-80px)] flex flex-col">
       <SEO schema={homePageSchema} />
       <main className="flex-1">
-        <section className="py-16 md:py-24 lg:py-32 container text-center">
+        <section className="py-8 sm:py-16 md:py-24 lg:py-32 container text-center px-4 sm:px-6">
           <div className="max-w-3xl mx-auto">
-            <div className="inline-block mb-6 px-4 py-1.5 bg-secondary rounded-full">
+            <div className="inline-block mb-4 sm:mb-6 px-4 py-1.5 bg-secondary rounded-full">
               <span className="text-sm font-medium">AI til boligkøb</span>
             </div>
             
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Undgå overraskelser<br />når du køber bolig
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
+              Undgå overraskelser<br className="hidden sm:block" /> når du køber bolig
             </h1>
             
-            <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-10 max-w-2xl mx-auto px-4 sm:px-0">
               AI-analyse af bolig som afslører skjulte
               risikofaktorer og spørgsmål du bør stille på visning.
             </p>
             
-            <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center justify-center gap-4 mb-6 sm:mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary rounded-full">
                 <span className="text-purple text-sm">❤️</span>
-                <span className="text-sm font-medium">Nu med støtte til nybyggeri og fritidsboliger!</span>
+                <span className="text-xs sm:text-sm font-medium">Nu med støtte til nybyggeri og fritidsboliger!</span>
               </div>
             </div>
             
-            <form onSubmit={handleAnalyze} className="flex flex-col sm:flex-row max-w-lg mx-auto gap-3">
+            <form onSubmit={handleAnalyze} className="flex flex-col sm:flex-row max-w-lg mx-auto gap-3 px-4 sm:px-0">
               <div className="flex-1 relative">
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
                   Bolig-annonce
@@ -195,26 +195,26 @@ const HomePage = () => {
                   value={url}
                   onChange={(e) => {
                     setUrl(e.target.value);
-                    setUrlError(null); // Clear errors on input change
+                    setUrlError(null);
                   }}
-                  className={`pl-28 h-12 ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  className={`pl-28 h-12 text-base sm:text-sm ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
                   placeholder="Indsæt link til boligannonce..."
                   disabled={isAnalyzing}
                 />
               </div>
               <Button 
                 type="submit" 
-                className="bg-purple hover:bg-purple-dark h-12 px-6"
+                className="bg-purple hover:bg-purple-dark h-12 px-6 w-full sm:w-auto"
                 disabled={isAnalyzing}
               >
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    <span>{renderStatusMessage()}</span>
+                    <span className="text-base sm:text-sm">{renderStatusMessage()}</span>
                   </>
                 ) : (
                   <>
-                    <span>Analyser bolig</span>
+                    <span className="text-base sm:text-sm">Analyser bolig</span>
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -237,10 +237,12 @@ const HomePage = () => {
         </section>
         
         {recentListings && recentListings.length > 0 && (
-          <section className="py-12 md:py-16 container">
-            <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">Nyligt analyserede boliger</h2>
+          <section className="py-8 sm:py-12 md:py-16 container px-4 sm:px-6">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 sm:mb-8 text-center">
+              Nyligt analyserede boliger
+            </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {recentListings.map((listing) => (
                 <ListingPreview key={listing.id} listing={listing} />
               ))}
@@ -249,11 +251,11 @@ const HomePage = () => {
         )}
       </main>
       
-      <footer className="py-6 border-t border-border">
-        <div className="container">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+      <footer className="py-6 border-t border-border mt-auto">
+        <div className="container px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-sm text-muted-foreground">© 2024 Boliganalyse.ai</p>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6 sm:gap-4">
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">Kontakt os</a>
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">Om os</a>
               <a href="#" className="text-sm text-muted-foreground hover:text-foreground">Vilkår</a>
