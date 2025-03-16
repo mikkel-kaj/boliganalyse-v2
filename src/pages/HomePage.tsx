@@ -40,6 +40,7 @@ const HomePage = () => {
         .from('apartment_listings')
         .select('*')
         .order('created_at', { ascending: false })
+        .eq('status', 'Analyse fuldført')
         .limit(8);
       
       if (error) throw error;
