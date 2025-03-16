@@ -36,57 +36,61 @@ export const ListingPreview = ({ listing, showStatus = false }: ListingPreviewPr
   return (
     <Link
       to={`/analyse/${listing.id}`}
-      className="property-card bg-card rounded-xl overflow-hidden border border-border hover:border-purple/30 transition-all flex flex-col h-full"
+      className="property-card bg-card rounded-lg sm:rounded-xl overflow-hidden border border-border hover:border-purple/30 transition-all flex flex-col h-full"
     >
       <div className="relative">
         <img 
           src={imageUrl} 
           alt={analysis?.property?.address || "Bolig under analyse"} 
-          className="w-full h-48 sm:h-40 object-cover"
+          className="w-full h-36 sm:h-40 object-cover"
           loading="lazy"
         />
-        <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-xs px-2 py-1 rounded-full">
+        <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-[10px] sm:text-xs px-2 py-1 rounded-full">
           {getTimeAgo(listing.created_at)}
         </div>
         {showStatus && !analysis?.property && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-sm font-medium text-white bg-purple px-3 py-1.5 rounded-full">
+            <span className="text-xs sm:text-sm font-medium text-white bg-purple px-2 sm:px-3 py-1 sm:py-1.5 rounded-full">
               {listing.status}
             </span>
           </div>
         )}
       </div>
       
-      <div className="p-4 flex-1 flex flex-col">
-        <h3 className="font-medium mb-1 text-base sm:text-sm line-clamp-1">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+        <h3 className="font-medium mb-0.5 sm:mb-1 text-sm sm:text-base line-clamp-1">
           {analysis?.property?.address || "Bolig under analyse"}
         </h3>
-        <p className="text-xl sm:text-lg font-bold mb-2">
+        <p className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">
           {analysis?.property?.price || "Analyserer..."}
         </p>
         
-        <div className="flex items-center justify-between text-sm sm:text-xs text-muted-foreground mb-4">
+        <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-4">
           <span>{analysis?.property?.size}</span>
         </div>
         
-        <div className="space-y-3 sm:space-y-2 mt-auto">
+        <div className="space-y-2 sm:space-y-3 mt-auto">
           {analysis?.risks && analysis.risks.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1.5">RISIKOFAKTORER</h4>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-1.5 sm:space-y-2">
+              <h4 className="text-[10px] sm:text-xs font-medium uppercase text-muted-foreground">
+                RISIKOFAKTORER
+              </h4>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {analysis.risks.slice(0, 3).map((risk: any, idx: number) => (
-                  <RiskIcon key={idx} risk={risk} size={4} className="sm:scale-75" />
+                  <RiskIcon key={idx} risk={risk} size={3} />
                 ))}
               </div>
             </div>
           )}
           
           {analysis?.highlights && analysis.highlights.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-xs font-medium uppercase text-muted-foreground mb-1.5">HØJDEPUNKTER</h4>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-1.5 sm:space-y-2">
+              <h4 className="text-[10px] sm:text-xs font-medium uppercase text-muted-foreground">
+                HØJDEPUNKTER
+              </h4>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {analysis.highlights.slice(0, 3).map((highlight: any, idx: number) => (
-                  <HighlightIcon key={idx} highlight={highlight} size={4} className="sm:scale-75" />
+                  <HighlightIcon key={idx} highlight={highlight} size={3} />
                 ))}
               </div>
             </div>

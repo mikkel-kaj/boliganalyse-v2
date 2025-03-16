@@ -107,10 +107,13 @@ const RecentAnalysesPage = () => {
         schema={recentAnalysesSchema}
       />
 
-      <div className="container py-8 sm:py-12 px-4 sm:px-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">Nyligt analyserede boliger</h1>
+      <div className="container py-4 sm:py-8 px-2 sm:px-4 md:px-6">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 px-2 sm:px-0">
+          Nyligt analyserede boliger
+        </h1>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Mobile view: 2 columns with smaller cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
           {recentProperties.map((property) => (
             <ListingPreview 
               key={property.id} 
