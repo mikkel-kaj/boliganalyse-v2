@@ -112,7 +112,7 @@ serve(async (req) => {
     try {
       // @ts-expect-error - EdgeRuntime is available in Supabase Edge Functions
       EdgeRuntime.waitUntil(
-        processListingInBackground(listing.id, normalizedUrl, repository),
+        processListingInBackground(listing.id, url, repository),
       );
       logger.info(`Background processing started for listing: ${listing.id}`);
     } catch (bgError) {
