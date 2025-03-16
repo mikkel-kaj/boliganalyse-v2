@@ -122,18 +122,10 @@ export class ListingProcessorService {
     } catch (error) {
       logger.error(`Processing failed for listing ${listingId}`, error);
 
-      // Update status to indicate error
-      try {
         await this.repository.updateStatus(
           listingId,
-          `Fejl: ${error instanceof Error ? error.message : String(error)}`,
+          `Fejl`,
         );
-      } catch (statusError) {
-        logger.error(
-          `Failed to update error status for listing ${listingId}`,
-          statusError,
-        );
-      }
 
       return false;
     }
