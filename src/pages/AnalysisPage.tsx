@@ -414,6 +414,8 @@ const AnalysisPage = () => {
                             <h1 className="text-xl font-semibold">{property.address}</h1>
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <span>{property.zip_code} {property.city}</span>
+                                <span className="text-xs">•</span>
+                                <span className="text-xs">Oprettet {timeAgoDisplay}</span>
                             </div>
                         </div>
                     </div>
