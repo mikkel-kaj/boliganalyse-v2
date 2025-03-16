@@ -36,7 +36,7 @@ export class AIAnalyzerService {
   async analyzeText(
     textContent: string,
     energyRating?: string
-  ): Promise<{ originalLink: string; analysis: Record<string, any> }> {
+  ): Promise<Record<string, any>> {
     logger.info("Starting analyzeTextForInitialData with text length: " + (textContent?.length || 0));
     
     if (!textContent) {
@@ -174,10 +174,7 @@ export class AIAnalyzerService {
         throw new Error(`Failed to parse response from OpenAI: ${parseError.message}`);
       }
       
-      return {
-        originalLink: parsed.originalLink,
-        analysis: parsed
-      };
+      return parsed;
     } catch (error) {
       logger.error("Error analyzing text for initial data:", error);
       throw error;
