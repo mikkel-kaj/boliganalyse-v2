@@ -205,7 +205,7 @@ export class AIAnalyzerService {
         return this.convertToAnalysisResult(analysis);
       }
 
-      const combinedText = `${primaryText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText}`;
+      const combinedText = `${primaryText.extractedText}\n\n---\n\nORIGINAL LISTING CONTENT:\n${secondaryText.extractedText}`;
       
       // Perform the analysis
       const analysis = await this.analyzeText(combinedText);
