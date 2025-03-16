@@ -49,6 +49,7 @@ export class ListingProcessorService {
 
       // Fetch HTML content
       const htmlContent = await this.fetchHtmlContent(url);
+      logger.info(`Fetched HTML content for listing: ${htmlContent} and ${url} and ${listingId}`);
 
       if (!htmlContent) {
         throw new Error("Failed to fetch HTML content");
@@ -92,6 +93,7 @@ export class ListingProcessorService {
         const originalSourceHtml = await this.fetchHtmlContent(
           parseResult.originalLink,
         );
+        logger.info(`Fetched HTML content for listing: ${originalSourceHtml} and ${parseResult.originalLink} and ${listingId}`);
 
         const sourceProvider = this.providerRegistry.getProviderForUrl(parseResult.originalLink);
 
