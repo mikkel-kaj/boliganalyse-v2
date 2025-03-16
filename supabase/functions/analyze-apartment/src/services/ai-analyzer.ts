@@ -194,7 +194,7 @@ export class AIAnalyzerService {
   async analyzeMultipleTexts(
     primaryText: HTMLParseResult,
     secondaryText: HTMLParseResult | undefined
-  ): Promise<AnalysisResult> {
+  ): Promise<any> {
     try {
       // Combine the texts for analysis
       if (!secondaryText) {
@@ -210,7 +210,7 @@ export class AIAnalyzerService {
       // Perform the analysis
       const analysis = await this.analyzeText(combinedText);
 
-      return this.convertToAnalysisResult(analysis.analysis);
+      return analysis
     } catch (error) {
       logger.error("Error analyzing multiple text contents", error);
       throw error;

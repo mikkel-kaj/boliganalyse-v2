@@ -108,13 +108,6 @@ export class ListingProcessorService {
         originalSourceResult
       );
 
-      // Add source information
-      analysisResult.source = provider.name;
-
-      // If energy rating was extracted, add it to the analysis result
-      if (parseResult.energyRating && !analysisResult.energyRating) {
-        analysisResult.energyRating = parseResult.energyRating;
-      }
 
       // Save analysis result
       await this.repository.saveAnalysisResult(listingId, analysisResult);

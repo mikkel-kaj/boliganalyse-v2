@@ -145,7 +145,7 @@ export class ListingRepository {
    */
   async saveAnalysisResult(
     id: string, 
-    analysisResult: AnalysisResult, 
+    analysisResult: any,
     status = "Analyse fuldført"
   ): Promise<boolean> {
     try {
