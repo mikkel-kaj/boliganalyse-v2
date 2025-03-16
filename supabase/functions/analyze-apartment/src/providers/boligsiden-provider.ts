@@ -39,6 +39,7 @@ export class BoligsidenProvider extends BaseProvider {
   async extractSourceUrl(htmlContent: string): Promise<string | undefined> {
     try {
       const parser = new DOMParser();
+
       const document = parser.parseFromString(htmlContent, "text/html");
       if (!document) {
         throw new Error("Failed to parse HTML");
@@ -73,11 +74,26 @@ export class BoligsidenProvider extends BaseProvider {
       // Extract basic fields that are common across providers
       const energyRating = await this.extractEnergyRating(htmlContent);
       const property_image_url = await this.extractImageUrl(htmlContent);
-      const extractedText = await htmlUtils.extractTextFromHtml(htmlContent);
+      let extractedText = await htmlUtils.extractTextFromHtml(htmlContent);
       const originalLink = await this.extractSourceUrl(htmlContent);
 
       // Extract specific fields for this provider
       const specificFields = await this.extractSpecificFields(htmlContent);
+
+
+      // Remove certain phrases from extractedText -
+
+      extractedText = extractedText.replace(
+          /Se hvilke internetforbindelser, der er tilgængelige på adressen. Bemærk, at mobildækning ikke er oplyst./g,
+          "",
+      );
+
+      // RadonrisikoRadonrisikoen vurderes til at være ukendtUkendt
+      extractedText = extractedText.replace(
+            /RadonrisikoRadonrisikoen vurderes til at være ukendtUkendt/g,
+            "",
+        );
+
 
       return {
         originalLink,
