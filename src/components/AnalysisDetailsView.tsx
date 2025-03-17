@@ -6,6 +6,7 @@ import { ArrowLeft, Share2, MessageSquare } from "lucide-react";
 import { getCategoryIcon, getIconComponent } from "@/components/IconMapper";
 import SEO from "@/components/SEO";
 import FeedbackForm from "@/components/FeedbackForm";
+import DetailedCommercial from "@/components/DetailedCommercial";
 import {
     Collapsible,
     CollapsibleContent,
@@ -393,6 +394,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                     />
                                 </CollapsibleContent>
                             </Collapsible>
+                            <DetailedCommercial />
                         </div>
                     </div>
                 </div>

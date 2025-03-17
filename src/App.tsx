@@ -8,6 +8,7 @@ import HomePage from "@/pages/HomePage";
 import AnalysisPage from "@/pages/AnalysisPage";
 import RecentAnalysesPage from "@/pages/RecentAnalysesPage";
 import NotFound from "@/pages/NotFound";
+import Commercial from "@/components/Commercial";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Navbar />
+        <Commercial />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/analyse/:id" element={<AnalysisPage />} />
