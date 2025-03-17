@@ -11,7 +11,7 @@ const DetailedCommercial: React.FC = () => {
             Reklame
           </span>
         
-        <div className="space-y-6 p-6">
+        <div className="space-y-4 p-4">
           <div className="space-y-1">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2">
               <span>Brug for en konsulent i AI og Cloud?</span>
@@ -35,7 +35,8 @@ const DetailedCommercial: React.FC = () => {
           </div>
           
           <p className="text-sm text-muted-foreground leading-relaxed">
-          Specialiseret i avancerede AI-løsninger, herunder custom LLM implementeringer, optimeringsalgoritmer og enterprise-grade udvikling med fokus på skalerbarhed.
+            For det første - tak fordi du bruger sitet - jeg håber du fik gavn af din analyse.
+          Det er mig, som står bag - Mikkel Kaj Andersen - og jeg er konsulent indenfor avancerede AI-løsninger, herunder custom LLM implementeringer, optimeringsalgoritmer og full stack / cloud udvikling. <br></br><br></br>Tag gerne et kig, hvis du har brug for en konsulent i AI og Cloud.
           </p>
           
           <div className="flex gap-2">
