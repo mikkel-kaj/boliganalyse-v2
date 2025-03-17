@@ -1,5 +1,7 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { RiskIcon, HighlightIcon } from '@/components/IconMapper';
+import { ImagePlaceholder } from './ImagePlaceholder';
 
 interface ListingPreviewProps {
   listing: any; // TODO: Add proper typing
@@ -39,11 +41,9 @@ export const ListingPreview = ({ listing, showStatus = false }: ListingPreviewPr
       className="property-card bg-card rounded-lg sm:rounded-xl overflow-hidden border border-border hover:border-purple/30 transition-all flex flex-col h-full"
     >
       <div className="relative">
-        <img 
-          src={imageUrl} 
-          alt={analysis?.property?.address || "Bolig under analyse"} 
-          className="w-full h-36 sm:h-40 object-cover"
-          loading="lazy"
+        <ImagePlaceholder
+          alt={analysis?.property?.address || "Bolig under analyse"}
+          className="w-full h-36 sm:h-40"
         />
         <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm text-[10px] sm:text-xs px-2 py-1 rounded-full">
           {getTimeAgo(listing.created_at)}

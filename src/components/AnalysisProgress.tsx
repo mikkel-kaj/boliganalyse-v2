@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { toast } from '@/components/ui/use-toast';
+import { ImagePlaceholder } from './ImagePlaceholder';
 
 const statusMessages: Record<string, { message: string, progress: number, isError?: boolean }> = {
   "Starter analyse": { message: "Forbereder analyse...", progress: 5 },
@@ -45,53 +45,39 @@ const AnalysisProgress: React.FC<AnalysisProgressProps> = ({
   }, [isError, errorMessage]);
 
   return (
-    <div className="relative w-full h-[400px] mb-6 overflow-hidden rounded-lg">
-      {/* Property image with blur */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center blur-sm"
-        style={{ 
-          backgroundImage: `url(${imageUrl})`,
-          filter: 'brightness(0.7) blur(4px)'
-        }}
-      />
-      
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40" />
-    
-      
-      {/* Content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white">
-        {isError ? (
-          <AlertTriangle className="h-12 w-12 text-red-500 mb-6" />
-        ) : (
-          <Loader2 className="h-12 w-12 animate-spin mb-6" />
-        )}
-        
-        <h2 className="text-2xl font-bold text-center mb-2">{message}</h2>
-        
-        {isError && errorMessage ? (
-          <p className="text-sm text-center mb-6 max-w-md text-red-300">
-            {errorMessage}
-          </p>
-        ) : (
-          <p className="text-sm text-center mb-6 max-w-md">
-            {isError 
-              ? "Der opstod desværre en fejl under analysen. Prøv igen senere eller kontakt kundeservice."
-              : "Vi analyserer boligen grundigt. Dette plejer at tage omkring et minuts tid."}
-          </p>
-        )}
-        
-        {/* Progress bar */}
-        <div className="w-full max-w-md h-2 bg-white/30 rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-500 ease-out ${isError ? 'bg-red-500' : 'bg-purple'}`}
-            style={{ width: `${progress}%` }}
-          />
+    <div className="relative min-h-[400px] flex items-center justify-center">
+      <div className="absolute inset-0">
+        <ImagePlaceholder
+          alt="Analyse i gang"
+          className="w-full h-full"
+        />
+      </div>
+      <div className="relative z-10 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-purple/10 flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-purple animate-spin"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
         </div>
-        
-        <p className="text-xs mt-2 text-white/80">
-          {Math.round(progress)}% gennemført
-        </p>
+        <h2 className="text-xl font-semibold mb-2">{message}</h2>
+        {progress !== undefined && (
+          <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-purple transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

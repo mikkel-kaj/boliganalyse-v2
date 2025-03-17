@@ -11,6 +11,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { ImagePlaceholder } from './ImagePlaceholder';
 
 interface PropertyDetail {
     label: string;
@@ -172,10 +173,9 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
 
                                 {/* Image - Will be full width on mobile, half width on desktop */}
                                 <div className="w-full md:w-1/2 order-2 md:order-1">
-                                    <img
-                                        src={listing.property_image_url}
+                                    <ImagePlaceholder
                                         alt={property.address}
-                                        className="w-full h-[280px] object-cover rounded-lg"
+                                        className="w-full h-[280px]"
                                     />
                                 </div>
                             </div>
@@ -366,12 +366,11 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                             <div className="bg-card text-card-foreground rounded-xl p-6 mb-8">
                                 <h2 className="text-lg font-semibold mb-4">Billeder</h2>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {property.images.slice(0, 6).map((image, index) => (
-                                        <img
+                                    {property.images.slice(0, 6).map((_, index) => (
+                                        <ImagePlaceholder
                                             key={index}
-                                            src={image}
                                             alt={`${property.address} - ${index + 1}`}
-                                            className="w-full h-24 object-cover rounded-lg"
+                                            className="w-full h-24"
                                         />
                                     ))}
                                 </div>
