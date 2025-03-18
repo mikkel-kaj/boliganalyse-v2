@@ -122,10 +122,13 @@ export class ListingProcessorService {
     } catch (error) {
       logger.error(`Processing failed for listing ${listingId}`, error);
 
-        await this.repository.updateStatus(
-          listingId,
-          `Fejl`,
-        );
+      await this.repository.updateStatus(
+        listingId,
+        "Fejl",
+        {
+          error_message: error instanceof Error ? error.message : String(error)
+        }
+      );
 
       return false;
     }
