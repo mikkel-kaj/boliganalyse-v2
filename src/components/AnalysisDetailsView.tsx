@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { ArrowLeft, Share2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Share2, MessageSquare, ChevronDown } from "lucide-react";
 import { getCategoryIcon, getIconComponent } from "@/components/IconMapper";
 import SEO from "@/components/SEO";
 import FeedbackForm from "@/components/FeedbackForm";
@@ -211,42 +211,47 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-border pt-6">
                                 {/* Risks Section */}
                                 <div className="space-y-3">
-                                    <h3 className="text-lg font-semibold text-risk-default flex items-center gap-2">
-                                        <span className="text-2xl">⚠️</span>
+                                    <h3 className="text-sm font-medium text-risk-default flex items-center gap-2">
+                                        <span className="text-base">⚠️</span>
                                         Risikoer
                                     </h3>
                                     <div className="space-y-2">
                                         {risksWithIds.map((risk) => (
                                             <Expandable key={risk.id} expandDirection="vertical" expandBehavior="replace">
                                                 <ExpandableTrigger>
-                                                    <div className="bg-risk-default/10 hover:bg-risk-default/15 transition-colors rounded-lg p-3 cursor-pointer">
+                                                    <div className="bg-risk-default/20 hover:bg-risk-default/25 transition-colors rounded-lg p-3 cursor-pointer group">
                                                         <div className="flex items-center gap-2">
                                                             <div>
                                                                 {getCategoryIcon(risk.category, 4)}
                                                             </div>
-                                                            <div className="flex-1 text-sm font-medium">
+                                                            <div className="flex-1 text-xs font-medium text-risk-default">
                                                                 {risk.title}
+                                                            </div>
+                                                            <div className="transition-colors">
+                                                                <ChevronDown className="h-3 w-3" />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </ExpandableTrigger>
                                                 <ExpandableContent>
                                                     <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                        <div className="space-y-4">
-                                                            <p className="text-sm text-muted-foreground">{risk.details || risk.description}</p>
-                                                            {risk.excerpt && (
-                                                                <blockquote className="text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
-                                                                    {risk.excerpt}
-                                                                </blockquote>
-                                                            )}
-                                                            {risk.recommendations?.[0] && (
-                                                                <div className="bg-risk-default/20 rounded-lg p-4">
-                                                                    <p className="text-sm font-medium text-risk-default">
-                                                                        💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        <p className="text-sm">{risk.details || risk.description}</p>
+                                                        {(risk.excerpt || risk.recommendations?.[0]) && (
+                                                            <div className="mt-4 space-y-4">
+                                                                {risk.excerpt && (
+                                                                    <blockquote className="text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
+                                                                        {risk.excerpt}
+                                                                    </blockquote>
+                                                                )}
+                                                                {risk.recommendations?.[0] && (
+                                                                    <div className="bg-risk-default/20 rounded-lg p-4">
+                                                                        <p className="text-sm font-medium text-risk-default">
+                                                                            💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </ExpandableContent>
                                             </Expandable>
@@ -256,30 +261,36 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
 
                                 {/* Highlights Section */}
                                 <div className="space-y-3">
-                                    <h3 className="text-lg font-semibold text-highlight-default flex items-center gap-2">
-                                        <span className="text-2xl">✨</span>
+                                    <h3 className="text-sm font-medium text-highlight-default flex items-center gap-2">
+                                        <span className="text-base">✨</span>
                                         Højdepunkter
                                     </h3>
                                     <div className="space-y-2">
                                         {highlightsWithIds.map((highlight) => (
                                             <Expandable key={highlight.id} expandDirection="vertical" expandBehavior="replace">
                                                 <ExpandableTrigger>
-                                                    <div className="bg-highlight-default/10 hover:bg-highlight-default/15 transition-colors rounded-lg p-3 cursor-pointer">
+                                                    <div className="bg-highlight-default/10 hover:bg-highlight-default/15 transition-colors rounded-lg p-3 cursor-pointer group">
                                                         <div className="flex items-center gap-2">
                                                             <div>
                                                                 {getIconComponent(highlight.icon || 'star', 4)}
                                                             </div>
-                                                            <div className="flex-1 text-sm font-medium">
+                                                            <div className="flex-1 text-xs text-highlight-default font-medium">
                                                                 {highlight.title}
+                                                            </div>
+                                                            <div className="transition-colors">
+                                                                <ChevronDown className="h-3 w-3" />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </ExpandableTrigger>
                                                 <ExpandableContent>
                                                     <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                        <div className="space-y-4">
-                                                            <p className="text-sm text-muted-foreground">{highlight.details}</p>
-                                                        </div>
+                                                        <p className="text-sm">{highlight.details}</p>
+                                                        {highlight.excerpt && (
+                                                            <blockquote className="mt-4 text-sm italic border-l-2 border-highlight-default/20 pl-3">
+                                                                {highlight.excerpt}
+                                                            </blockquote>
+                                                        )}
                                                     </div>
                                                 </ExpandableContent>
                                             </Expandable>
@@ -304,7 +315,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                             </div>
                                             <div className="flex-1">
                                                 <h3 className="font-medium mb-2 text-risk-default">{risk.title}</h3>
-                                                <p className="text-sm text-muted-foreground">{risk.details || risk.description}</p>
+                                                <p className="text-sm">{risk.details || risk.description}</p>
                                                 
                                                 {risk.excerpt && (
                                                     <blockquote className="mt-3 text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
