@@ -217,44 +217,50 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                     </h3>
                                     <div className="space-y-2">
                                         {risksWithIds.map((risk) => (
-                                            <Expandable key={risk.id} expandDirection="vertical" expandBehavior="replace">
-                                                <ExpandableTrigger>
-                                                    <div className="bg-risk-default/20 hover:bg-risk-default/25 transition-colors rounded-lg p-3 cursor-pointer group">
-                                                        <div className="flex items-center gap-2">
-                                                            <div>
-                                                                {getCategoryIcon(risk.category, 4)}
+                                            <HoverCard key={risk.id} openDelay={100} closeDelay={100}>
+                                                <Expandable expandDirection="vertical" expandBehavior="replace">
+                                                    <HoverCardTrigger asChild>
+                                                        <ExpandableTrigger>
+                                                            <div className="bg-risk-default/20 hover:bg-risk-default/30 px-3 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors group">
+                                                                <div className="flex items-center">
+                                                                    {getCategoryIcon(risk.category, 4)}
+                                                                </div>
+                                                                <span className="text-xs font-medium text-risk-default">{risk.title}</span>
+                                                                <div className="ml-auto flex items-center gap-1">
+                                                                    <span className="text-xs text-risk-default/70">▸</span>
+                                                                    <ChevronDown className="h-3 w-3 text-risk-default/70 transition-transform group-data-[state=open]:rotate-180" />
+                                                                </div>
                                                             </div>
-                                                            <div className="flex-1 text-xs font-medium text-risk-default">
-                                                                {risk.title}
+                                                        </ExpandableTrigger>
+                                                    </HoverCardTrigger>
+                                                    <HoverCardContent side="right" className="w-80 p-4 bg-popover text-popover-foreground border-risk-default/20">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                {getCategoryIcon(risk.category, 5)}
+                                                                <h4 className="font-medium text-risk-default">{risk.title}</h4>
                                                             </div>
-                                                            <div className="transition-colors">
-                                                                <ChevronDown className="h-3 w-3" />
-                                                            </div>
+                                                            <p className="text-sm">{risk.details || risk.description}</p>
                                                         </div>
-                                                    </div>
-                                                </ExpandableTrigger>
-                                                <ExpandableContent>
-                                                    <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                        <p className="text-sm">{risk.details || risk.description}</p>
-                                                        {(risk.excerpt || risk.recommendations?.[0]) && (
-                                                            <div className="mt-4 space-y-4">
-                                                                {risk.excerpt && (
-                                                                    <blockquote className="text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
-                                                                        {risk.excerpt}
-                                                                    </blockquote>
-                                                                )}
-                                                                {risk.recommendations?.[0] && (
-                                                                    <div className="bg-risk-default/20 rounded-lg p-4">
-                                                                        <p className="text-sm font-medium text-risk-default">
-                                                                            💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
-                                                                        </p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </ExpandableContent>
-                                            </Expandable>
+                                                    </HoverCardContent>
+                                                    <ExpandableContent>
+                                                        <div className="bg-card border border-border rounded-lg p-4 mt-2">
+                                                            <p className="text-sm text-muted-foreground">{risk.details || risk.description}</p>
+                                                            {risk.excerpt && (
+                                                                <blockquote className="mt-3 text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
+                                                                    {risk.excerpt}
+                                                                </blockquote>
+                                                            )}
+                                                            {risk.recommendations?.[0] && (
+                                                                <div className="mt-3 bg-risk-default/20 rounded-lg p-3">
+                                                                    <p className="text-sm font-medium text-risk-default">
+                                                                        💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </ExpandableContent>
+                                                </Expandable>
+                                            </HoverCard>
                                         ))}
                                     </div>
                                 </div>
@@ -267,33 +273,43 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                     </h3>
                                     <div className="space-y-2">
                                         {highlightsWithIds.map((highlight) => (
-                                            <Expandable key={highlight.id} expandDirection="vertical" expandBehavior="replace">
-                                                <ExpandableTrigger>
-                                                    <div className="bg-highlight-default/10 hover:bg-highlight-default/15 transition-colors rounded-lg p-3 cursor-pointer group">
-                                                        <div className="flex items-center gap-2">
-                                                            <div>
-                                                                {getIconComponent(highlight.icon || 'star', 4)}
+                                            <HoverCard key={highlight.id} openDelay={100} closeDelay={100}>
+                                                <Expandable expandDirection="vertical" expandBehavior="replace">
+                                                    <HoverCardTrigger asChild>
+                                                        <ExpandableTrigger>
+                                                            <div className="bg-highlight-default/10 hover:bg-highlight-default/20 px-3 py-2 rounded-md flex items-center gap-2 cursor-pointer transition-colors group">
+                                                                <div className="flex items-center">
+                                                                    {getIconComponent(highlight.icon || 'star', 4)}
+                                                                </div>
+                                                                <span className="text-xs font-medium text-highlight-default">{highlight.title}</span>
+                                                                <div className="ml-auto flex items-center gap-1">
+                                                                    <span className="text-xs text-highlight-default/70">▸</span>
+                                                                    <ChevronDown className="h-3 w-3 text-highlight-default/70 transition-transform group-data-[state=open]:rotate-180" />
+                                                                </div>
                                                             </div>
-                                                            <div className="flex-1 text-xs text-highlight-default font-medium">
-                                                                {highlight.title}
+                                                        </ExpandableTrigger>
+                                                    </HoverCardTrigger>
+                                                    <HoverCardContent side="right" className="w-80 p-4 bg-popover text-popover-foreground border-highlight-default/20">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                {getIconComponent(highlight.icon || 'star', 5)}
+                                                                <h4 className="font-medium text-highlight-default">{highlight.title}</h4>
                                                             </div>
-                                                            <div className="transition-colors">
-                                                                <ChevronDown className="h-3 w-3" />
-                                                            </div>
+                                                            <p className="text-sm">{highlight.details}</p>
                                                         </div>
-                                                    </div>
-                                                </ExpandableTrigger>
-                                                <ExpandableContent>
-                                                    <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                        <p className="text-sm">{highlight.details}</p>
-                                                        {highlight.excerpt && (
-                                                            <blockquote className="mt-4 text-sm italic border-l-2 border-highlight-default/20 pl-3">
-                                                                {highlight.excerpt}
-                                                            </blockquote>
-                                                        )}
-                                                    </div>
-                                                </ExpandableContent>
-                                            </Expandable>
+                                                    </HoverCardContent>
+                                                    <ExpandableContent>
+                                                        <div className="bg-card border border-border rounded-lg p-4 mt-2">
+                                                            <p className="text-sm text-muted-foreground">{highlight.details}</p>
+                                                            {highlight.excerpt && (
+                                                                <blockquote className="mt-3 text-sm italic border-l-2 border-highlight-default/20 pl-3 text-muted-foreground">
+                                                                    {highlight.excerpt}
+                                                                </blockquote>
+                                                            )}
+                                                        </div>
+                                                    </ExpandableContent>
+                                                </Expandable>
+                                            </HoverCard>
                                         ))}
                                     </div>
                                 </div>
