@@ -208,25 +208,24 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                             )}
 
                             {/* Quick Overview Grid using risksWithIds and highlightsWithIds*/}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-border pt-6">
                                 {/* Risks Section */}
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <h3 className="text-lg font-semibold text-risk-default flex items-center gap-2">
                                         <span className="text-2xl">⚠️</span>
-                                        Risikofaktorer
+                                        Risikoer
                                     </h3>
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {risksWithIds.map((risk) => (
                                             <Expandable key={risk.id} expandDirection="vertical" expandBehavior="replace">
                                                 <ExpandableTrigger>
-                                                    <div className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="mt-1">
-                                                                {getCategoryIcon(risk.category, 5)}
+                                                    <div className="bg-risk-default/10 hover:bg-risk-default/15 transition-colors rounded-lg p-3 cursor-pointer">
+                                                        <div className="flex items-center gap-2">
+                                                            <div>
+                                                                {getCategoryIcon(risk.category, 4)}
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <h4 className="font-medium text-risk-default">{risk.title}</h4>
-                                                                <p className="text-sm text-muted-foreground line-clamp-2">{risk.details || risk.description}</p>
+                                                            <div className="flex-1 text-sm font-medium">
+                                                                {risk.title}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -256,30 +255,31 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                 </div>
 
                                 {/* Highlights Section */}
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     <h3 className="text-lg font-semibold text-highlight-default flex items-center gap-2">
                                         <span className="text-2xl">✨</span>
                                         Højdepunkter
                                     </h3>
-                                    <div className="space-y-3">
+                                    <div className="space-y-2">
                                         {highlightsWithIds.map((highlight) => (
                                             <Expandable key={highlight.id} expandDirection="vertical" expandBehavior="replace">
                                                 <ExpandableTrigger>
-                                                    <div className="bg-card border border-border rounded-lg p-4 cursor-pointer hover:bg-accent/50 transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="mt-1">
-                                                                {getIconComponent(highlight.icon || 'star', 5)}
+                                                    <div className="bg-highlight-default/10 hover:bg-highlight-default/15 transition-colors rounded-lg p-3 cursor-pointer">
+                                                        <div className="flex items-center gap-2">
+                                                            <div>
+                                                                {getIconComponent(highlight.icon || 'star', 4)}
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <h4 className="font-medium text-highlight-default">{highlight.title}</h4>
-                                                                <p className="text-sm text-muted-foreground line-clamp-2">{highlight.details}</p>
+                                                            <div className="flex-1 text-sm font-medium">
+                                                                {highlight.title}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </ExpandableTrigger>
                                                 <ExpandableContent>
                                                     <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                        <p className="text-sm text-muted-foreground">{highlight.details}</p>
+                                                        <div className="space-y-4">
+                                                            <p className="text-sm text-muted-foreground">{highlight.details}</p>
+                                                        </div>
                                                     </div>
                                                 </ExpandableContent>
                                             </Expandable>
