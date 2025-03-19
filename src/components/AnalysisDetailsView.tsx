@@ -211,10 +211,10 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-border pt-6">
                                 {/* Risks Section */}
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-medium text-risk-default flex items-center gap-2">
-                                        <span className="text-base">⚠️</span>
-                                        Risikoer
-                                    </h3>
+                                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                                <span className="text-risk-default text-xl">⚠️</span>
+                                                <span className="text-risk-default">Risikoer</span>
+                                    </h2>
                                     <div className="space-y-2">
                                         {risksWithIds.map((risk) => (
                                             <HoverCard key={risk.id} openDelay={100} closeDelay={100}>
@@ -227,7 +227,6 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                                                 </div>
                                                                 <span className="text-xs font-medium text-risk-default">{risk.title}</span>
                                                                 <div className="ml-auto flex items-center gap-1">
-                                                                    <span className="text-xs text-risk-default/70">▸</span>
                                                                     <ChevronDown className="h-3 w-3 text-risk-default/70 transition-transform group-data-[state=open]:rotate-180" />
                                                                 </div>
                                                             </div>
@@ -244,7 +243,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                                     </HoverCardContent>
                                                     <ExpandableContent>
                                                         <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                            <p className="text-sm text-muted-foreground">{risk.details || risk.description}</p>
+                                                            <p className="text-sm">{risk.details || risk.description}</p>
                                                             {risk.excerpt && (
                                                                 <blockquote className="mt-3 text-sm italic border-l-2 border-risk-default/20 pl-3 text-muted-foreground">
                                                                     {risk.excerpt}
@@ -267,10 +266,10 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
 
                                 {/* Highlights Section */}
                                 <div className="space-y-3">
-                                    <h3 className="text-sm font-medium text-highlight-default flex items-center gap-2">
-                                        <span className="text-base">✨</span>
-                                        Højdepunkter
-                                    </h3>
+                                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                            <span className="text-highlight-default text-xl">✨</span>
+                                            <span className="text-highlight-default">Højdepunkter</span>
+                                        </h2>
                                     <div className="space-y-2">
                                         {highlightsWithIds.map((highlight) => (
                                             <HoverCard key={highlight.id} openDelay={100} closeDelay={100}>
@@ -283,7 +282,6 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                                                 </div>
                                                                 <span className="text-xs font-medium text-highlight-default">{highlight.title}</span>
                                                                 <div className="ml-auto flex items-center gap-1">
-                                                                    <span className="text-xs text-highlight-default/70">▸</span>
                                                                     <ChevronDown className="h-3 w-3 text-highlight-default/70 transition-transform group-data-[state=open]:rotate-180" />
                                                                 </div>
                                                             </div>
@@ -300,7 +298,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                                     </HoverCardContent>
                                                     <ExpandableContent>
                                                         <div className="bg-card border border-border rounded-lg p-4 mt-2">
-                                                            <p className="text-sm text-muted-foreground">{highlight.details}</p>
+                                                            <p className="text-sm">{highlight.details}</p>
                                                             {highlight.excerpt && (
                                                                 <blockquote className="mt-3 text-sm italic border-l-2 border-highlight-default/20 pl-3 text-muted-foreground">
                                                                     {highlight.excerpt}
