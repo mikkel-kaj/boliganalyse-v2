@@ -113,7 +113,6 @@ export class ListingProcessorService {
         originalSourceResult
       );
 
-
       // Save analysis result
       await this.repository.saveAnalysisResult(listingId, analysisResult);
 
@@ -122,11 +121,16 @@ export class ListingProcessorService {
     } catch (error) {
       logger.error(`Processing failed for listing ${listingId}`, error);
 
+      // Create error message with stack trace if available
+      const errorMessage = error instanceof Error 
+        ? `${error.message}\n${error.stack || ''}`
+        : String(error);
+
       await this.repository.updateStatus(
         listingId,
         "Fejl",
         {
-          error_message: error instanceof Error ? error.message : String(error)
+          error_message: errorMessage
         }
       );
 
@@ -156,7 +160,7 @@ export class ListingProcessorService {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
+      throw new Error(`HTTP error: ${response.status}, ${response.statusText}`);
     }
 
     return await response.text();
