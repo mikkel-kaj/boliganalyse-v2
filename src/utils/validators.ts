@@ -64,7 +64,15 @@ export function validateBoligsideUrl(url: string): { valid: boolean; error?: str
         error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
       };
     }
+
+    if (parsedUrl.href.includes('ViewPage')) {
+      return {
+        valid: false,
+        error: "URL'en ser ud til at være en bolig der ikke er til salg."
+      };
+    }
     
+
     return { valid: true };
   } catch (error) {
     return { 

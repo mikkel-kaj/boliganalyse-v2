@@ -47,6 +47,14 @@ export function validateListingUrl(url: string): ValidationResult {
     const parsedUrl = new URL(url);
     const domain = extractDomain(url);
     
+    // Check for ViewPage in the URL path
+    if (parsedUrl.href.includes('ViewPage')) {
+      return { 
+        valid: false, 
+        error: "URL'en ser ud til at være en bolig der ikke er til salg." 
+      };
+    }
+    
     // Check if domain is from a supported provider
     const supportedDomains: SupportedDomains = {
       'boligsiden.dk': {
