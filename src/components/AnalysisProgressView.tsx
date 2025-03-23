@@ -4,17 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import AnalysisProgress from "@/components/AnalysisProgress";
+import { AnalysisStatus } from '@/lib/status';
+import { StatusStepList, StatusError } from './status';
 
 interface AnalysisProgressViewProps {
-    status: string;
+    status: AnalysisStatus;
     propertyImageUrl?: string;
     address: string;
+    errorMessage?: string;
 }
 
 const AnalysisProgressView: React.FC<AnalysisProgressViewProps> = ({
     status,
     propertyImageUrl,
-    address
+    address,
+    errorMessage
 }) => {
     return (
         <div className="container py-12">
@@ -29,6 +33,7 @@ const AnalysisProgressView: React.FC<AnalysisProgressViewProps> = ({
                 <AnalysisProgress
                     status={status}
                     propertyImageUrl={propertyImageUrl}
+                    errorMessage={errorMessage}
                 />
 
                 <Card>
@@ -38,42 +43,22 @@ const AnalysisProgressView: React.FC<AnalysisProgressViewProps> = ({
                             Vores AI-system arbejder på at analysere boligen. Dette inkluderer:
                         </p>
 
-                        <ul className="space-y-2 mb-4">
-                            <li className="flex items-center gap-2">
-                                <div
-                                    className={`h-2 w-2 rounded-full ${status !== "Starter analyse" ? 'bg-green-500' : 'bg-purple animate-pulse'}`}/>
-                                <span>Forberedelse af analyse</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <div
-                                    className={`h-2 w-2 rounded-full ${status === "Søger efter salgsopslag" ? 'bg-purple animate-pulse' : (status === "Starter analyse" ? 'bg-gray-300' : 'bg-green-500')}`}/>
-                                <span>Indsamling af data fra boligannoncen</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <div
-                                    className={`h-2 w-2 rounded-full ${status === "Opslag fundet!" ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`}/>
-                                <span>Indledende analyse af boligen</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <div
-                                    className={`h-2 w-2 rounded-full ${status === "Første fase analyse gennemført" ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag", "Opslag fundet!"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`}/>
-                                <span>Identifikation af nøgleinformation</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <div
-                                    className={`h-2 w-2 rounded-full ${status === "Leder efter fejl og mangler.." ? 'bg-purple animate-pulse' : (["Starter analyse", "Søger efter salgsopslag", "Opslag fundet!", "Første fase analyse gennemført"].includes(status) ? 'bg-gray-300' : 'bg-green-500')}`}/>
-                                <span>AI-vurdering af risici og højdepunkter</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                                <div
-                                    className={`h-2 w-2 rounded-full ${status === "Analyse fuldført" ? 'bg-green-500' : 'bg-gray-300'}`}/>
-                                <span>Færdiggørelse af analysen</span>
-                            </li>
-                        </ul>
+                        <StatusStepList 
+                            currentStatus={status} 
+                            className="mb-4"
+                        />
 
-                        <p className="text-sm text-muted-foreground">
-                            Siden opdaterer automatisk, når analysen er færdig. Du behøver ikke at genindlæse siden.
-                        </p>
+                        <StatusError
+                            status={status}
+                            errorMessage={errorMessage}
+                            showRetryButton={true}
+                        />
+                        
+                        {!isErrorStatus(status) && (
+                            <p className="text-sm text-muted-foreground">
+                                Siden opdaterer automatisk, når analysen er færdig. Du behøver ikke at genindlæse siden.
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -81,4 +66,7 @@ const AnalysisProgressView: React.FC<AnalysisProgressViewProps> = ({
     );
 };
 
-export default AnalysisProgressView; 
+// Helper import
+import { isErrorStatus } from '@/lib/status/utils';
+
+export default AnalysisProgressView;

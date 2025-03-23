@@ -30,6 +30,7 @@ export const config = {
   // Database table names
   database: {
     listingsTable: "apartment_listings",
+    schema: "private",
   },
   
   // CORS settings

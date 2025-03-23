@@ -33,7 +33,9 @@ export const ListingPreview = ({ listing, showStatus = false }: ListingPreviewPr
     }
   };
 
-  if (!analysis?.property && !showStatus) return null;
+  // If no analysis data and not showing status, display a default card
+  const hasPropertyData = analysis && analysis.property && typeof analysis.property === 'object';
+  const showDefaultCard = !hasPropertyData && !showStatus;
 
   return (
     <Link

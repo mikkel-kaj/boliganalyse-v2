@@ -8,6 +8,7 @@ import {ListingRepository} from "./repositories/listing-repository.ts";
 import {ListingProcessorService} from "./services/listing-processor.ts";
 import {validateListingUrl} from "./utils/validation.ts";
 import {createLogger} from "./utils/logger.ts";
+import {AnalysisStatus, statusFromString} from "./types/status.ts";
 
 const logger = createLogger("Main");
 
@@ -23,24 +24,12 @@ export async function processListingInBackground(
   url: string,
   repository: ListingRepository,
 ) {
-  try {
     // Create the processor service
-    const processor = new ListingProcessorService(repository);
+  const processor = new ListingProcessorService(repository);
 
-    // Process the listing
-    await processor.processListing(listingId, url);
-  } catch (error) {
-    logger.error(
-      `Background processing failed for listing ${listingId}`,
-      error,
-    );
-    // Update status to indicate error
-    await repository.updateStatus(listingId, "Fejl",
-  {
-        "error_message": error instanceof Error ? error.message : String(error),
-      },
-    );
-  }
+  // Process the listing
+  await processor.processListing(listingId, url);
+
 }
 
 /**
@@ -76,21 +65,14 @@ serve(async (req) => {
 
     const normalizedUrl = normalizeUrl(url);
 
-    // Initialize Supabase client
-    const supabase = createClient(
-      config.supabase.url,
-      config.supabase.serviceRoleKey,
-    );
-
-    const repository = new ListingRepository(supabase);
+    const repository = new ListingRepository();
 
     // Check if this listing already exists
     const existingListing = await repository.findByNormalizedUrl(normalizedUrl);
 
     // Check if the status indicates an error - if so, allow reanalysis
-    const hasError = existingListing && existingListing.status &&
-      (existingListing.status.toLowerCase().includes("fejl") ||
-        existingListing.status.toLowerCase().includes("error"));
+    const hasError = existingListing && existingListing.status && 
+      statusFromString(existingListing.status) === AnalysisStatus.ERROR;
 
     if (existingListing && !hasError) {
       logger.info(`Listing already in DB: ${existingListing.id}`);
@@ -106,6 +88,9 @@ serve(async (req) => {
     if (!listing) {
       listing = await repository.createListing(url, normalizedUrl);
       logger.info(`Created new listing: ${listing.id}`);
+    } else {
+      // Reset the status for re-analysis if it had an error
+      await repository.updateStatus(listing.id, AnalysisStatus.QUEUED);
     }
 
     // Start background processing

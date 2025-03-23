@@ -2,7 +2,9 @@ import { BaseProvider } from "./base-provider.ts";
 import { BoligsidenProvider } from "./boligsiden-provider.ts";
 import { extractDomain } from "../utils/url.ts";
 import { createLogger } from "../utils/logger.ts";
-import {FallbackProvider} from "./fallback-provider.ts";
+import { FallbackProvider } from "./fallback-provider.ts";
+import { HomeProvider } from "./home-provider.ts";
+import { JsonLdProvider } from "./json-ld-provider.ts";
 
 const logger = createLogger("ProviderRegistry");
 
@@ -17,13 +19,16 @@ export class ProviderRegistry {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Register all available providers (Order matters here, fallback should be last.)
+    // Register all available providers (Order still matters for priority)
     this.registerProvider(new BoligsidenProvider());
+    this.registerProvider(new JsonLdProvider());
+    this.registerProvider(new HomeProvider());
     this.registerProvider(new FallbackProvider());
-
     // Note: Add new providers here as they're implemented
-    // this.registerProvider(new HomeProvider());
     // this.registerProvider(new NyboligProvider());
+    
+    // FallbackProvider should not be included anymore, as we want to reject
+    // requests that can't be handled by specialized providers or JSON-LD
   }
   
   /**
@@ -46,19 +51,21 @@ export class ProviderRegistry {
   }
   
   /**
-   * Get a provider that can handle the given URL
+   * Get a provider that can handle the given URL and HTML content
    * @param url URL to find a provider for
-   * @returns Provider that can handle the URL or undefined if none found
+   * @param htmlContent HTML content to check (for JSON-LD detection)
+   * @returns Provider that can handle the URL and content
+   * @throws Error if no provider found
    */
-  public getProviderForUrl(url: string): BaseProvider {
-    // Try to find a provider that can handle this URL
-    const provider = this.providers.find(p => p.canHandle(url));
-
-    if (provider) {
-      logger.info(`Found provider for URL ${url}: ${provider.name}`);
-      return provider;
+  public getProviderForContent(url: string, htmlContent: string): BaseProvider {
+    // Iterate through all providers and find the first one that can handle this URL/content
+    for (const provider of this.providers) {
+      if (provider.canHandle(url, htmlContent)) {
+        logger.info(`Using ${provider.name} provider for URL: ${url}`);
+        return provider;
+      }
     }
 
-    throw new Error(`No provider found for URL: ${url}`);
+    throw new Error(`No provider found that can handle URL: ${url}`);
   }
 } 

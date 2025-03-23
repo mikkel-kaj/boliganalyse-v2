@@ -1,0 +1,143 @@
+{
+  "@context" : "https://schema.org",
+  "@graph" : [ {
+    "@type" : "Organization",
+    "@id" : "https://home.dk/#organization",
+    "name" : "home",
+    "url" : "https://home.dk/",
+    "logo" : {
+      "@type" : "ImageObject",
+      "inLanguage" : "da-dk",
+      "@id" : "https://home.dk/#/schema/logo/image/",
+      "url" : "https://assets.home.dk/cms/media/w23ardmi/logo.svg",
+      "caption" : "home logo"
+    },
+    "image" : {
+      "@id" : "https://home.dk/#/schema/logo/image/"
+    },
+    "sameAs" : [ "https://dk.linkedin.com/company/home-a-s", "https://www.instagram.com/home.dk", "https://da.wikipedia.org/wiki/Home", "https://twitter.com/bolignyt" ],
+    "foundingDate" : "1989-08-01",
+    "description" : "home er landets stærkeste ejendomsmægler. Få vurderet din bolig af en ejendomsmægler fra home, og kom sikkert i gang med salg af din bolig.",
+    "legalName" : "home as"
+  }, {
+    "@type" : "WebSite",
+    "@id" : "https://home.dk/#website",
+    "url" : "https://home.dk/",
+    "name" : "home as",
+    "description" : "home er landets stærkeste ejendomsmægler. Få vurderet din bolig af en ejendomsmægler fra home, og kom sikkert i gang med salg af din bolig.",
+    "publisher" : {
+      "@id" : "https://home.dk/#organization"
+    },
+    "inLanguage" : "da-dk",
+    "copyrightHolder" : {
+      "@id" : "https://home.dk/#organization"
+    }
+  }, {
+    "@type" : "WebPage",
+    "@id" : "https://home.dk/salg/lejligheder/emdrupvej-113-4-2400-koebenhavn-nv/sag-1620003650/",
+    "url" : "https://home.dk/salg/lejligheder/emdrupvej-113-4-2400-koebenhavn-nv/sag-1620003650/",
+    "name" : "Lejlighed til salg: Emdrupvej 113, st.. 4., 2400 København NV",
+    "isPartOf" : {
+      "@id" : "https://home.dk/#website"
+    },
+    "primaryImageOfPage" : {
+      "@id" : "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo3MzIxNTI0LCJNZWRpYVB1cnBvc2VJZCI6MTN9/imageHash/bb0e9e28296242054e87517a921bf51a/imageSize/Assets/inline/True"
+    },
+    "image" : {
+      "@id" : "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo3MzIxNTI0LCJNZWRpYVB1cnBvc2VJZCI6MTN9/imageHash/bb0e9e28296242054e87517a921bf51a/imageSize/Assets/inline/True"
+    },
+    "description" : "Lejlighed til salg ved home Nordvest - Emdrup. Bestil en fremvisning af Emdrupvej 113, st.. 4., 2400 København NV i dag.",
+    "inLanguage" : "da-DK"
+  }, {
+    "@type" : "RealEstateListing",
+    "name" : "3 VÆR. VELINDRETTET STUELEJLIGHED MED SKØN TERRASSE",
+    "description" : "Når du stiger af S-toget på Emdrup Station, har du bogstavelig talt få skridt hjem til din nye adresse, som altså placerer dig centralt og med nem adgang til det indre København. Her skal du se nærmere på en velholdt stuelejlighed på 85 m2 med sin egen solrige terrasse og videre udgang til fælleshave. Glæd dig!\n\nDu træder indenfor til et hjem i rigtig pæn stand, så det bliver en fornøjelse at skulle indrette lejlighedens gode, regulære rum. Turen starter i en entré, hvor der er klædeskab og&nbsp; fin plads til knagerækker og skoskab. Herfra kan du bevæge dig videre mod bl.a. de to værelser der begge er velforsynede med skabe. Dertil kommer et nydeligt badeværelse med vaskemaskine og separat bruseniche, og gulvvarme. Til slut er det et åbent opholdsrum, der binder sløjfe på det dejlige hjem.\n\nDet stilrene køkken byder på fine forhold for madlavningen, for her er rigelig skabs- og bordplads, og en opvaskemaskine klarer resten af arbejdet, når du sætter dig til bords med dine gæster. I stuen er det uden tvivl de store vinduespartier, der løber med opmærksomheden; de lukker dagslyset ind og inviterer samtidig på fri udsigt til grønne omgivelser.\n\nNår sommeren melder sin ankomst, kan du lade terrassedøren stå på vid gab og således skabe en flydende overgang til den private oase på terrassen. Her er god plads til lækre havemøbler, grill og blomsterkrukker, så indret et hyggeligt uderum her i første parket til den fælles grønne have.\n\nHvis du ikke ankommer til adressen med tog, men derimod med bilen, kan du glæde dig over, at der i bebyggelsen er gratis p-kælder. Bilen kan du dog trygt lade stå, når du til daglig bevæger dig rundt mod indkøb, fitness, pasningstilbud osv. – det ligger nemlig indenfor få hundrede meter fra adressen. Derudover kan du også gå til både Emdrup Sø og den skønne Utterslev Mose, når du trænger til en grøn pause.&nbsp;Ejendommen er opført i 1979 og foruden p-kælderen byder den ude foran bygningen på brugsret til gode fælles parkeringsmuligheder (ét p-kort pr. lejlighed). I den fælles have er der skønnegræsarealer, legefaciliteter og borde-bænkesæt, hvor du om sommeren kan nyde varmen\nog om vinteren kan bygge en snemand. I ejendommen er der ligeledes træningsrum, legerum og en masse andre fællesfaciliteter. (nogle kræver medlemskab, men betalingen er lav.)\nBedst af alt er den korte cykel afstand til centrum af København.VELKOMMEN TIL&nbsp;",
+    "url" : "https://home.dk/salg/lejligheder/emdrupvej-113-4-2400-koebenhavn-nv/sag-1620003650/",
+    "datePosted" : "2025-03-20T08:33:39.1431908Z",
+    "image" : [ "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo3MzIxNTIxLCJNZWRpYVB1cnBvc2VJZCI6MTN9/imageHash/cc4187d542721d363bdd9085bedfe014/imageSize/Assets/inline/True", "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo3MzIxNTE4LCJNZWRpYVB1cnBvc2VJZCI6MTN9/imageHash/975f4315a81bf4be21b79f9bf5f36ef2/imageSize/Assets/inline/True", "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo3MzIxNTE5LCJNZWRpYVB1cnBvc2VJZCI6MTN9/imageHash/074cd9e465d0ba3a27ce9947cc724973/imageSize/Assets/inline/True" ],
+    "offers" : {
+      "@type" : "Offer",
+      "price" : 3695000,
+      "priceCurrency" : "DKK",
+      "availability" : "https://schema.org/InStock",
+      "seller" : {
+        "@type" : "RealEstateAgent",
+        "currenciesAccepted" : "DKK",
+        "branchCode" : "162",
+        "vatID" : "27143989",
+        "name" : "home Nordvest - Emdrup",
+        "telephone" : "38 88 88 89",
+        "contactPoint" : {
+          "@type" : "ContactPoint",
+          "email" : "nordvest@home.dk",
+          "areaServed" : "DK"
+        },
+        "url" : "https://home.dk/ejendomsmaegler/home-nordvest-emdrup/maegler-162/",
+        "openingHours" : [ "Mo 9.00 - 17.30", "Tu 9.00 - 17.00", "We 9.00 - 17.00", "Th 9.00 - 17.00", "Fr 9.00 - 15.30", "Su 10.00 - 12.00*" ],
+        "address" : {
+          "@type" : "PostalAddress",
+          "postalCode" : "2400",
+          "addressLocality" : "København NV",
+          "addressCountry" : "DK",
+          "streetAddress" : "Frederiksborgvej 85"
+        },
+        "geo" : {
+          "@type" : "GeoCoordinates",
+          "latitude" : "55.70898",
+          "longitude" : "12.5316"
+        },
+        "employee" : [ {
+          "@type" : "Person",
+          "name" : "Mogens Brask",
+          "jobTitle" : "Indehaver, køberrådg., ejd. mægler & valuar MDE",
+          "image" : "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo2MjA2MjA5LCJNZWRpYVB1cnBvc2VJZCI6MTl9/imageHash/91b23a1193bc7ace9cce2d5d39c46c8c/imageSize/Assets/inline/True",
+          "email" : "brask@home.dk",
+          "telephone" : "+4521660402"
+        } ]
+      },
+      "itemOffered" : {
+        "@type" : "Apartment",
+        "yearBuilt" : "1979",
+        "numberOfRooms" : 3,
+        "numberOfBathroomsTotal" : 1,
+        "floorLevel" : null,
+        "accommodationFloorPlan" : {
+          "@type" : "FloorPlan",
+          "name" : "Standard Layout",
+          "numberOfRooms" : 3,
+          "layoutImage" : "https://home.mindworking.eu/api/mediaData/mediaDataMediaPurposeId/SU1lZGlhRGF0YTp7Ik1lZGlhRGF0YUlkIjo3MzIxNTA5LCJNZWRpYVB1cnBvc2VJZCI6MTR9/imageHash/e5f1acbcd50ef35cb53b799bc7da0617/imageSize/Assets/inline/True",
+          "floorSize" : {
+            "@type" : "QuantitativeValue",
+            "value" : 85,
+            "unitCode" : "M2",
+            "unitText" : "m²"
+          }
+        },
+        "address" : {
+          "@type" : "PostalAddress",
+          "addressLocality" : "København NV",
+          "postalCode" : "2400",
+          "streetAddress" : "Emdrupvej 113, st.. 4., 2400 København NV"
+        },
+        "geo" : {
+          "@type" : "GeoCoordinates",
+          "latitude" : 55.7225531024865,
+          "longitude" : 12.5412150190713
+        },
+        "additionalProperty" : [ {
+          "@type" : "PropertyValue",
+          "name" : "EnergyRating",
+          "value" : "C"
+        }, {
+          "@type" : "PropertyValue",
+          "name" : "Balcony",
+          "value" : true
+        }, {
+          "@type" : "PropertyValue",
+          "name" : "Elevator",
+          "value" : true
+        } ]
+      }
+    }
+  } ]
+}

@@ -12,24 +12,33 @@ export interface ValidationResult {
 }
 
 /**
- * URL validation utilities
+ * List of supported real estate domains
  */
-
-/**
- * Domain configuration structure
- */
-interface DomainConfig {
-  pathPrefix: string;
-  minPathLength: number;
-  requiresUdbudParam: boolean;
-}
-
-/**
- * Mapping of supported domains with their configurations
- */
-interface SupportedDomains {
-  [domain: string]: DomainConfig;
-}
+export const SUPPORTED_DOMAINS = [
+  // Major aggregators
+  'boligsiden.dk',
+  
+  // Major real estate chains
+  'home.dk',
+  'nybolig.dk',
+  'edc.dk',
+  'danbolig.dk',
+  'estate.dk',
+  'realmaeglerne.dk',
+  
+  // Rental properties
+  'lejebolig.dk',
+  'boligportal.dk',
+  
+  // Other real estate agencies
+  'lokalbolig.dk',
+  'robinhus.dk',
+  'boligone.dk',
+  '1848.dk',
+  'dinmaegler.dk',
+  'lilholts.dk',
+  'coldwellbanker.dk'
+];
 
 /**
  * Validates that a URL is from a supported real estate provider
@@ -55,59 +64,16 @@ export function validateListingUrl(url: string): ValidationResult {
       };
     }
     
-    // Check if domain is from a supported provider
-    const supportedDomains: SupportedDomains = {
-      'boligsiden.dk': {
-        pathPrefix: '/adresse/',
-        minPathLength: 2,
-        requiresUdbudParam: true
-      },
-      'home.dk': {
-        pathPrefix: '/ejerbolig/',
-        minPathLength: 3,
-        requiresUdbudParam: false
-      },
-      'nybolig.dk': {
-        pathPrefix: '/til-salg/',
-        minPathLength: 3,
-        requiresUdbudParam: false
-      }
-      // Add more providers as needed
-    };
-    
-    // Check if domain is supported
-    const provider = supportedDomains[domain];
-    if (!provider) {
-      return { 
-        valid: false, 
-        error: "URL'en skal være fra en understøttet boligportal (boligsiden.dk, home.dk, nybolig.dk)"
-      };
+    // Special case: For Boligsiden URLs, use the more strict validation
+    if (domain === 'boligsiden.dk') {
+      return validateBoligsideUrl(url);
     }
     
-    // Check path prefix for specific domain requirements
-    if (!parsedUrl.pathname.startsWith(provider.pathPrefix)) {
+    // For all other domains, just check if the domain is supported
+    if (!SUPPORTED_DOMAINS.includes(domain)) {
       return { 
         valid: false, 
-        error: `URL'en skal starte med '${domain}${provider.pathPrefix}'` 
-      };
-    }
-    
-    // Extract and validate the path part
-    const pathPart = parsedUrl.pathname.replace(provider.pathPrefix, '');
-    
-    // Check if there's enough content after the prefix
-    if (!pathPart || pathPart.length < provider.minPathLength) {
-      return { 
-        valid: false, 
-        error: "Adressedelen af URL'en mangler eller er for kort" 
-      };
-    }
-
-    // Check for udbud parameter if required
-    if (provider.requiresUdbudParam && !parsedUrl.searchParams.has('udbud')) {
-      return {
-        valid: false,
-        error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
+        error: "URL'en skal være fra en understøttet boligportal. Se listen over understøttede portaler på forsiden."
       };
     }
     
@@ -141,30 +107,18 @@ export function validateBoligsideUrl(url: string): ValidationResult {
       };
     }
     
-    // Check path starts with /adresse/
-    if (!parsedUrl.pathname.startsWith('/adresse/')) {
-      return { 
-        valid: false, 
-        error: "URL skal starte med 'https://www.boligsiden.dk/adresse/'" 
+    // Check for udbud parameter
+    if (!parsedUrl.searchParams.has('udbud')) {
+      return {
+        valid: false,
+        error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
       };
     }
     
-    // Extract and validate the address part
-    const addressPart = parsedUrl.pathname.replace('/adresse/', '');
-    
-    // Check if there's anything after /adresse/
-    if (!addressPart || addressPart.length < 3) {
+    if (parsedUrl.href.includes('ViewPage')) {
       return { 
         valid: false, 
-        error: "Adressedelen af URL'en mangler eller er for kort" 
-      };
-    }
-    
-    // Basic check that the address part looks valid
-    if (!addressPart.match(/^[a-zA-Z0-9æøåÆØÅ\-_]+/)) {
-      return { 
-        valid: false, 
-        error: "Adressen i URL'en ser ikke gyldig ud" 
+        error: "URL'en ser ud til at være en bolig der ikke er til salg." 
       };
     }
     

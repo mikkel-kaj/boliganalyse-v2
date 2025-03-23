@@ -1,78 +1,96 @@
 import {ListingRepository} from "../repositories/listing-repository.ts";
 import {AIAnalyzerService} from "./ai-analyzer.ts";
 import {ProviderRegistry} from "../providers/provider-registry.ts";
+import {StatusManager} from "./status-manager.ts";
 import {config} from "../config/config.ts";
 import {createLogger} from "../utils/logger.ts";
 import {HTMLParseResult} from "../types/index.ts";
+import {AnalysisStatus} from "../types/status.ts";
 
 const logger = createLogger("ListingProcessor");
 
 /**
- * Service for processing real estate listings
- * This is the implementation that would be used by the background processor
+ * Service for processing apartment listings
  */
 export class ListingProcessorService {
   private repository: ListingRepository;
   private aiAnalyzer: AIAnalyzerService;
   private providerRegistry: ProviderRegistry;
+  private statusManager: StatusManager;
+  private fetchOptions: RequestInit;
 
   /**
-   * Create a new listing processor service
-   * @param repository Repository for data operations
+   * Create a new listing processor
+   * @param repository Repository for listing data operations
+   * @param aiAnalyzer AI service for text analysis 
+   * @param providerRegistry Registry of providers to use
+   * @param statusManager Status manager for handling status updates
    */
-  constructor(repository: ListingRepository) {
+  constructor(
+    repository: ListingRepository,
+    aiAnalyzer?: AIAnalyzerService,
+    providerRegistry?: ProviderRegistry) {
     this.repository = repository;
-
-    // Initialize AI analyzer with config
-    this.aiAnalyzer = new AIAnalyzerService({
+    this.aiAnalyzer = aiAnalyzer || new AIAnalyzerService({
       apiKey: config.openai.apiKey,
-      model: config.openai.model,
+      model: config.openai.model
     });
+    this.providerRegistry = providerRegistry || ProviderRegistry.getInstance();
 
-    // Get provider registry singleton
-    this.providerRegistry = ProviderRegistry.getInstance();
+    this.statusManager = new StatusManager();
+    
+    // Set up fetch options with timeout
+    this.fetchOptions = {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      },
+      redirect: "follow",
+    };
   }
 
   /**
-   * Process a listing in the background
-   * @param listingId Listing ID to process
-   * @param url Original URL
-   * @param normalizedUrl Normalized URL
+   * Process a listing
+   * @param listingId Listing ID
+   * @param url URL to process
    * @returns Processing result
    */
   async processListing(listingId: string, url: string): Promise<boolean> {
+    const controller = new AbortController();
+
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      logger.warn(`Processing timeout for listing: ${listingId}`);
+      // The timeout error will be caught by the catch block
+    }, 300000); // 5 minute timeout for full processing
+
     try {
       logger.info(`Starting processing for listing: ${listingId}`);
+      await this.statusManager.updateStatus(listingId, AnalysisStatus.FETCHING_HTML);
 
-      // Update status to indicate processing has started
-      await this.repository.updateStatus(listingId, "Søger efter salgsopslag");
 
-      // Fetch HTML content
       const htmlContent = await this.fetchHtmlContent(url);
-      logger.info(`Fetched HTML content for listing: ${htmlContent} and ${url} and ${listingId}`);
+      logger.info(`Fetched HTML content for URL: ${url}`);
+
 
       if (!htmlContent) {
         throw new Error("Failed to fetch HTML content");
       }
 
-      await this.repository.updateStatus(listingId, "Opslag fundet!");
+      let provider;
 
-      const provider = this.providerRegistry.getProviderForUrl(url);
+      try {
+        provider = this.providerRegistry.getProviderForContent(url, htmlContent);
+      } catch (providerError) {
 
-      if (!provider) {
-        throw new Error(`No provider found for URL: ${url}`);
+        logger.error(`No suitable provider found for URL: ${url}`);
+
+        throw new Error(`No suitable provider found for this listing. Please try a supported provider like boligsiden.dk, home.dk, or a site using JSON-LD.`);
       }
 
-      // Update status
-      await this.repository.updateStatus(
-        listingId,
-        "Leder efter fejl og mangler..",
-      );
+      await this.statusManager.updateStatus(listingId, AnalysisStatus.PARSING_DATA);
 
-      // Parse HTML with provider
       const parseResult = await provider.parseHtml(url, htmlContent);
 
-      // Update image URL if available
       if (parseResult.property_image_url) {
         await this.repository.updateListingMetadata(
           listingId,
@@ -80,59 +98,67 @@ export class ListingProcessorService {
         );
       }
 
-      // Check for original source URL
       let originalSourceResult: HTMLParseResult | undefined;
 
-      if (parseResult.originalLink) {
-        await this.repository.updateStatus(
+      if (parseResult.originalLink && parseResult.originalLink !== url) {
+        await this.statusManager.updateStatus(
           listingId,
-          "Henter original kilde",
+          AnalysisStatus.PREPARING_ANALYSIS
         );
 
-        // Fetch original source HTML
         const originalSourceHtml = await this.fetchHtmlContent(
           parseResult.originalLink,
         );
-        logger.info(`Fetched HTML content for listing: ${originalSourceHtml} and ${parseResult.originalLink} and ${listingId}`);
+        logger.info(`Fetched HTML content from original source: ${parseResult.originalLink}`);
 
-        const sourceProvider = this.providerRegistry.getProviderForUrl(parseResult.originalLink);
-
-        originalSourceResult = await sourceProvider.parseHtml(
+        try {
+          const sourceProvider = this.providerRegistry.getProviderForContent(
             parseResult.originalLink,
-            originalSourceHtml,
-        );
+            originalSourceHtml
+          );
+
+          originalSourceResult = await sourceProvider.parseHtml(
+            parseResult.originalLink,
+            originalSourceHtml
+          );
+        } catch (sourceProviderError) {
+          logger.warn(`Could not find provider for original source URL: ${parseResult.originalLink}`);
+        }
       }
 
-      // Update status for AI analysis
-      await this.repository.updateStatus(listingId, "Laver AI-analyse");
+      await this.statusManager.updateStatus(listingId, AnalysisStatus.ANALYZING);
 
-      logger.info(`Compiled the full text which will be analyzed for listing: ${parseResult.extractedText} and ${originalSourceResult?.extractedText}`);
+      logger.info(`Analyzing extracted text and data for listing: ${listingId}`);
+
+      await this.statusManager.updateStatus(listingId, AnalysisStatus.GENERATING_INSIGHTS);
 
       const analysisResult = await this.aiAnalyzer.analyzeMultipleTexts(
         parseResult,
         originalSourceResult
       );
 
-      // Save analysis result
+      await this.statusManager.updateStatus(listingId, AnalysisStatus.FINALIZING);
+
       await this.repository.saveAnalysisResult(listingId, analysisResult);
 
       logger.info(`Processing completed for listing: ${listingId}`);
+
+      await this.statusManager.updateStatus(listingId, AnalysisStatus.COMPLETED);
+      
+      clearTimeout(timeoutId);
       return true;
     } catch (error) {
+      clearTimeout(timeoutId);
+      
       logger.error(`Processing failed for listing ${listingId}`, error);
 
-      // Create error message with stack trace if available
-      const errorMessage = error instanceof Error 
-        ? `${error.message}\n${error.stack || ''}`
-        : String(error);
-
-      await this.repository.updateStatus(
-        listingId,
-        "Fejl",
-        {
-          error_message: errorMessage
-        }
-      );
+      let status = AnalysisStatus.ERROR;
+      
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        status = AnalysisStatus.TIMEOUT;
+      }
+      
+      await this.statusManager.setErrorStatus(listingId, error, status);
 
       return false;
     }
@@ -146,23 +172,24 @@ export class ListingProcessorService {
   private async fetchHtmlContent(url: string): Promise<string> {
     // Set up AbortController for timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), config.http.timeout);
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-      },
-      signal: controller.signal,
-    });
-
-    // Clear the timeout
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}, ${response.statusText}`);
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    
+    try {
+      const response = await fetch(url, {
+        ...this.fetchOptions,
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch URL: ${url}, status: ${response.status}`);
+      }
+      
+      return await response.text();
+    } catch (error) {
+      logger.error(`Error fetching HTML content from ${url}`, error);
+      throw error;
     }
-
-    return await response.text();
   }
 }

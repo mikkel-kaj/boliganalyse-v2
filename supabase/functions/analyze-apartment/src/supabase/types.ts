@@ -9,48 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      apartment_listings: {
-        Row: {
-          analysis: Json | null
-          created_at: string
-          error_message: string | null
-          html_content: string | null
-          id: string
-          normalized_url: string
-          partial_analysis: Json | null
-          property_image_url: string | null
-          status: string
-          updated_at: string
-          url: string
-        }
-        Insert: {
-          analysis?: Json | null
-          created_at?: string
-          error_message?: string | null
-          html_content?: string | null
-          id?: string
-          normalized_url: string
-          partial_analysis?: Json | null
-          property_image_url?: string | null
-          status?: string
-          updated_at?: string
-          url: string
-        }
-        Update: {
-          analysis?: Json | null
-          created_at?: string
-          error_message?: string | null
-          html_content?: string | null
-          id?: string
-          normalized_url?: string
-          partial_analysis?: Json | null
-          property_image_url?: string | null
-          status?: string
-          updated_at?: string
-          url?: string
-        }
-        Relationships: []
-      }
       feedback: {
         Row: {
           created_at: string
@@ -83,7 +41,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      client_apartment_listings: {
+        Row: {
+          analysis: Json | null
+          created_at: string | null
+          id: string | null
+          property_image_url: string | null
+          status: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string | null
+          id?: string | null
+          property_image_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string | null
+          id?: string | null
+          property_image_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -193,3 +180,4 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+

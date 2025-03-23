@@ -1,6 +1,6 @@
-import { config } from "../config/config.ts";
-import {AnalysisResult, AnalyzerServiceOptions, HTMLParseResult} from "../types/index.ts";
-import { createLogger } from "../utils/logger.ts";
+import {config} from "../config/config.ts";
+import {AnalyzerServiceOptions, HTMLParseResult,} from "../types/index.ts";
+import {createLogger} from "../utils/logger.ts";
 
 const logger = createLogger("AIAnalyzer");
 
@@ -26,7 +26,7 @@ export class AIAnalyzerService {
       throw new Error("OpenAI API key is required");
     }
   }
-  
+
   /**
    * Analyze plain text to extract initial information including original link
    * @param textContent Plain text content to analyze
@@ -35,10 +35,13 @@ export class AIAnalyzerService {
    */
   async analyzeText(
     textContent: string,
-    energyRating?: string
+    energyRating?: string,
   ): Promise<Record<string, any>> {
-    logger.info("Starting analyzeTextForInitialData with text length: " + (textContent?.length || 0));
-    
+    logger.info(
+      "Starting analyzeTextForInitialData with text length: " +
+        (textContent?.length || 0),
+    );
+
     if (!textContent) {
       logger.warn("No text content provided for initial analysis");
       throw new Error("No text content provided for analysis");
@@ -46,66 +49,73 @@ export class AIAnalyzerService {
 
     // Use the exact same prompt as the original implementation
     const prompt = `
-    1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele.
+    1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele. Din opgave er at analysere boligannoncer grundigt med fokus på fakta og proaktiv vurdering, selv med begrænset information.
     
-    Din opgave er at analysere boligannoncer grundigt og identificere både risici og fordele for en potentiel køber.
+    2. Analyser boligteksten omhyggeligt ud fra disse områder:
     
-    Analysér omhyggeligt teksten med fokus på:
-
-    1) BASAL INFORMATION: Vær opmærksom på følgende områder:
-      - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
-      - Bygningsdetaljer: byggeår, renoveringsår, energimærke, tag, vægge, konstruktionsmateriale
-      - Økonomi: udbetaling, månedlig ydelse, ejerudgift, boligafgift, grundskyld, fællesudgifter
-      - Tilstand: stand, energimærke, vedligeholdelsesrapport, tilstandsrapport, el-rapport
-      - Området: beskrivelse af kvarteret, afstand til transport, institutioner, indkøb
-      - Historik: tidligere priser, tid på markedet, prisændringer, tidligere salg
-      
-    2) RISICI: Find og detaljer mindst 8-10 potentielle risici ved boligen. Vær grundig og kritisk!
-      - Prishistorik (mange prisfald?)
-      - Bygningens alder og stand
-      - Energimærkning (dårlig = højere varmeudgifter)
-      - Renoveringsbehov
-      - Område/beliggenhed (trafik, støj, fremtidig udvikling)
-      - Månedlige udgifter (høje fællesudgifter?)
-      - Juridiske forhold (andel: bestyrelsens økonomi?, forpligtelser?)
-      - Tid på markedet (lang tid = potentielle problemer?)
-      - For hver risiko, inkluder konkrete handlingsanbefalinger (hvad køber bør spørge om/undersøge)
+    **BASAL INFORMATION:**
+    - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
+    - Bygningsdetaljer: byggeår, renoveringsår, energimærke, tag, vægge, konstruktionsmateriale
+    - Økonomi: udbetaling, månedlig ydelse, ejerudgift, boligafgift, grundskyld, fællesudgifter
+    - Tilstand: generel stand, vedligeholdelsesniveau, energimærke, rapporter (hvis nævnt)
+    - Området: kvarter, transport, institutioner, indkøbsmuligheder, rekreative områder
+    - Historik: prisændringer, tid på markedet, tidligere salg
     
-    3) FORDELE: Fremhæv 8-10 positive aspekter ved boligen:
-      - Beliggenhed og område
-      - Indretning og planløsning
-      - Potentiale og muligheder
-      - Energieffektivitet og bæredygtighed
-      - Stand og kvalitet
-      - Økonomi og værdi
-      - Vælg passende ikoner fra listen i output-skabelonen
+    **RISICI:**
+    Identificér mindst 8 risici ved boligen baseret på den givne tekst. Hvis data mangler, undgå at nævne "information mangler". Brug i stedet din ekspertise til at:
+    - Vurdere sandsynlige risici baseret på boligtype, alder, beliggenhed og andre tilgængelige oplysninger.
+    - Komme med realistiske og relevante antagelser, fx om potentielle omkostninger, støjgener eller renoveringsbehov.
+    - Angive konkrete anbefalinger til spørgsmål, som køberen bør stille eller områder, der bør undersøges yderligere.
     
-    Returnér JSON i dette format:
+    Eksempler på risikokategorier:
+    - Energimæssige forhold (fx potentielle høje energiomkostninger)
+    - Bygningsmæssige forhold (alder, potentielle skjulte fejl, vedligeholdelsesbehov)
+    - Beliggenhed (støj, trafik, kommende byggeri, parkering)
+    - Økonomiske forhold (løbende udgifter, boligudgift sammenlignet med markedet)
+    - Juridiske forhold (forpligtelser, vedtægter, husdyr, udlejning)
+    
+    **FORDELE:**
+    Identificér mindst 8 fordele, der realistisk kan udledes af teksten. Brug din faglige dømmekraft og understreg styrker, der kan give værdi for køberen.
+    
+    Eksempler på fordele:
+    - Beliggenhed og nærhed til faciliteter
+    - Indretning og praktisk planløsning
+    - Boligens generelle tilstand
+    - Udearealer (have, terrasse, udsigt)
+    - Økonomi (pris i forhold til markedet)
+    - Energieffektivitet (hvis relevant)
+    - Muligheder for personlig tilpasning
+    
+    2.1 Forsøg at vær kreativ med dine fordele og risici, og tænk ud over det åbenlyse - hvad kan være skjulte fordele og risici - og hvad kan være en potentiel dealbreaker for køberen?
+    2.2 Vær opmærksom på, at du skal vurdere boligen ud fra den givne tekst, men du må godt bruge din egen viden og erfaring til at udfylde huller - f.eks, hvis du ved et område er kendt for noget specifikt.
+    
+    3. Returnér svaret i nedenstående JSON-format (ingen tekst udenfor JSON):
+    
     {
-      "summary": "Kort beskrivelse af din analyse på vegne af en potentiel boligkøber, lav en kort beskrivelse af hvad du har fundet, hvad du mener og hvad du anbefaler.",
+      "summary": "Kort og præcis vurdering med vigtigste risici og fordele samt din anbefaling.",
       "property": {
         "address": "...",
-        "price": "...", 
-        "udbetaling": "...",
-        "pricePerM2": "...",
-        "size": "...",
-        "værelser": "...", 
+        "price": "... kr.",
+        "udbetaling": "... kr.",
+        "pricePerM2": "... kr. per m²",
+        "size": "... m²",
+        "værelser": "...",
         "floor": "...",
         "boligType": "...",
         "ejerform": "...",
-        "energiMaerke": "${energyRating || '...'}",
+        "energiMaerke": "...",
         "byggeaar": "...",
         "renoveringsaar": "...",
-        "maanedligeUdgift": "..."
+        "maanedligeUdgift": "... kr."
       },
       "risks": [
         {
           "category": "Energi|Tilstand|Økonomi|Beliggenhed|Juridisk|Andet",
-          "title": "Kort præcis titel",
-          "details": "Uddybet forklaring af risikoen (2-3 sætninger)",
-          "excerpt": "Tekstuddrag fra annoncen der understøtter dette (ellers inkluder din egen forklaring)",
+          "title": "Kort, præcis titel på risiko",
+          "details": "Grundig vurdering af risikoen (2-3 sætninger)",
+          "excerpt": "Relevante tekstdetaljer eller din egen vurdering",
           "recommendations": [
-            {"promptTitle": "Spørg mægler", "prompt": "Specifikt spørgsmål til ejendomsmægleren"}
+            {"promptTitle": "Spørg mægler", "prompt": "Relevant spørgsmål, der bør stilles mægleren"}
           ]
         }
       ],
@@ -113,22 +123,17 @@ export class AIAnalyzerService {
         {
           "icon": "home|building|map|key|piggy-bank|scale|star|heart|award|lightbulb|thumbs-up|check|flag|search",
           "title": "Kort præcis fordel",
-          "details": "Uddybet forklaring (2-3 sætninger)"
+          "details": "Begrundet forklaring af fordelen (2-3 sætninger)"
         }
       ]
     }
     
-    VIGTIG VEJLEDNING:
+    **VIGTIGT:**
     - Svar på dansk.
-    - Være grundig og fokuser på fakta frem for salgssprog.
-    - Vær grundig med RISICI - dette er den vigtigste del! Medtag også mindre risici.
-    - FORDELE skal fremhæve det positive, men må ikke ignorere sandheden.
-    - Udtræk så mange relevante informationer som muligt.
-    - Hvis data mangler, brug tom streng ("").
-    - Ingen tekst udenfor JSON.
+    - Foretag realistiske vurderinger frem for at pege på manglende oplysninger.
+    - Vær grundig med både risici og fordele.
+    
 
-    You have been provided with the following text from the real estate listing that you must analyze. The text is likely
-    to be malformed, and missing spaces. Never mention this in the output, but use your best judgement to analyze the text.
     """${textContent}"""
     `;
 
@@ -155,91 +160,69 @@ export class AIAnalyzerService {
 
       const data = await response.json();
       const rawText = data?.choices?.[0]?.message?.content?.trim() || "";
-      
+
       // Attempt to parse JSON
       let parsed: Record<string, any> = {};
       try {
-        // Extract JSON from the response - exact same code as original
-        const jsonStart = rawText.indexOf('{');
-        const jsonEnd = rawText.lastIndexOf('}');
-        
+        const jsonStart = rawText.indexOf("{");
+        const jsonEnd = rawText.lastIndexOf("}");
+
         if (jsonStart === -1 || jsonEnd === -1) {
           throw new Error("Could not find JSON in response");
         }
-        
+
         const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
         parsed = JSON.parse(jsonText);
         logger.info("Successfully parsed JSON from response");
       } catch (error) {
         const parseError = error as Error;
-        throw new Error(`Failed to parse response from OpenAI: ${parseError.message}`);
+        throw new Error(
+          `Failed to parse response from OpenAI: ${parseError.message}`,
+        );
       }
-      
+
       return parsed;
     } catch (error) {
       logger.error("Error analyzing text for initial data:", error);
       throw error;
     }
   }
-  
+
   /**
    * Analyze multiple text contents
    * @param primaryText Primary text content
-   * @param secondaryText Secondary text content 
+   * @param secondaryText Secondary text content
    * @param partialAnalysis Any partial analysis already done
    * @returns Analysis result
    */
   async analyzeMultipleTexts(
     primaryText: HTMLParseResult,
-    secondaryText: HTMLParseResult | undefined
+    secondaryText: HTMLParseResult | undefined,
   ): Promise<any> {
     try {
       // Combine the texts for analysis
       if (!secondaryText) {
-        logger.warn("Secondary text content is missing, analyzing primary text only");
+        logger.warn(
+          "Secondary text content is missing, analyzing primary text only",
+        );
 
-        const analysis = await this.analyzeText(`${primaryText});`);
+        const analysis = await this.analyzeText(
+          `${primaryText.extractedText});`,
+        );
 
         return analysis;
       }
 
-      const combinedText = `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText}`;
-      
+      const combinedText =
+        `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText}`;
+
       // Perform the analysis
       const analysis = await this.analyzeText(combinedText);
 
-      return analysis
+      return analysis;
     } catch (error) {
       logger.error("Error analyzing multiple text contents", error);
       throw error;
     }
   }
-  
-  /**
-   * Convert the partial/full analysis to our AnalysisResult type
-   * @param analysisData Any analysis data to convert
-   * @returns Standardized analysis result
-   */
-  private convertToAnalysisResult(analysisData: Record<string, any>): AnalysisResult {
-    // Extract core property data from the analysis
-    const property = analysisData.property || {};
-    
-    const result: AnalysisResult = {
-      address: property.address || "",
-      price: property.price ? Number(property.price.toString().replace(/\D/g, '')) : undefined,
-      area: property.size ? Number(property.size.toString().replace(/\D/g, '')) : undefined,
-      rooms: property.værelser ? Number(property.værelser) : undefined,
-      energyRating: property.energiMaerke || "",
-      constructionYear: property.byggeaar ? Number(property.byggeaar) : undefined,
-      monthlyExpenses: property.maanedligeUdgift ? Number(property.maanedligeUdgift.toString().replace(/\D/g, '')) : undefined,
-      description: analysisData.summary || "",
-      type: property.boligType || "",
-    };
-    
-    // Include all other data fields as-is
-    return {
-      ...result,
-      rawAnalysis: analysisData // Include the full raw analysis for reference
-    };
-  }
-} 
+}

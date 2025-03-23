@@ -17,10 +17,11 @@ export abstract class BaseProvider implements ProviderInfo {
   abstract get name(): string;
   
   /**
-   * Check if this provider can handle the given URL
+   * Check if this provider can handle the given URL and optionally HTML content
    * @param url URL to check
+   * @param htmlContent Optional HTML content to check
    */
-  abstract canHandle(url: string): boolean;
+  abstract canHandle(url: string, htmlContent?: string): boolean;
   
   /**
    * Extract the original source URL from the HTML content if available

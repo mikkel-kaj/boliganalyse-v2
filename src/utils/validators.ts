@@ -3,12 +3,102 @@
  */
 
 /**
- * Validates that a URL is a valid Boligsiden address URL.
+ * List of supported real estate domains.
+ * Keep in sync with backend SUPPORTED_DOMAINS in validation.ts
+ */
+export const SUPPORTED_DOMAINS = [
+  // Major aggregators
+  'boligsiden.dk',
+  
+  // Major real estate chains
+  'home.dk',
+  'nybolig.dk',
+  'edc.dk',
+  'danbolig.dk',
+  'estate.dk',
+  'realmaeglerne.dk',
+  
+  // Rental properties
+  'lejebolig.dk',
+  'boligportal.dk',
+  
+  // Other real estate agencies
+  'lokalbolig.dk',
+  'robinhus.dk',
+  'boligone.dk',
+  '1848.dk',
+  'dinmaegler.dk',
+  'lilholts.dk',
+  'coldwellbanker.dk'
+];
+
+/**
+ * Extract domain from URL
+ * @param url URL to extract domain from
+ * @returns Domain without www prefix
+ */
+function extractDomain(url: string): string {
+  try {
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname.replace(/^www\./, "");
+    return domain;
+  } catch (error) {
+    console.error("Error extracting domain:", error);
+    return "";
+  }
+}
+
+/**
+ * Validates that a URL is from a supported real estate provider.
  * This should be kept in sync with the backend validation in
  * supabase/functions/analyze-apartment/utils/validation.ts
  * 
  * @param url URL to validate
  * @returns Object with validation result and error message if invalid
+ */
+export function validateListingUrl(url: string): { valid: boolean; error?: string } {
+  // Check if URL is provided
+  if (!url) {
+    return { valid: false, error: "URL er ikke angivet" };
+  }
+
+  try {
+    // Parse URL to check structure
+    const parsedUrl = new URL(url);
+    const domain = extractDomain(url);
+    
+    // Check for ViewPage in the URL path (typically for sold properties)
+    if (parsedUrl.href.includes('ViewPage')) {
+      return { 
+        valid: false, 
+        error: "URL'en ser ud til at være en bolig der ikke er til salg." 
+      };
+    }
+    
+    // Special case: For Boligsiden URLs, use the more strict validation
+    if (domain === 'boligsiden.dk') {
+      return validateBoligsideUrl(url);
+    }
+    
+    // For all other domains, just check if the domain is supported
+    if (!SUPPORTED_DOMAINS.includes(domain)) {
+      return { 
+        valid: false, 
+        error: "URL'en skal være fra en understøttet boligportal. Se listen over understøttede portaler på forsiden."
+      };
+    }
+    
+    return { valid: true };
+  } catch (error) {
+    return { 
+      valid: false, 
+      error: "Ugyldig URL-format" 
+    };
+  }
+}
+
+/**
+ * Legacy function to validate Boligsiden URLs for backward compatibility
  */
 export function validateBoligsideUrl(url: string): { valid: boolean; error?: string } {
   // Check if URL is provided
@@ -28,37 +118,8 @@ export function validateBoligsideUrl(url: string): { valid: boolean; error?: str
       };
     }
     
-    // Check path starts with /adresse/
-    if (!parsedUrl.pathname.startsWith('/adresse/')) {
-      return { 
-        valid: false, 
-        error: "URL skal starte med 'https://www.boligsiden.dk/adresse/'" 
-      };
-    }
-    
-    // Extract and validate the address part
-    const addressPart = parsedUrl.pathname.replace('/adresse/', '');
-    
-    // Check if there's anything after /adresse/
-    if (!addressPart || addressPart.length < 3) {
-      return { 
-        valid: false, 
-        error: "Adressedelen af URL'en mangler eller er for kort" 
-      };
-    }
-    
-    // Basic check that the address part looks valid
-    // We're not being too strict here, just making sure it's not completely invalid
-    if (!addressPart.match(/^[a-zA-Z0-9æøåÆØÅ\-_]+/)) {
-      return { 
-        valid: false, 
-        error: "Adressen i URL'en ser ikke gyldig ud" 
-      };
-    }
-
     // Check for udbud parameter
-    const hasUdbudParam = parsedUrl.searchParams.has('udbud');
-    if (!hasUdbudParam) {
+    if (!parsedUrl.searchParams.has('udbud')) {
       return {
         valid: false,
         error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
@@ -72,7 +133,6 @@ export function validateBoligsideUrl(url: string): { valid: boolean; error?: str
       };
     }
     
-
     return { valid: true };
   } catch (error) {
     return { 

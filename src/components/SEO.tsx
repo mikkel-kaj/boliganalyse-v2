@@ -12,7 +12,7 @@ interface SEOProps {
 
 const SEO = ({
   title = 'Boliganalyse.ai | AI til boligkøb',
-  description = 'Analyser boligannoncer med AI og undgå overraskelser ved boligkøb. Kunstig intelligens afslører skjulte risikofaktorer og spørgsmål du bør stille på visning.',
+  description = 'Analyser boligannoncer med AI og undgå overraskelser ved boligkøb. Kunstig intelligens afslører skjulte risikofaktorer og spørgsmål du bør stille til fremvisning.',
   canonicalPath = '',
   ogImage = '/og-image.png',
   ogType = 'website',

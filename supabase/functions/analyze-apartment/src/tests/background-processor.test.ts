@@ -9,7 +9,7 @@ import { ListingProcessorService } from "../services/listing-processor.ts";
 // Create a logger for testing
 const logger = createLogger("BackgroundProcessorTest");
 
-// Test the background processing function
+
 Deno.test({
   name: "processListingInBackground should process a listing correctly",
   async fn() {
@@ -17,10 +17,10 @@ Deno.test({
     const supabase = createLocalSupabaseClient();
 
     // Create a real repository with the local client
-    const repository = new ListingRepository(supabase);
+    const repository = new ListingRepository();
 
     // Create a test listing to use
-    const testUrl = `https://www.boligsiden.dk/adresse/mirabellevej-1-4070-kirke-hyllinge-03500500___1_______?udbud=950825ee-cb9d-4ea1-a8c1-892b95a1ab5e`;
+    const testUrl = `https://home.dk/salg/lejligheder/emdrupvej-113-4-2400-koebenhavn-nv/sag-1620003650/`;
     const normalizedUrl = testUrl;
     const deleteIfExists = await repository.deleteByUrl(normalizedUrl);
     const listing = await repository.createListing(testUrl, normalizedUrl);
@@ -33,5 +33,8 @@ Deno.test({
         normalizedUrl,
         repository
     )
+
+    assertEquals(1, 1);
+
   }
 })

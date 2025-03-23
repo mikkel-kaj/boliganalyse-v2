@@ -7,8 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Send, Loader2 } from "lucide-react";
+import {useToast} from "@/hooks/use-toast.ts";
 
 type FeedbackType = 'idea' | 'problem' | 'other';
 

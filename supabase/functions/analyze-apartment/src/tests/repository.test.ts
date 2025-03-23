@@ -1,7 +1,8 @@
-import { assertEquals, assertExists } from "std/testing/asserts";
-import { ListingRepository } from "../repositories/listing-repository.ts";
-import { createLogger } from "../utils/logger.ts";
-import { createLocalSupabaseClient } from "./utils/test-helpers.ts";
+import {assertEquals, assertExists} from "std/testing/asserts";
+import {ListingRepository} from "../repositories/listing-repository.ts";
+import {createLogger} from "../utils/logger.ts";
+import {createLocalSupabaseClient} from "./utils/test-helpers.ts";
+import {AnalysisStatus} from "../types/status.ts";
 
 // Create a logger for testing
 const logger = createLogger("RepositoryTest");
@@ -10,11 +11,8 @@ const logger = createLogger("RepositoryTest");
 Deno.test({
   name: "Repository should handle database operations correctly",
   async fn() {
-    // Create a client for the local Supabase Docker instance
-    const supabase = createLocalSupabaseClient();
-    
     // Create a test repository with the local client
-    const repository = new ListingRepository(supabase);
+    const repository = new ListingRepository();
     
     // Create a unique test listing
     const testUrl = `https://example.com/test-${Date.now()}`;
@@ -32,7 +30,7 @@ Deno.test({
       assertEquals(foundListing?.url, testUrl, "Found listing should have the correct URL");
       
       // 3. Test updating status
-      const statusUpdated = await repository.updateStatus(listing.id, "Testing status");
+      const statusUpdated = await repository.updateStatus(listing.id, AnalysisStatus.GENERATING_INSIGHTS);
       assertEquals(statusUpdated, true, "Status update should succeed");
       
       // 4. Test updating metadata with just image URL
@@ -53,7 +51,7 @@ Deno.test({
       const analysisSaved = await repository.saveAnalysisResult(
         listing.id,
         testAnalysis,
-        "Test complete"
+        AnalysisStatus.COMPLETED
       );
       assertEquals(analysisSaved, true, "Analysis save should succeed");
       

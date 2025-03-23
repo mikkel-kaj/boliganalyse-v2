@@ -22,8 +22,9 @@ export class BoligsidenProvider extends BaseProvider {
   /**
    * Check if this provider can handle the given URL
    * @param url URL to check
+   * @param htmlContent Optional HTML content (not used by this provider)
    */
-  canHandle(url: string): boolean {
+  canHandle(url: string, htmlContent?: string): boolean {
     try {
       const domain = extractDomain(url);
       return domain === "boligsiden.dk";

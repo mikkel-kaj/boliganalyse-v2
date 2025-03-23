@@ -1,31 +1,23 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config/config.ts";
-import { ListingData, AnalysisResult } from "../types/index.ts";
+import { ListingData } from "../types/index.ts";
 import { createLogger } from "../utils/logger.ts";
+import { AnalysisStatus } from "../types/status.ts";
+import {supabase_private} from "../supabase/client.ts";
 
 const logger = createLogger("ListingRepository");
 
-/**
- * Repository for apartment listing data operations
- */
 export class ListingRepository {
-  private supabase: SupabaseClient;
+  private supabase: SupabaseClient<any, "private", any>;
   private tableName: string;
-  
-  /**
-   * Create a new listing repository
-   * @param supabaseClient Optional existing Supabase client
-   */
-  constructor(supabaseClient?: SupabaseClient) {
+
+  constructor(supabaseClient?: SupabaseClient<any, "private", any>) {
     if (supabaseClient) {
       this.supabase = supabaseClient;
     } else {
-      this.supabase = createClient(
-        config.supabase.url,
-        config.supabase.serviceRoleKey
-      );
+      // Use any schema to avoid type errors when accessing tables in different schemas
+      this.supabase = supabase_private;
     }
-    
     this.tableName = config.database.listingsTable;
   }
   
@@ -37,7 +29,7 @@ export class ListingRepository {
   async findByNormalizedUrl(normalizedUrl: string): Promise<ListingData | null> {
     try {
       const { data, error } = await this.supabase
-        .from(this.tableName)
+        .from(`${this.tableName}`)
         .select("*")
         .eq("normalized_url", normalizedUrl)
         .maybeSingle();
@@ -62,14 +54,14 @@ export class ListingRepository {
   async createListing(url: string, normalizedUrl: string): Promise<ListingData> {
     try {
       const { data, error } = await this.supabase
-        .from(this.tableName)
-        .insert([
-          {
-            url,
-            normalized_url: normalizedUrl,
-            status: "Starter analyse"
-          },
-        ])
+        .from(`${this.tableName}`)
+        .insert({
+          url,
+          normalized_url: normalizedUrl,
+          status: AnalysisStatus.PENDING,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
         .select()
         .single();
       
@@ -88,7 +80,7 @@ export class ListingRepository {
   async deleteByUrl(url: string): Promise<boolean> {
       try {
       const { error } = await this.supabase
-          .from(this.tableName)
+          .from(`${this.tableName}`)
           .delete()
           .eq("url", url);
 
@@ -106,18 +98,18 @@ export class ListingRepository {
   /**
    * Update a listing's status
    * @param id Listing ID
-   * @param status New status
+   * @param status New status from AnalysisStatus enum
    * @param additionalFields Additional fields to update
    * @returns Success indicator
    */
   async updateStatus(
     id: string, 
-    status: string, 
+    status: AnalysisStatus,
     additionalFields: Record<string, any> = {}
   ): Promise<boolean> {
     try {
       const { error } = await this.supabase
-        .from(this.tableName)
+        .from(`${this.tableName}`)
         .update({ 
           status, 
           updated_at: new Date().toISOString(),
@@ -146,12 +138,12 @@ export class ListingRepository {
   async saveAnalysisResult(
     id: string, 
     analysisResult: any,
-    status = "Analyse fuldført"
+    status = AnalysisStatus.COMPLETED
   ): Promise<boolean> {
     try {
       const { error } = await this.supabase
-        .from(this.tableName)
-        .update({ 
+        .from(`${this.tableName}`)
+        .update({
           analysis: analysisResult,
           status,
           updated_at: new Date().toISOString()
@@ -189,7 +181,7 @@ export class ListingRepository {
       }
       
       const { error } = await this.supabase
-        .from(this.tableName)
+        .from(`${this.tableName}`)
         .update(updateData)
         .eq("id", id);
       
