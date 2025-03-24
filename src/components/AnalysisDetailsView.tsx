@@ -145,7 +145,7 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                             <h3 className="text-sm text-muted-foreground mb-1">Totalpris</h3>
                                             <p className="text-2xl font-bold text-foreground">{property.price}</p>
                                             {property.pricePerM2 && (
-                                                <p className="text-sm text-muted-foreground">{property.pricePerM2} per m²</p>
+                                                <p className="text-sm text-muted-foreground">{property.pricePerM2}</p>
                                             )}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
