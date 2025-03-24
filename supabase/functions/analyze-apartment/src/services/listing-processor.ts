@@ -91,12 +91,15 @@ export class ListingProcessorService {
 
       const parseResult = await provider.parseHtml(url, htmlContent);
 
-      if (parseResult.property_image_url) {
-        await this.repository.updateListingMetadata(
-          listingId,
-          parseResult.property_image_url,
-        );
-      }
+      // Save original URL data
+      await this.repository.updateListingMetadata(
+        listingId,
+        parseResult.property_image_url,
+        url, // html_url
+        undefined, // html_url_redirect (set below if redirect exists)
+        parseResult.extractedText, // text_extracted
+        undefined // text_extracted_redirect (set below if redirect exists)
+      );
 
       let originalSourceResult: HTMLParseResult | undefined;
 
@@ -121,6 +124,24 @@ export class ListingProcessorService {
             parseResult.originalLink,
             originalSourceHtml
           );
+          
+          // Save redirect URL data
+          await this.repository.updateListingMetadata(
+            listingId,
+            originalSourceResult.property_image_url || parseResult.property_image_url,
+            undefined, // html_url (already set above)
+            parseResult.originalLink, // html_url_redirect
+            undefined, // text_extracted (already set above)
+            originalSourceResult.extractedText // text_extracted_redirect
+          );
+          
+          // Also update the url_redirect column
+          await this.statusManager.updateStatus(
+            listingId,
+            AnalysisStatus.PARSING_DATA, // Reuse existing status since we're still in parsing stage
+            { url_redirect: parseResult.originalLink }
+          );
+          
         } catch (sourceProviderError) {
           logger.warn(`Could not find provider for original source URL: ${parseResult.originalLink}`);
         }

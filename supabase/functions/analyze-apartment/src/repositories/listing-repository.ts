@@ -162,14 +162,22 @@ export class ListingRepository {
   }
   
   /**
-   * Update listing with image URL
+   * Update listing with metadata
    * @param id Listing ID
-   * @param imageUrl Image URL
+   * @param imageUrl Image URL (optional)
+   * @param htmlUrl Original HTML URL (optional)
+   * @param htmlUrlRedirect Redirected HTML URL (optional)
+   * @param textExtracted Extracted text from original URL (optional)
+   * @param textExtractedRedirect Extracted text from redirected URL (optional)
    * @returns Success indicator
    */
   async updateListingMetadata(
     id: string, 
-    imageUrl?: string
+    imageUrl?: string,
+    htmlUrl?: string,
+    htmlUrlRedirect?: string,
+    textExtracted?: string,
+    textExtractedRedirect?: string
   ): Promise<boolean> {
     try {
       const updateData: Record<string, any> = {
@@ -178,6 +186,22 @@ export class ListingRepository {
       
       if (imageUrl) {
         updateData.property_image_url = imageUrl;
+      }
+      
+      if (htmlUrl) {
+        updateData.html_url = htmlUrl;
+      }
+      
+      if (htmlUrlRedirect) {
+        updateData.html_url_redirect = htmlUrlRedirect;
+      }
+      
+      if (textExtracted) {
+        updateData.text_extracted = textExtracted;
+      }
+      
+      if (textExtractedRedirect) {
+        updateData.text_extracted_redirect = textExtractedRedirect;
       }
       
       const { error } = await this.supabase
