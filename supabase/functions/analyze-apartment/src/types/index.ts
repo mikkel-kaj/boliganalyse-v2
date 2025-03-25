@@ -12,6 +12,11 @@ export interface ListingData {
   analysis?: AnalysisResult;
   created_at?: string;
   updated_at?: string;
+  text_extracted: string | null;
+  text_extracted_redirect: string | null;
+  html_url: string | null;
+  html_url_redirect: string | null;
+  url_redirect: string | null;
 }
 
 export interface ValidationResult {
@@ -47,10 +52,6 @@ export interface AnalysisResult {
   [key: string]: any; // Allow for flexible fields
 }
 
-export interface AnalysisOptions {
-  includePartialAnalysis?: boolean;
-  forceReanalysis?: boolean;
-}
 
 export interface AnalyzerServiceOptions {
   apiKey: string;
