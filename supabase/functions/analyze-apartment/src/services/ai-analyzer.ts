@@ -1,6 +1,6 @@
-import {config} from "../config/config.ts";
-import {AnalyzerServiceOptions, HTMLParseResult,} from "../types/index.ts";
-import {createLogger} from "../utils/logger.ts";
+import { config } from "../config/config.ts";
+import { AnalyzerServiceOptions, HTMLParseResult } from "../types/index.ts";
+import { createLogger } from "../utils/logger.ts";
 
 const logger = createLogger("AIAnalyzer");
 
@@ -85,11 +85,66 @@ export class AIAnalyzerService {
     - Økonomi (pris i forhold til markedet)
     - Energieffektivitet (hvis relevant)
     - Muligheder for personlig tilpasning
-    
+
+    Følgende regler gælder for energimærkninger I Danmark:
+
+    # Regler for energimærkninger
+
+    ##    En familiehuse og række/kædehuse mv.
+
+    Det er lovpligtigt at fremlægge en gyldig energimærkning, når et fritliggende enfamiliehus på 60 m2 eller derover skal sælges. For række-, kæde- og dobbelthuse betragtes hver boligenhed som én bygning.
+
+    Sælger har ansvar for energimærkningen
+    Det er sælgers pligt at sørge for, at køber får udleveret energimærkningen. Hvis salget sker via ejendomsmægler, skal sælger fremlægge et gyldigt energimærke til ejendomsmægleren inden bygningen sættes til salg.
+
+    Ved række-, kæde- og dobbelthuse, hvor boligejerne er organiseret i en ejerforening eller andels/anpartsforening, er det den enkelte ejer/andelshavers pligt at få udarbejdet et energimærke for boligen.
+
+    Mærket skal være synligt ved annoncering
+    Energimærket skal altid være synligt ved annoncering i kommercielle medier, uanset om det gælder salg, udleje eller overdragelse af en bygning eller bygningsenhed. Energimærkningen skal derfor være udarbejdet ved annonceringstidspunktet.
+
+    Nye bygninger
+    Nye bygninger på 60 m2 eller derover skal energimærkes. Energimærkningen skal indsendes til kommunen, inden bygningen bliver meldt færdig eller tages i brug. Formålet er at kontrollere, at bygningen overholder energikravene i byggetilladelsen.
+
+    Bygherre har ansvar for energimærkningen
+    Det er bygherren, som skal sørge for at stille den første energimærkning af ejendommen  til rådighed for de kommende ejere. Nyopførte bygninger får energimærke A2015 eller A2020. Tallet angiver, om bygningen lever op til de energimæssige krav i det gældende bygningsreglement (BR15) eller den frivillige lavenergiklasse 2020.
+
+    ## Ejerlejlighed
+
+    Det er lovpligtigt at fremlægge et energimærke, når en ejerlejlighed skal sælges. Energimærkning skal udarbejdes for hele ejendommen, hvis der er tale om en etageejendom. Energimærket er gyldigt i ti år. Det vil sige, at det kan genbruges, når andre lejligheder i bygningen sælges i gyldighedsperioden.
+
+    Sælger skal sørge for udlevering af energimærke til køber
+    Det er sælgers pligt at sørge for, at køber får udleveret ejendommens energimærke. Mærkningen skal fremlægges for køber, inden der bliver indgået en aftale om salg. Hvis salget sker via ejendomsmægler, skal sælger fremlægge energimærkning for ejendomsmægleren inden lejligheden annonceres til salg. Energimærket skal altid være synligt ved annoncering i kommercielle medier uanset om det gælder salg, udleje eller overdragelse.
+
+    Ejerforeningen skal stille energimærkning til rådighed
+    Ejerforeningen har pligt til at stille et gyldig energimærke til rådighed for sælgeren. Ejer man en lejlighed, kan man derfor kræve, at ejerforeningen stiller en gyldig energimærkning til rådighed uden beregning, når lejligheden skal sælges. Ejerforeningen har derefter 60 dage til at stille energimærkningen til rådighed.
+
+    En ejerforening, der undlader at lade energimærkningen udarbejde, eller som ikke overholder de angivne frister, kan få et påbud fra Energistyrelsen. Det vil være muligt at straffe foreningen med bøde.
+
+    Se mere under afsnittet "Sanktioner" nedenfor.
+
+    ##Andelslejligheder
+
+    Ved overdragelse af andel, anpart eller aktie i et boligfællesskab er der krav om energimærkning. Ved overdragelse af andele/anparter i en etageejendom, skal hele ejendommen energimærkes.
+
+    Overdrager har ansvar for energimærkningen
+    Det er overdragers pligt at sørge for, at køber får udleveret en energimærkning. Hvis overdragelsen af andel, anpart eller aktie i boligfællesskab sker via ejendomsmægler, skal overdrager fremlægge energimærkning af bygningen for ejendomsmægleren forud for annoncering af bygningen. Energimærket skal altid være synligt ved annoncering i kommercielle medier uanset om det gælder salg, udleje eller overdragelse.
+
+    Foreningen skal stille energimærkning til rådighed
+    Andels/anpartsforeningen har pligt til at stille et gyldigt energimærke til rådighed uden beregning, når en bolig skal overdrages. Det gælder dog kun, hvis andelen/anparten er en lejlighed i en etageejendom. For parcelhuse samt række-, kæde- og dobbelthuse er det den enkelte andels/anpartshavers pligt at få udarbejdet et energimærke for boligen. 
+            
+    ## Sommerhuse og fritidsboliger
+
+    Sommerhuse/fritidsboliger skal ikke energimærkes.
+
+    # Regler for energimærkninger SLUT
+
+
     2.1 Forsøg at vær kreativ med dine fordele og risici, og tænk ud over det åbenlyse - hvad kan være skjulte fordele og risici - og hvad kan være en potentiel dealbreaker for køberen?
     2.2 Vær opmærksom på, at du skal vurdere boligen ud fra den givne tekst, men du må godt bruge din egen viden og erfaring til at udfylde huller - f.eks, hvis du ved et område er kendt for noget specifikt.
     
-    3. Returnér svaret i nedenstående JSON-format (ingen tekst udenfor JSON):
+    3. Sørg ALTID for at have en reference, til hvad du har brugt til at komme frem til dit svar, og inkluder det i feltet "excerpt" i JSON-formatet.
+
+    4. Returnér svaret i nedenstående JSON-format (ingen tekst udenfor JSON):
     
     {
       "summary": "Kort og præcis vurdering med vigtigste risici og fordele samt din anbefaling.",
@@ -103,7 +158,7 @@ export class AIAnalyzerService {
         "floor": "...",
         "boligType": "...",
         "ejerform": "...",
-        "energiMaerke": "...",
+        "energiMaerke": "...", // Kun hvis huset ikke er en fritidsbolig
         "byggeaar": "...",
         "renoveringsaar": "...",
         "maanedligeUdgift": "... kr."
