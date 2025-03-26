@@ -7,6 +7,16 @@ import { supabase_private } from "../supabase/client.ts";
 
 const logger = createLogger("ListingRepository");
 
+/**
+ * Sanitize text by removing null bytes and other problematic characters
+ * @param text Text to sanitize
+ * @returns Sanitized text or undefined if input is undefined
+ */
+function sanitizeText(text: string | undefined): string | undefined {
+  if (!text) return undefined;
+  return text.replace(/\u0000/g, '').trim();
+}
+
 export class ListingRepository {
   private supabase: SupabaseClient<any, "private", any>;
   private tableName: string;
@@ -141,7 +151,20 @@ export class ListingRepository {
       id: string,
       metadata: Partial<Pick<ListingData, "property_image_url" | "html_url" | "html_url_redirect" | "text_extracted" | "text_extracted_redirect" | "url_redirect">>,
   ): Promise<boolean> {
-    const updateData = { ...metadata, updated_at: new Date().toISOString() };
+    // Sanitize text fields
+    const sanitizedMetadata = { ...metadata };
+
+
+    
+    if (sanitizedMetadata.html_url) {
+      sanitizedMetadata.html_url = sanitizeText(sanitizedMetadata.html_url);
+    }
+    
+    if (sanitizedMetadata.html_url_redirect) {
+      sanitizedMetadata.html_url_redirect = sanitizeText(sanitizedMetadata.html_url_redirect);
+    }
+    
+    const updateData = { ...sanitizedMetadata, updated_at: new Date().toISOString() };
 
     const { error } = await this.supabase
         .from(this.tableName)
