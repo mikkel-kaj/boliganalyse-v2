@@ -95,8 +95,22 @@ export class ListingRepository {
       error: Error | string | unknown,
       status: AnalysisStatus = AnalysisStatus.ERROR,
   ): Promise<boolean> {
-    const errorMessage =
-        error instanceof Error ? `${error.message}\n${error.stack || ""}` : String(error);
+    let errorMessage = '';
+    
+    if (typeof error === 'object' && error !== null) {
+      if ('message' in error) {
+        errorMessage = `${(error as any).message}`;
+      if ('stack' in error) {
+        errorMessage += `\n${(error as any).stack || ""}`;
+      }
+      } else if (error instanceof Error) {
+        errorMessage = `${error.message}\n${error.stack || ""}`;
+      } else {
+        errorMessage = String(error);
+      }
+    } else {
+      errorMessage = String(error);
+    }
 
     return this.updateStatus(id, status, errorMessage);
   }
