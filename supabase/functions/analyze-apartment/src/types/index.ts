@@ -57,4 +57,5 @@ export interface AnalyzerServiceOptions {
   apiKey: string;
   apiEndpoint?: string;
   model?: string;
+  apiVersion?: string;
 } 

@@ -27,6 +27,16 @@ export const config = {
     temperature: 1.2, // Low temperature for more consistent results
   },
   
+  // Claude configuration
+  claude: {
+    apiKey: Deno.env.get("ANTHROPIC_API_KEY") || "",
+    endpoint: "https://api.anthropic.com/v1/messages",
+    model: "claude-3-7-sonnet-20250219", // Default model, can be overridden
+    maxTokens: 4000,
+    temperature: 0.5, // Low temperature for more consistent results
+    apiVersion: "2023-06-01",
+  },
+  
   // Database table names
   database: {
     listingsTable: "apartment_listings",
@@ -61,7 +71,7 @@ export function validateConfig(): string[] {
   
   if (!config.supabase.url) missingConfig.push("SUPABASE_URL");
   if (!config.supabase.serviceRoleKey) missingConfig.push("SUPABASE_SERVICE_ROLE_KEY");
-  if (!config.openai.apiKey) missingConfig.push("OPENAI_API_KEY");
+  if (!config.claude.apiKey) missingConfig.push("ANTHROPIC_API_KEY");
   
   return missingConfig;
 } 

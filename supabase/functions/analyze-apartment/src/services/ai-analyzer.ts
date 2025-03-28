@@ -12,18 +12,21 @@ export class AIAnalyzerService {
   private apiKey: string;
   private apiEndpoint: string;
   private model: string;
+  private apiVersion: string;
 
   /**
    * Create a new AI analyzer service
    * @param options Configuration options
    */
   constructor(options: AnalyzerServiceOptions) {
-    this.apiKey = options.apiKey;
-    this.apiEndpoint = options.apiEndpoint || config.openai.endpoint;
-    this.model = options.model || config.openai.model;
+    this.apiKey = config.claude.apiKey;
+    this.apiEndpoint = config.claude.endpoint;
+    this.model = config.claude.model;
+    this.apiVersion = config.claude.apiVersion;
+    console.log(this.apiKey)
 
     if (!this.apiKey) {
-      throw new Error("OpenAI API key is required");
+      throw new Error("Claude API key is required");
     }
   }
 
@@ -38,7 +41,7 @@ export class AIAnalyzerService {
     energyRating?: string,
   ): Promise<Record<string, any>> {
     logger.info(
-      "Starting analyzeTextForInitialData with text length: " +
+      "Starting analyzeText with text length: " +
         (textContent?.length || 0),
     );
 
@@ -193,28 +196,29 @@ export class AIAnalyzerService {
     `;
 
     try {
-      logger.info("Making request to OpenAI API for text analysis...");
+      logger.info("Making request to Claude API for text analysis...");
       const response = await fetch(this.apiEndpoint, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.apiKey}`,
+          "x-api-key": this.apiKey,
+          "anthropic-version": this.apiVersion,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: this.model, // Using the exact model from original implementation
-          messages: [{ role: "system", content: prompt }],
-          max_tokens: 12000,
-          temperature: 0.5,
+          model: this.model,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: config.claude.maxTokens,
+          temperature: config.claude.temperature,
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`OpenAI error (phase1): ${errorText}`);
+        throw new Error(`Claude API error: ${errorText}`);
       }
 
       const data = await response.json();
-      const rawText = data?.choices?.[0]?.message?.content?.trim() || "";
+      const rawText = data?.content?.[0]?.text || "";
 
       // Attempt to parse JSON
       let parsed: Record<string, any> = {};
@@ -232,13 +236,13 @@ export class AIAnalyzerService {
       } catch (error) {
         const parseError = error as Error;
         throw new Error(
-          `Failed to parse response from OpenAI: ${parseError.message}`,
+          `Failed to parse response from Claude: ${parseError.message}`
         );
       }
 
       return parsed;
     } catch (error) {
-      logger.error("Error analyzing text for initial data:", error);
+      logger.error("Error analyzing text:", error);
       throw error;
     }
   }
@@ -247,7 +251,6 @@ export class AIAnalyzerService {
    * Analyze multiple text contents
    * @param primaryText Primary text content
    * @param secondaryText Secondary text content
-   * @param partialAnalysis Any partial analysis already done
    * @returns Analysis result
    */
   async analyzeMultipleTexts(
@@ -258,18 +261,18 @@ export class AIAnalyzerService {
       // Combine the texts for analysis
       if (!secondaryText) {
         logger.warn(
-          "Secondary text content is missing, analyzing primary text only",
+          "Secondary text content is missing, analyzing primary text only"
         );
 
         const analysis = await this.analyzeText(
-          `${primaryText.extractedText});`,
+          primaryText.extractedText || ""
         );
 
         return analysis;
       }
 
       const combinedText =
-        `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText}`;
+        `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText || ""}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText || ""}`;
 
       // Perform the analysis
       const analysis = await this.analyzeText(combinedText);
