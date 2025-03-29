@@ -324,17 +324,20 @@ export class AIAnalyzerService {
       let data = await response.json() as ClaudeResponse;
       logger.info("Received initial response from Claude API");
       
+      let conversationComplete = false;
+      
       // Process response, potentially with multiple tool calls
-      while (data.content && data.content.length > 0) {
+      while (!conversationComplete && data.content && data.content.length > 0) {
         // Track if we found a tool call in this response
         let foundToolCall = false;
         
         // Store the assistant response for adding to message history
         const assistantMessageContent = data.content;
         
-        // Add all text content to the finalResult
+        // Process text and tool_use content
         for (const content of data.content) {
           if (content.type === 'text') {
+            // Add text content to the final result
             finalResult.content.push(content as TextContentBlock);
           } else if (content.type === 'tool_use') {
             foundToolCall = true;
@@ -356,12 +359,13 @@ export class AIAnalyzerService {
               ? toolResponse.error 
               : String(toolResponse.output);
             
-            // Add the assistant and tool result messages to the conversation
+            // Add the assistant message to the conversation history
             messages.push({
               role: "assistant",
               content: assistantMessageContent
             });
             
+            // Add the tool result to the conversation history
             messages.push({
               role: "user",
               content: [
@@ -399,27 +403,34 @@ export class AIAnalyzerService {
             data = await response.json() as ClaudeResponse;
             logger.info("Received follow-up response from Claude API");
             
-            // Add the response to the final result
+            // Break the inner loop since we've processed this tool call and will get new content
+            break;
+          }
+        }
+        
+        // If no tool call was found, we're done with the conversation
+        if (!foundToolCall) {
+          conversationComplete = true;
+          
+          // If this is the first response (no tool calls) or the final response after all tool calls,
+          // make sure to include its text content
+          if (finalResult.content.length === 0) {
+            // Add all text content from the final response
             for (const content of data.content) {
               if (content.type === 'text') {
                 finalResult.content.push(content as TextContentBlock);
               }
             }
-            
-            // Break the inner loop since we've processed this tool call
-            break;
           }
-        }
-        
-        // If no tool call was found, we're done
-        if (!foundToolCall) {
-          break;
         }
       }
       
-      // Add any additional properties from the last response
+      // Add any additional metadata properties from the last response
       const finalResponse: ClaudeResponse = {
-        ...data,
+        id: data.id,
+        model: data.model,
+        role: data.role,
+        stop_reason: data.stop_reason,
         content: finalResult.content
       };
       
