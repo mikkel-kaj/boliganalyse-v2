@@ -36,21 +36,12 @@ export class AIAnalyzerService {
     this.model = config.claude.model;
     this.apiVersion = config.claude.apiVersion;
     
-    // Initialize tool registry, using the initializeTools option if provided
-    const shouldInitializeTools = options.initializeTools !== undefined ? options.initializeTools : true;
+    const shouldInitializeTools = options.initializeTools ?? true;
     this.toolRegistry = new ToolRegistryService(shouldInitializeTools);
 
     if (!this.apiKey) {
       throw new Error("Claude API key is required");
     }
-  }
-
-  /**
-   * Get the tool registry used by this analyzer
-   * @returns The tool registry
-   */
-  getToolRegistry(): ToolRegistry {
-    return this.toolRegistry;
   }
 
   /**
@@ -63,18 +54,60 @@ export class AIAnalyzerService {
     textContent: string,
     energyRating?: string,
   ): Promise<Record<string, any>> {
-    logger.info(
-      "Starting analyzeText with text length: " +
-        (textContent?.length || 0),
-    );
+    logger.info(`Starting analyzeText with text length: ${textContent?.length || 0}`);
 
     if (!textContent) {
-      logger.warn("No text content provided for initial analysis");
       throw new Error("No text content provided for analysis");
     }
 
-    // Use the exact same prompt as the original implementation
-    const prompt = `
+    try {
+      const response = await fetch(this.apiEndpoint, {
+        method: "POST",
+        headers: {
+          "x-api-key": this.apiKey,
+          "anthropic-version": this.apiVersion,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: "user", content: this.createAnalysisPrompt(textContent) }],
+          max_tokens: config.claude.maxTokens,
+          temperature: config.claude.temperature,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Claude API error: ${await response.text()}`);
+      }
+
+      const data = await response.json();
+      const rawText = data?.content?.[0]?.text || "";
+
+      return this.extractJsonFromResponse(rawText);
+    } catch (error) {
+      logger.error("Error analyzing text:", error);
+      throw error;
+    }
+  }
+
+  private extractJsonFromResponse(rawText: string): Record<string, any> {
+    const jsonStart = rawText.indexOf("{");
+    const jsonEnd = rawText.lastIndexOf("}");
+
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error("Could not find JSON in response");
+    }
+
+    try {
+      const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
+      return JSON.parse(jsonText);
+    } catch (error) {
+      throw new Error(`Failed to parse response from Claude: ${(error as Error).message}`);
+    }
+  }
+
+  private createAnalysisPrompt(textContent: string): string {
+    return `
     1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele. Din opgave er at analysere boligannoncer grundigt med fokus på fakta og proaktiv vurdering, selv med begrænset information.
     
     2. Analyser boligteksten omhyggeligt ud fra disse områder:
@@ -217,58 +250,6 @@ export class AIAnalyzerService {
 
     """${textContent}"""
     `;
-
-    try {
-      logger.info("Making request to Claude API for text analysis...");
-      const add = await this.addNumbers(2, 3);
-      const response = await fetch(this.apiEndpoint, {
-        method: "POST",
-        headers: {
-          "x-api-key": this.apiKey,
-          "anthropic-version": this.apiVersion,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: config.claude.maxTokens,
-          temperature: config.claude.temperature,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Claude API error: ${errorText}`);
-      }
-
-      const data = await response.json();
-      const rawText = data?.content?.[0]?.text || "";
-
-      // Attempt to parse JSON
-      let parsed: Record<string, any> = {};
-      try {
-        const jsonStart = rawText.indexOf("{");
-        const jsonEnd = rawText.lastIndexOf("}");
-
-        if (jsonStart === -1 || jsonEnd === -1) {
-          throw new Error("Could not find JSON in response");
-        }
-
-        const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
-        parsed = JSON.parse(jsonText);
-        logger.info("Successfully parsed JSON from response");
-      } catch (error) {
-        const parseError = error as Error;
-        throw new Error(
-          `Failed to parse response from Claude: ${parseError.message}`
-        );
-      }
-
-      return parsed;
-    } catch (error) {
-      logger.error("Error analyzing text:", error);
-      throw error;
-    }
   }
 
   /**
@@ -280,165 +261,93 @@ export class AIAnalyzerService {
     logger.info("Starting analyzeWithTools");
 
     if (!prompt) {
-      logger.warn("No prompt provided for tool-based analysis");
       throw new Error("No prompt provided for analysis");
     }
 
-    // Get tool definitions
     const tools = this.toolRegistry.getAllToolDefinitions();
+    const messages: ClaudeMessage[] = [{ role: "user", content: prompt }];
+    const finalResult: ClaudeResponse = { content: [] };
     
     try {
-      // Initialize messages array with user prompt
-      const messages: ClaudeMessage[] = [
-        { role: "user", content: prompt }
-      ];
+      let data = await this.makeClaudeRequest(messages, tools);
       
-      // Accumulated final response
-      const finalResult: ClaudeResponse = {
-        content: []
-      };
-      
-      // Initial Claude API call
-      logger.info("Making initial request to Claude API with tool definitions...");
-      let response = await fetch(this.apiEndpoint, {
-        method: "POST",
-        headers: {
-          "x-api-key": this.apiKey,
-          "anthropic-version": this.apiVersion,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: messages,
-          max_tokens: config.claude.maxTokens,
-          temperature: config.claude.temperature,
-          tools: tools,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Claude API error: ${errorText}`);
-      }
-
-      let data = await response.json() as ClaudeResponse;
-      logger.info("Received initial response from Claude API");
-      
-      let conversationComplete = false;
-      
-      // Process response, potentially with multiple tool calls
-      while (!conversationComplete && data.content && data.content.length > 0) {
-        // Track if we found a tool call in this response
-        let foundToolCall = false;
-        
-        // Store the assistant response for adding to message history
-        const assistantMessageContent = data.content;
-        
-        // Process text and tool_use content
+      while (data.content?.length > 0) {
+        // Process text content
         for (const content of data.content) {
           if (content.type === 'text') {
-            // Add text content to the final result
             finalResult.content.push(content as TextContentBlock);
-          } else if (content.type === 'tool_use') {
-            foundToolCall = true;
-            
-            // Extract tool call information
-            const toolUseContent = content as ToolUseContentBlock;
-            const toolCall: ToolCallRequest = {
-              name: toolUseContent.name,
-              parameters: toolUseContent.input,
-              id: toolUseContent.id
-            };
-            
-            // Execute the tool
-            logger.info(`Executing tool call: ${toolUseContent.name}`);
-            const toolResponse: ToolCallResponse = await this.toolRegistry.executeTool(toolCall);
-            
-            // Format the tool result properly - ensure it's a string
-            const resultContent = toolResponse.error 
-              ? toolResponse.error 
-              : String(toolResponse.output);
-            
-            // Add the assistant message to the conversation history
-            messages.push({
-              role: "assistant",
-              content: assistantMessageContent
-            });
-            
-            // Add the tool result to the conversation history
-            messages.push({
-              role: "user",
-              content: [
-                {
-                  type: "tool_result",
-                  tool_use_id: toolUseContent.id,
-                  content: resultContent
-                }
-              ]
-            });
-            
-            // Make another API call to continue the conversation
-            logger.info("Making follow-up request to Claude API after tool call");
-            response = await fetch(this.apiEndpoint, {
-              method: "POST",
-              headers: {
-                "x-api-key": this.apiKey,
-                "anthropic-version": this.apiVersion,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: this.model,
-                messages: messages,
-                max_tokens: config.claude.maxTokens,
-                temperature: config.claude.temperature,
-                tools: tools,
-              }),
-            });
-            
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`Claude API error in follow-up: ${errorText}`);
-            }
-            
-            data = await response.json() as ClaudeResponse;
-            logger.info("Received follow-up response from Claude API");
-            
-            // Break the inner loop since we've processed this tool call and will get new content
-            break;
           }
         }
         
-        // If no tool call was found, we're done with the conversation
-        if (!foundToolCall) {
-          conversationComplete = true;
-          
-          // If this is the first response (no tool calls) or the final response after all tool calls,
-          // make sure to include its text content
-          if (finalResult.content.length === 0) {
-            // Add all text content from the final response
-            for (const content of data.content) {
-              if (content.type === 'text') {
-                finalResult.content.push(content as TextContentBlock);
-              }
-            }
-          }
-        }
+        // Find any tool calls
+        const toolCall = data.content.find(c => c.type === 'tool_use') as ToolUseContentBlock | undefined;
+        
+        // If no tool calls, we're done
+        if (!toolCall) break;
+        
+        // Execute the tool
+        logger.info(`Executing tool: ${toolCall.name}`);
+        const toolRequest: ToolCallRequest = {
+          name: toolCall.name,
+          parameters: toolCall.input,
+          id: toolCall.id
+        };
+        
+        const toolResponse = await this.toolRegistry.executeTool(toolRequest);
+        const resultContent = toolResponse.error ? toolResponse.error : String(toolResponse.output);
+        
+        // Update conversation with assistant message and tool result
+        messages.push({ role: "assistant", content: data.content });
+        messages.push({
+          role: "user",
+          content: [{
+            type: "tool_result",
+            tool_use_id: toolCall.id,
+            content: resultContent
+          }]
+        });
+        
+        // Continue conversation
+        data = await this.makeClaudeRequest(messages, tools);
       }
       
-      // Add any additional metadata properties from the last response
-      const finalResponse: ClaudeResponse = {
+      return {
         id: data.id,
         model: data.model,
         role: data.role,
         stop_reason: data.stop_reason,
         content: finalResult.content
       };
-      
-      return finalResponse;
     } catch (error) {
       logger.error("Error analyzing with tools:", error);
       throw error;
     }
+  }
+
+  private async makeClaudeRequest(messages: ClaudeMessage[], tools?: any[]): Promise<ClaudeResponse> {
+    logger.info("Making request to Claude API");
+    const response = await fetch(this.apiEndpoint, {
+      method: "POST",
+      headers: {
+        "x-api-key": this.apiKey,
+        "anthropic-version": this.apiVersion,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: this.model,
+        messages: messages,
+        max_tokens: config.claude.maxTokens,
+        temperature: config.claude.temperature,
+        tools: tools,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Claude API error: ${errorText}`);
+    }
+
+    return await response.json() as ClaudeResponse;
   }
 
   /**
@@ -453,34 +362,24 @@ export class AIAnalyzerService {
     try {
       const result = await this.analyzeWithTools(prompt);
       
-      // Extract the final answer from the response
-      if (result.content && result.content.length > 0) {
-        for (const content of result.content) {
-          if (content.type === "text") {
-            // Try to extract just the number from the text
-            const textContent = content as TextContentBlock;
-            const numMatch = textContent.text.match(/\d+/);
-            if (numMatch) {
-              return parseInt(numMatch[0], 10);
-            }
-            
-            // Try to directly parse the text as a number
-            const num = Number(textContent.text.trim());
-            if (!isNaN(num)) {
-              return num;
-            }
-          }
+      for (const content of result.content || []) {
+        if (content.type === "text") {
+          const text = (content as TextContentBlock).text;
+          
+          // Try to extract a number
+          const numMatch = text.match(/\d+/);
+          if (numMatch) return parseInt(numMatch[0], 10);
+          
+          // Try direct parsing
+          const num = Number(text.trim());
+          if (!isNaN(num)) return num;
         }
-        
-        logger.warn("Could not parse number from result text");
       }
       
-      // If we couldn't extract the number from the response, default to calculating it directly
-      logger.warn("Could not extract result from Claude response, calculating directly");
+      logger.warn("Failed to extract number from Claude response");
       return a + b;
     } catch (error) {
       logger.error("Error using add tool:", error);
-      // Fallback to direct calculation
       return a + b;
     }
   }
@@ -496,26 +395,15 @@ export class AIAnalyzerService {
     secondaryText: HTMLParseResult | undefined,
   ): Promise<any> {
     try {
-      // Combine the texts for analysis
       if (!secondaryText) {
-        logger.warn(
-          "Secondary text content is missing, analyzing primary text only"
-        );
-
-        const analysis = await this.analyzeText(
-          primaryText.extractedText || ""
-        );
-
-        return analysis;
+        logger.warn("Secondary text content is missing, analyzing primary text only");
+        return await this.analyzeText(primaryText.extractedText || "");
       }
 
       const combinedText =
         `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText || ""}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText || ""}`;
 
-      // Perform the analysis
-      const analysis = await this.analyzeText(combinedText);
-
-      return analysis;
+      return await this.analyzeText(combinedText);
     } catch (error) {
       logger.error("Error analyzing multiple text contents", error);
       throw error;
