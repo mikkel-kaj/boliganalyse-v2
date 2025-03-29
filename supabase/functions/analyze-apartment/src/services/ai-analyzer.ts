@@ -13,6 +13,9 @@ import {ToolRegistryService} from "./tool-registry.ts";
 
 const logger = createLogger("AIAnalyzer");
 
+// Sleep function to delay between API calls
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Service for performing AI analysis on text from real estate listings
  * This service ONLY handles text analysis, not HTML parsing
@@ -23,6 +26,7 @@ export class AIAnalyzerService {
   private model: string;
   private apiVersion: string;
   private toolRegistry: ToolRegistry;
+  private apiDelay: number = 6000; // 3 seconds delay between API calls
 
   /**
    * Create a new AI analyzer service
@@ -143,7 +147,7 @@ export class AIAnalyzerService {
     4. Returnér svaret i nedenstående JSON-format:
     
     {
-      "summary": "Dine opsamlede tanker, baggrund, og konklusioner på boligen, inklusiv perspektiver der ikke passer til højdepunkter/risici",
+      "summary": "Dine opsamlede tanker, baggrund, og konklusioner på boligen, inklusiv perspektiver der ikke passer til højdepunkter/risici - skal formatters i MARKDOWN",
       "property": {
         "address": "...",
         "price": "... kr.",
@@ -184,67 +188,15 @@ export class AIAnalyzerService {
     - Foretag realistiske vurderinger frem for at pege på manglende oplysninger.
     - Vær grundig med både risici og fordele.
     
-  Du har adgang til Danmarks Statistiks API gennem værktøjer og skal hjælpe brugeren med at finde og analysere data. Du kan max lave 3 API-kald.
+    DU har adgang til Danmarks Statistik, vha. tool_calls.
     
-    Tilgængelige værktøjer:
-    1. get_subjects - Find emner eller underkategorier i Danmarks Statistik
-    2. get_tables - Find relevante tabeller, evt. filtreret på emner
-    3. get_table_info - Få metadata om en specifik tabel (variabler, værdikoder, osv.)
-    4. get_data - Hent data fra en tabel, evt. filtreret på variabler
+    Her er nogle regler du skal følge:
     
-    Processen for at hjælpe brugeren:
-    // ALWAYS start by getting table information
-    get_table_info({
-      "lang": "da",
-      "table_id": "EJ56"
-    })
-    1. Find relevante emner med get_subjects
-    2. Find relevante tabeller med get_tables
-    3. Undersøg metadata for de mest relevante tabeller med get_table_info
-    4. Hent data med get_data
-    5. Analyser data og giv brugeren et klart, koncist svar på dansk
+    - First use get_subjects with no parameters to get the valid top-level subject codes
+    - Then use get_tables with the subject code to get the valid table codes
+    - Then use get_table_info with the table code to get the valid variables
+    - Finally use get_data with the table code and the variables you want to get the data
     
-    EKSEMPEL PÅ SVAR I "SUMMARY" feltet:
-    
-    Baseret på data fra Danmarks Statistik har jeg lavet en grundig analyse af boligen på Violvænget 1 i Strøby Egede. Her er mine vigtigste konklusioner:
-    
-    Demografiske forhold i [...]
-    
-    Kommunen har [...] indbyggere med en [...]
-    Dette demografiske billede [...]
-    
-    Boligmarkedet i området
-    
-    Gennemsnitsprisen [...]
-    Prisindekset [...]
-    Der er bygget relativt flere [...]
-    Etc.
-    
-    
-    Vurdering af boligen
-    
-    
-    Med en pris på [...] ligger boligen [...] området
-    Kvadratmeterprisen [...] er cirka [...] det typiske niveau i regionen
-    Etc.
-    
-    Fordele ved boligen
-    
-    A2015 energimærke sikrer lave driftsomkostninger og fremtidssikring
-    Havudsigt og stor grund (1374 m²) er sjældne kvaliteter, der opretholder værdi
-    Nybyggeri fra 2023 betyder minimal vedligeholdelse og moderne løsninger
-    Etc.
-    
-    Risici ved købet
-    
-    Pris i forhold til [...]
-    Demografisk udvikling [...]
-    Beliggenhed [...]
-    Etc.
-    
-    
-    Ud fra et statistisk perspektiv [...]
-
     """${textContent}"""
     `;
   }
@@ -298,6 +250,8 @@ export class AIAnalyzerService {
           ? toolResponse.error
           : String(toolResponse.output);
 
+        console.log("tool result:" + resultContent);
+
         // Update conversation with assistant message and tool result
         messages.push({ role: "assistant", content: data.content });
         messages.push({
@@ -308,6 +262,10 @@ export class AIAnalyzerService {
             content: resultContent,
           }],
         });
+
+        // Sleep for the specified delay before making the next API call
+        logger.info(`Sleeping for ${this.apiDelay}ms before next API call`);
+        await sleep(this.apiDelay);
 
         // Continue conversation
         data = await this.makeClaudeRequest(messages, tools);
