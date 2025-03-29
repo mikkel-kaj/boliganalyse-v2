@@ -33,11 +33,45 @@ export abstract class BaseTool implements ToolImplementation {
    */
   protected validateParameters(params: Record<string, any>): boolean {
     // Check for required parameters
-    for (const paramDef of this.definition.input_schema) {
-      if (paramDef.required && (params[paramDef.name] === undefined || params[paramDef.name] === null)) {
-        throw new Error(`Missing required parameter: ${paramDef.name}`);
+    const requiredParams = this.definition.input_schema.required || [];
+    for (const required of requiredParams) {
+      if (params[required] === undefined || params[required] === null) {
+        throw new Error(`Missing required parameter: ${required}`);
       }
     }
+
+    // Check for type validation
+    const properties = this.definition.input_schema.properties;
+    for (const [key, value] of Object.entries(params)) {
+      const propDef = properties[key];
+      if (propDef) {
+        // Validate type
+        const expectedType = propDef.type;
+        let isValid = true;
+
+        if (expectedType === 'string' && typeof value !== 'string') {
+          isValid = false;
+        } else if (expectedType === 'number' && typeof value !== 'number') {
+          isValid = false;
+        } else if (expectedType === 'boolean' && typeof value !== 'boolean') {
+          isValid = false;
+        } else if (expectedType === 'array' && !Array.isArray(value)) {
+          isValid = false;
+        } else if (expectedType === 'object' && (typeof value !== 'object' || value === null || Array.isArray(value))) {
+          isValid = false;
+        }
+
+        if (!isValid) {
+          throw new Error(`Parameter ${key} is of type ${typeof value}, expected ${expectedType}`);
+        }
+
+        // Validate enum values
+        if (propDef.enum && !propDef.enum.includes(value)) {
+          throw new Error(`Parameter ${key} value "${value}" is not one of the allowed enum values: ${propDef.enum.join(', ')}`);
+        }
+      }
+    }
+
     return true;
   }
 

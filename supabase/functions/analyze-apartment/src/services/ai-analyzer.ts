@@ -37,6 +37,14 @@ export class AIAnalyzerService {
   }
 
   /**
+   * Get the tool registry used by this analyzer
+   * @returns The tool registry
+   */
+  getToolRegistry(): ToolRegistry {
+    return this.toolRegistry;
+  }
+
+  /**
    * Analyze plain text to extract initial information including original link
    * @param textContent Plain text content to analyze
    * @param energyRating Optional energy rating to include in the prompt
@@ -203,7 +211,7 @@ export class AIAnalyzerService {
 
     try {
       logger.info("Making request to Claude API for text analysis...");
-      const numbers = await this.addNumbers(5, 7);
+      const add = await this.addNumbers(2, 3);
       const response = await fetch(this.apiEndpoint, {
         method: "POST",
         headers: {
@@ -268,7 +276,7 @@ export class AIAnalyzerService {
     }
 
     // Get tool definitions
-    const toolDefinitions = this.toolRegistry.getAllToolDefinitions();
+    const tools = this.toolRegistry.getAllToolDefinitions();
     
     try {
       logger.info("Making request to Claude API with tool definitions...");
@@ -284,7 +292,7 @@ export class AIAnalyzerService {
           messages: [{ role: "user", content: prompt }],
           max_tokens: config.claude.maxTokens,
           temperature: config.claude.temperature,
-          tools: toolDefinitions,
+          tools: tools,
         }),
       });
 
@@ -304,6 +312,7 @@ export class AIAnalyzerService {
             const toolCall: ToolCallRequest = {
               name: content.name,
               parameters: content.input,
+              id: content.id
             };
             
             logger.info(`Executing tool call: ${content.name}`);
@@ -328,15 +337,14 @@ export class AIAnalyzerService {
                       {
                         type: "tool_result",
                         tool_use_id: content.id,
-                        result: toolResponse.output,
-                        error: toolResponse.error
+                        content: toolResponse.error ? toolResponse.error : toolResponse.output
                       }
                     ]
                   }
                 ],
                 max_tokens: config.claude.maxTokens,
                 temperature: config.claude.temperature,
-                tools: toolDefinitions,
+                tools: tools,
               }),
             });
             

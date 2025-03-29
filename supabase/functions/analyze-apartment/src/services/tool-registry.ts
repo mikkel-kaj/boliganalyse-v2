@@ -37,12 +37,12 @@ export class ToolRegistryService implements ToolRegistry {
 
     // Register the example Add tool
     const addTool = new AddTool();
-    this.registerTool(addTool, addTool.getDefinition());
+    this.registerTool(addTool);
 
     // Register additional tools here as they are implemented
     // Example:
     // const calculatorTool = new CalculatorTool();
-    // this.registerTool(calculatorTool, calculatorTool.getDefinition());
+    // this.registerTool(calculatorTool);
 
     logger.info("Tool initialization complete");
   }
@@ -50,9 +50,10 @@ export class ToolRegistryService implements ToolRegistry {
   /**
    * Register a new tool with its definition
    * @param tool The tool implementation
-   * @param definition The tool definition including parameters
    */
-  registerTool(tool: ToolImplementation, definition: ToolDefinition): void {
+  registerTool(tool: ToolImplementation): void {
+    const definition = tool.getDefinition();
+    
     if (this.tools.has(definition.name)) {
       logger.warn(`Tool with name ${definition.name} already exists and will be overwritten`);
     }
@@ -94,7 +95,7 @@ export class ToolRegistryService implements ToolRegistry {
    * @returns Result of the tool execution
    */
   async executeTool(request: ToolCallRequest): Promise<ToolCallResponse> {
-    const { name, parameters } = request;
+    const { name, parameters, id } = request;
     const tool = this.tools.get(name);
     
     if (!tool) {

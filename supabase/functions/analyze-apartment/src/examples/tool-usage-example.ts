@@ -35,10 +35,20 @@ export async function toolUsageExample(): Promise<void> {
     
     logger.info("Direct tool usage with custom prompt...");
     const result = await analyzer.analyzeWithTools(prompt);
-    logger.info("Analysis result:", result);
+    
+    // Log only the text part of the result for clarity
+    if (result.content && result.content.length > 0) {
+      const textContent = result.content
+        .filter((item: any) => item.type === "text")
+        .map((item: any) => item.text)
+        .join("\n");
+      logger.info(`Analysis result text: ${textContent}`);
+    } else {
+      logger.info("No text content in the result");
+    }
     
   } catch (error) {
-    logger.error("Error in tool usage example:", error);
+    logger.error(`Error in tool usage example: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 

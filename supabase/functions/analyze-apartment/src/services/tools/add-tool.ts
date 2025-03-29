@@ -9,21 +9,21 @@ const logger = createLogger("AddTool");
  */
 export const ADD_TOOL_DEFINITION: ToolDefinition = {
   name: "add",
-  description: "Adds two numbers together and returns the result",
-  input_schema: [
-    {
-      name: "a",
-      type: "number",
-      description: "First number to add",
-      required: true
+  description: "Adds two numbers together and returns their sum. Use this tool when you need to perform addition between two numeric values.",
+  input_schema: {
+    type: "object",
+    properties: {
+      a: {
+        type: "number",
+        description: "First number to add"
+      },
+      b: {
+        type: "number",
+        description: "Second number to add"
+      }
     },
-    {
-      name: "b",
-      type: "number",
-      description: "Second number to add",
-      required: true
-    }
-  ]
+    required: ["a", "b"]
+  }
 };
 
 /**
