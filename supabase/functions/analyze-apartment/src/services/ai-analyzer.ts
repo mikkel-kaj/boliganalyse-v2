@@ -102,9 +102,46 @@ export class AIAnalyzerService {
 
   private createAnalysisPrompt(textContent: string): string {
     return `
-    1. Du er en ekspert i boliganalyse, der hjælper potentielle boligkøbere med at identificere skjulte risici og værdifulde fordele. Din opgave er at analysere boligannoncer grundigt med fokus på fakta og proaktiv vurdering, selv med begrænset information.
+   Du er ekspert i boliganalyser på det danske marked, og bruger idag din erfaring til at hjælpe fremtidige boligejere med at identificere skjulte risici og værdifulde fordele.
+       
+   Din opgave er at lave en grundig analyse af en boligannonce
+     
+   Forsøg at vær kreativ med dine fordele og risici, og tænk ud over det åbenlyse - hvad kan være skjulte fordele og risici - og hvad kan være en potentiel dealbreaker for køberen?
+       
+   Vær opmærksom på, at du skal vurdere boligen ud fra den givne tekst, men du må godt bruge din egen viden og erfaring til at udfylde huller, hvis du ved et område/materiale/boligtype eller noget fjerde,
+        er kendt for noget specifikt.
+      
+   Sørg ALTID for at have en reference, til hvad du har brugt til at komme frem til dit svar, og inkluder det i feltet "excerpt" i JSON-formatet.
     
-    2. Analyser boligteksten omhyggeligt ud fra disse områder:
+   Udover at identificere risici og fordele, skal du også give afgive en kort rapport om boligen, og de kommunale forhold, som kan have indflydelse på boligens værdi.
+   
+   Det er vigtigt, at du fokusere på ting, der er vigtige for køberen.
+   
+   Køberen er et par i 30'erne, med et barn på 3 år. De er begge i arbejde, og har en samlet indkomst på 1.000.000 kr. om året.
+   Køberen er interesseret i at vide, om boligen er et godt køb, og om der er noget, der kan påvirke boligens værdi.
+   Køberen er også interesseret i at vide, om boligen er et godt sted at bo, og om der er noget, der kan påvirke boligens værdi.
+   
+   
+   **OPGAVE 1**    
+   
+    Du skal forsøge at perskektivere boligen i forhold til Danmarks Statistik, og lave en grundig analyse af boligen udfra data i Danmarks statistik.
+    
+    Vælg et par fokusområder, som du vil undersøge nærmere med Danmarks Statistik, som er relevant for din købers profil og boligopslaget.
+    
+    DU har adgang til Danmarks Statistik, vha. tool_calls.
+    
+    Her er nogle regler du skal følge:
+    
+    - Først, brug get_subjects uden parametre for at få de gyldige top-level subject codes
+    - Brug derefter get_tables med subject code for at få de gyldige table codes
+    - Brug derefter get_table_info med table code for at få de gyldige variable
+    - Brug til sidst get_data med table code og de variable, du vil have data for
+    
+    Vær OBS på at bruge de rigtige parametre til funktionerne.
+    
+
+    **OPGAVE 2**
+    1. Analyser boligannoncens detaljer, sammen med dine kommunale observationer. Du kan overveje at inkludere disse områder:
     
     **BASAL INFORMATION:**
     - Generelle oplysninger: adresse, pris, boligtype, ejerform, størrelse, antal værelser, etage
@@ -113,41 +150,31 @@ export class AIAnalyzerService {
     - Tilstand: generel stand, vedligeholdelsesniveau, energimærke, rapporter (hvis nævnt)
     - Området: kvarter, transport, institutioner, indkøbsmuligheder, rekreative områder
     - Historik: prisændringer, tid på markedet, tidligere salg
-    
-    **RISICI:**
-    Identificér mindst 8 risici ved boligen baseret på den givne tekst. Hvis data mangler, undgå at nævne "information mangler". Brug i stedet din ekspertise til at:
-    - Vurdere sandsynlige risici baseret på boligtype, alder, beliggenhed og andre tilgængelige oplysninger.
-    - Komme med realistiske og relevante antagelser, fx om potentielle omkostninger, støjgener eller renoveringsbehov.
-    - Angive konkrete anbefalinger til spørgsmål, som køberen bør stille eller områder, der bør undersøges yderligere.
-    
-    Eksempler på risikokategorier:
     - Energimæssige forhold (fx potentielle høje energiomkostninger)
     - Bygningsmæssige forhold (alder, potentielle skjulte fejl, vedligeholdelsesbehov)
     - Beliggenhed (støj, trafik, kommende byggeri, parkering)
     - Økonomiske forhold (løbende udgifter, boligudgift sammenlignet med markedet)
     - Juridiske forhold (forpligtelser, vedtægter, husdyr, udlejning)
+
+    
+    **RISICI:**
+    Identificér mindst 8 risici ved boligen baseret på den givne tekst. Brug din ekspertise til at:
+    - Vurdere sandsynlige risici baseret på boligtype, alder, beliggenhed og andre tilgængelige oplysninger.
+    - Komme med realistiske og relevante antagelser, fx om potentielle omkostninger, støjgener eller renoveringsbehov.
+    - Angive konkrete anbefalinger til spørgsmål, som køberen bør stille eller områder, der bør undersøges yderligere.
+
     
     **FORDELE:**
     Identificér mindst 8 fordele, der realistisk kan udledes af teksten. Brug din faglige dømmekraft og understreg styrker, der kan give værdi for køberen.
-    
-    Eksempler på fordele:
-    - Beliggenhed og nærhed til faciliteter
-    - Indretning og praktisk planløsning
-    - Boligens generelle tilstand
-    - Udearealer (have, terrasse, udsigt)
-    - Økonomi (pris i forhold til markedet)
-    - Energieffektivitet (hvis relevant)
-    - Muligheder for personlig tilpasning
-
-    2.1 Forsøg at vær kreativ med dine fordele og risici, og tænk ud over det åbenlyse - hvad kan være skjulte fordele og risici - og hvad kan være en potentiel dealbreaker for køberen?
-    2.2 Vær opmærksom på, at du skal vurdere boligen ud fra den givne tekst, men du må godt bruge din egen viden og erfaring til at udfylde huller - f.eks, hvis du ved et område er kendt for noget specifikt.
-    
-    3. Sørg ALTID for at have en reference, til hvad du har brugt til at komme frem til dit svar, og inkluder det i feltet "excerpt" i JSON-formatet.
-
+   
+   ** Boligannonce: **
+   ${textContent}
+   
+   
     4. Returnér svaret i nedenstående JSON-format:
     
     {
-      "summary": "Dine opsamlede tanker, baggrund, og konklusioner på boligen, inklusiv perspektiver der ikke passer til højdepunkter/risici - skal formatters i MARKDOWN",
+      "summary": "Dine vigtigeste konklusioner fra din grundige analyse af kommunen, lokalområdet, og boligopslaget",
       "property": {
         "address": "...",
         "price": "... kr.",
@@ -169,8 +196,8 @@ export class AIAnalyzerService {
           "title": "Kort, præcis titel på risiko",
           "details": "Grundig vurdering af risikoen (2-3 sætninger)",
           "excerpt": "Relevante tekstdetaljer eller din egen vurdering",
-          "recommendations": [
-            {"promptTitle": "Spørg mægler", "prompt": "Relevant spørgsmål, der bør stilles mægleren"}
+          "recommendations": [ // Liste af anbefalinger til køberne
+            {"promptTitle": "Spørg mægler/Undersøg nærmere", "prompt": "Relevant spørgsmål, der bør stilles mægleren"}
           ]
         }
       ],
@@ -182,22 +209,6 @@ export class AIAnalyzerService {
         }
       ]
     }
-    
-    **VIGTIGT:**
-    - Svar på dansk.
-    - Foretag realistiske vurderinger frem for at pege på manglende oplysninger.
-    - Vær grundig med både risici og fordele.
-    
-    DU har adgang til Danmarks Statistik, vha. tool_calls.
-    
-    Her er nogle regler du skal følge:
-    
-    - First use get_subjects with no parameters to get the valid top-level subject codes
-    - Then use get_tables with the subject code to get the valid table codes
-    - Then use get_table_info with the table code to get the valid variables
-    - Finally use get_data with the table code and the variables you want to get the data
-    
-    """${textContent}"""
     `;
   }
 
@@ -263,10 +274,6 @@ export class AIAnalyzerService {
           }],
         });
 
-        // Sleep for the specified delay before making the next API call
-        logger.info(`Sleeping for ${this.apiDelay}ms before next API call`);
-        await sleep(this.apiDelay);
-
         // Continue conversation
         data = await this.makeClaudeRequest(messages, tools);
       }
@@ -287,6 +294,7 @@ export class AIAnalyzerService {
   private async makeClaudeRequest(
     messages: ClaudeMessage[],
     tools?: any[],
+    retryCount: number = 0,
   ): Promise<ClaudeResponse> {
     logger.info("Making request to Claude API");
     const response = await fetch(this.apiEndpoint, {
@@ -306,8 +314,15 @@ export class AIAnalyzerService {
       }),
     });
 
+    if (!response.ok && response.status == 429 && retryCount < 3) {
+      logger.warn("Rate limited by Claude API, retrying in 30 seconds");
+      await sleep(60000);
+      return await this.makeClaudeRequest(messages, tools, retryCount + 1);
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.log(response.toString());
       throw new Error(`Claude API error: ${errorText}`);
     }
 

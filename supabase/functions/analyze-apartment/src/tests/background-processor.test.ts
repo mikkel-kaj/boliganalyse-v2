@@ -18,7 +18,7 @@ Deno.test({
     const repository = new ListingRepository();
 
     // Create a test listing to use
-    const testUrl = `https://home.dk/salg/lejligheder/emdrupvej-113-4-2400-koebenhavn-nv/sag-1620003650/`;
+    const testUrl = `https://www.boligsiden.dk/adresse/lykkesholmvej-11b-4320-lejre-03500463_11b_______?udbud=0344a6be-1d51-4bdc-bf18-eec637ab220d`;
     const normalizedUrl = testUrl;
     const deleteIfExists = await repository.deleteByUrl(normalizedUrl);
     const listing = await repository.createListing(testUrl, normalizedUrl);

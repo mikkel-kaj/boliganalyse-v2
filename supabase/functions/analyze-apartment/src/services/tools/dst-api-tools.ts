@@ -413,7 +413,7 @@ export class GetDataTool extends BaseTool {
 
       if (!response.ok) {
         throw new Error(
-          `DST API Error: ${response.status} ${response.statusText}`,
+          `DST API Error: ${response.status} ${response.statusText} {${await response.text()}}`,
         );
       }
 

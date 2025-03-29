@@ -58,7 +58,7 @@ export class ListingProcessorService {
       controller.abort();
       logger.warn(`Processing timeout for listing: ${listingId}`);
       // The timeout error will be caught by the catch block
-    }, 300000); // 5 minute timeout for full processing
+    }, 3000000); // 5 minute timeout for full processing
 
     try {
       logger.info(`Starting processing for listing: ${listingId}`);
