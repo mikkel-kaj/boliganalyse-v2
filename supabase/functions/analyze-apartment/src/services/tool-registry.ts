@@ -6,7 +6,12 @@ import {
   ToolImplementation, 
   ToolRegistry 
 } from "../types/tool-calling.ts";
-import { AddTool } from "./tools/add-tool.ts";
+import { 
+  GetSubjectsTool, 
+  GetTablesTool, 
+  GetTableInfoTool, 
+  GetDataTool 
+} from "./tools/dst-api-tools.ts";
 
 const logger = createLogger("ToolRegistry");
 
@@ -35,15 +40,13 @@ export class ToolRegistryService implements ToolRegistry {
   initializeTools(): void {
     logger.info("Initializing tools...");
 
-    // Register the example Add tool
-    const addTool = new AddTool();
-    this.registerTool(addTool);
+    // Register Danmarks Statistik API tools
+    this.registerTool(new GetSubjectsTool());
+    this.registerTool(new GetTablesTool());
+    this.registerTool(new GetTableInfoTool());
+    this.registerTool(new GetDataTool());
 
     // Register additional tools here as they are implemented
-    // Example:
-    // const calculatorTool = new CalculatorTool();
-    // this.registerTool(calculatorTool);
-
     logger.info("Tool initialization complete");
   }
 

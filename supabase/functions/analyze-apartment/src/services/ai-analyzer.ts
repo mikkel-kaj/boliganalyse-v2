@@ -1,17 +1,15 @@
-import { config } from "../config/config.ts";
-import { AnalyzerServiceOptions, HTMLParseResult } from "../types/index.ts";
-import { createLogger } from "../utils/logger.ts";
-import { 
-  ClaudeMessage, 
-  ClaudeResponse, 
-  ContentBlock,
+import {config} from "../config/config.ts";
+import {AnalyzerServiceOptions, HTMLParseResult} from "../types/index.ts";
+import {createLogger} from "../utils/logger.ts";
+import {
+  ClaudeMessage,
+  ClaudeResponse,
   TextContentBlock,
-  ToolCallRequest, 
-  ToolCallResponse, 
-  ToolRegistry, 
-  ToolUseContentBlock
+  ToolCallRequest,
+  ToolRegistry,
+  ToolUseContentBlock,
 } from "../types/tool-calling.ts";
-import { ToolRegistryService } from "./tool-registry.ts";
+import {ToolRegistryService} from "./tool-registry.ts";
 
 const logger = createLogger("AIAnalyzer");
 
@@ -35,7 +33,7 @@ export class AIAnalyzerService {
     this.apiEndpoint = config.claude.endpoint;
     this.model = config.claude.model;
     this.apiVersion = config.claude.apiVersion;
-    
+
     const shouldInitializeTools = options.initializeTools ?? true;
     this.toolRegistry = new ToolRegistryService(shouldInitializeTools);
 
@@ -54,7 +52,9 @@ export class AIAnalyzerService {
     textContent: string,
     energyRating?: string,
   ): Promise<Record<string, any>> {
-    logger.info(`Starting analyzeText with text length: ${textContent?.length || 0}`);
+    logger.info(
+      `Starting analyzeText with text length: ${textContent?.length || 0}`,
+    );
 
     if (!textContent) {
       throw new Error("No text content provided for analysis");
@@ -64,11 +64,12 @@ export class AIAnalyzerService {
       const prompt = this.createAnalysisPrompt(textContent);
       const response = await this.analyzeWithTools(prompt);
 
-      if (response.stop_reason !== "end_turn") {
+      if (response.stop_reason && response.stop_reason !== "end_turn") {
         throw new Error(`Claude API error: ${response.stop_reason}`);
       }
 
-      const rawText = response.content[response.content.length - 1] as TextContentBlock;
+      const rawText = response
+        .content[response.content.length - 1] as TextContentBlock;
 
       return this.extractJsonFromResponse(rawText.text);
     } catch (error) {
@@ -89,7 +90,9 @@ export class AIAnalyzerService {
       const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
       return JSON.parse(jsonText);
     } catch (error) {
-      throw new Error(`Failed to parse response from Claude: ${(error as Error).message}`);
+      throw new Error(
+        `Failed to parse response from Claude: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -234,6 +237,21 @@ export class AIAnalyzerService {
     - Foretag realistiske vurderinger frem for at pege på manglende oplysninger.
     - Vær grundig med både risici og fordele.
     
+  Du har adgang til Danmarks Statistiks API gennem værktøjer og skal hjælpe brugeren med at finde og analysere data. Du kan max lave 3 API-kald.
+    
+    Tilgængelige værktøjer:
+    1. get_subjects - Find emner eller underkategorier i Danmarks Statistik
+    2. get_tables - Find relevante tabeller, evt. filtreret på emner
+    3. get_table_info - Få metadata om en specifik tabel (variabler, værdikoder, osv.)
+    4. get_data - Hent data fra en tabel, evt. filtreret på variabler
+    
+    Processen for at hjælpe brugeren:
+    1. Find relevante emner med get_subjects
+    2. Find relevante tabeller med get_tables
+    3. Undersøg metadata for de mest relevante tabeller med get_table_info
+    4. Hent data med get_data
+    5. Analyser data og giv brugeren et klart, koncist svar på dansk
+    
 
     """${textContent}"""
     `;
@@ -254,35 +272,40 @@ export class AIAnalyzerService {
     const tools = this.toolRegistry.getAllToolDefinitions();
     const messages: ClaudeMessage[] = [{ role: "user", content: prompt }];
     const finalResult: ClaudeResponse = { content: [] };
-    
+
     try {
       let data = await this.makeClaudeRequest(messages, tools);
-      
+
       while (data.content?.length > 0) {
         // Process text content
         for (const content of data.content) {
-          if (content.type === 'text') {
+          if (content.type === "text") {
+            console.log("AI thought:", (content as TextContentBlock).text);
             finalResult.content.push(content as TextContentBlock);
           }
         }
-        
+
         // Find any tool calls
-        const toolCall = data.content.find(c => c.type === 'tool_use') as ToolUseContentBlock | undefined;
-        
+        const toolCall = data.content.find((c) => c.type === "tool_use") as
+          | ToolUseContentBlock
+          | undefined;
+
         // If no tool calls, we're done
         if (!toolCall) break;
-        
+
         // Execute the tool
         logger.info(`Executing tool: ${toolCall.name}`);
         const toolRequest: ToolCallRequest = {
           name: toolCall.name,
           parameters: toolCall.input,
-          id: toolCall.id
+          id: toolCall.id,
         };
-        
+
         const toolResponse = await this.toolRegistry.executeTool(toolRequest);
-        const resultContent = toolResponse.error ? toolResponse.error : String(toolResponse.output);
-        
+        const resultContent = toolResponse.error
+          ? toolResponse.error
+          : String(toolResponse.output);
+
         // Update conversation with assistant message and tool result
         messages.push({ role: "assistant", content: data.content });
         messages.push({
@@ -290,20 +313,20 @@ export class AIAnalyzerService {
           content: [{
             type: "tool_result",
             tool_use_id: toolCall.id,
-            content: resultContent
-          }]
+            content: resultContent,
+          }],
         });
-        
+
         // Continue conversation
         data = await this.makeClaudeRequest(messages, tools);
       }
-      
+
       return {
         id: data.id,
         model: data.model,
         role: data.role,
         stop_reason: data.stop_reason,
-        content: finalResult.content
+        content: finalResult.content,
       };
     } catch (error) {
       logger.error("Error analyzing with tools:", error);
@@ -311,11 +334,15 @@ export class AIAnalyzerService {
     }
   }
 
-  private async makeClaudeRequest(messages: ClaudeMessage[], tools?: any[]): Promise<ClaudeResponse> {
+  private async makeClaudeRequest(
+    messages: ClaudeMessage[],
+    tools?: any[],
+  ): Promise<ClaudeResponse> {
     logger.info("Making request to Claude API");
     const response = await fetch(this.apiEndpoint, {
       method: "POST",
       headers: {
+        "anthropic-beta": "token-efficient-tools-2025-02-19",
         "x-api-key": this.apiKey,
         "anthropic-version": this.apiVersion,
         "Content-Type": "application/json",
@@ -349,12 +376,17 @@ export class AIAnalyzerService {
   ): Promise<any> {
     try {
       if (!secondaryText) {
-        logger.warn("Secondary text content is missing, analyzing primary text only");
+        logger.warn(
+          "Secondary text content is missing, analyzing primary text only",
+        );
         return await this.analyzeText(primaryText.extractedText || "");
       }
 
-      const combinedText =
-        `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${primaryText.extractedText || ""}\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${secondaryText.extractedText || ""}`;
+      const combinedText = `ORIGINAL ARTICLE FROM BOLIGSIDEN -- > ${
+        primaryText.extractedText || ""
+      }\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n${
+        secondaryText.extractedText || ""
+      }`;
 
       return await this.analyzeText(combinedText);
     } catch (error) {
