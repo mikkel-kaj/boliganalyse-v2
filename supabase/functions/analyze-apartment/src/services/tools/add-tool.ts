@@ -38,9 +38,9 @@ export class AddTool extends BaseTool {
   /**
    * Implementation of the add operation
    * @param params Parameters with a and b values
-   * @returns Sum of a and b
+   * @returns Sum of a and b as a string for Claude compatibility
    */
-  protected async executeImpl(params: Record<string, any>): Promise<number> {
+  protected async executeImpl(params: Record<string, any>): Promise<string> {
     const { a, b } = params;
     
     // Convert parameters to numbers (in case they are passed as strings)
@@ -52,7 +52,11 @@ export class AddTool extends BaseTool {
       throw new Error(`Invalid parameters: a=${a}, b=${b}. Both parameters must be numbers.`);
     }
     
-    logger.info(`Adding ${numA} + ${numB}`);
-    return numA + numB;
+    // Calculate the result
+    const result = numA + numB;
+    logger.info(`Adding ${numA} + ${numB} = ${result}`);
+    
+    // Return as string for Claude compatibility
+    return result.toString();
   }
 } 

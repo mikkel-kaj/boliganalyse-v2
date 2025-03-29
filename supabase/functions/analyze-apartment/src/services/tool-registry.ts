@@ -109,7 +109,13 @@ export class ToolRegistryService implements ToolRegistry {
     try {
       logger.info(`Executing tool: ${name} with parameters: ${JSON.stringify(parameters)}`);
       const output = await tool.execute(parameters);
-      return { output };
+      
+      // Validate output - Claude API requires tool results to be strings or content blocks
+      if (output !== null && output !== undefined) {
+        return { output };
+      } else {
+        return { output: null, error: "Tool returned null or undefined result" };
+      }
     } catch (error) {
       logger.error(`Error executing tool ${name}:`, error);
       return {

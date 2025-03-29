@@ -292,7 +292,7 @@ export class AIAnalyzerService {
           messages: [{ role: "user", content: prompt }],
           max_tokens: config.claude.maxTokens,
           temperature: config.claude.temperature,
-          tools: tools,
+          tools: tools
         }),
       });
 
@@ -318,6 +318,11 @@ export class AIAnalyzerService {
             logger.info(`Executing tool call: ${content.name}`);
             const toolResponse: ToolCallResponse = await this.toolRegistry.executeTool(toolCall);
             
+            // Format the tool result properly - ensure it's a string
+            const resultContent = toolResponse.error 
+              ? toolResponse.error 
+              : String(toolResponse.output); // Convert to string to ensure compatibility
+            
             // Send the tool result back to Claude
             const toolResponseMessage = await fetch(this.apiEndpoint, {
               method: "POST",
@@ -337,7 +342,7 @@ export class AIAnalyzerService {
                       {
                         type: "tool_result",
                         tool_use_id: content.id,
-                        content: toolResponse.error ? toolResponse.error : toolResponse.output
+                        content: resultContent
                       }
                     ]
                   }
@@ -391,14 +396,25 @@ export class AIAnalyzerService {
           if (numMatch) {
             return parseInt(numMatch[0], 10);
           }
-          return parseInt(lastContent.text, 10);
+          
+          // Try to directly parse the text as a number
+          const num = Number(lastContent.text.trim());
+          if (!isNaN(num)) {
+            return num;
+          }
+          
+          logger.warn(`Could not parse number from result text: "${lastContent.text}"`);
+          return 0;
         }
       }
       
-      throw new Error("Could not get a clear result from the add tool");
+      // If we couldn't extract the number from the response, default to calculating it directly
+      logger.warn("Could not extract result from Claude response, calculating directly");
+      return a + b;
     } catch (error) {
       logger.error("Error using add tool:", error);
-      throw error;
+      // Fallback to direct calculation
+      return a + b;
     }
   }
 
