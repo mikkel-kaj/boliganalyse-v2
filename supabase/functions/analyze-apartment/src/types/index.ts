@@ -58,4 +58,5 @@ export interface AnalyzerServiceOptions {
   apiEndpoint?: string;
   model?: string;
   apiVersion?: string;
+  initializeTools?: boolean; // Whether to automatically initialize tools
 } 

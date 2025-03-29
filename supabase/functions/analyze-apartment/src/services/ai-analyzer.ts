@@ -1,6 +1,8 @@
 import { config } from "../config/config.ts";
 import { AnalyzerServiceOptions, HTMLParseResult } from "../types/index.ts";
 import { createLogger } from "../utils/logger.ts";
+import { ToolCallRequest, ToolCallResponse, ToolRegistry } from "../types/tool-calling.ts";
+import { ToolRegistryService } from "./tool-registry.ts";
 
 const logger = createLogger("AIAnalyzer");
 
@@ -13,6 +15,7 @@ export class AIAnalyzerService {
   private apiEndpoint: string;
   private model: string;
   private apiVersion: string;
+  private toolRegistry: ToolRegistry;
 
   /**
    * Create a new AI analyzer service
@@ -23,7 +26,10 @@ export class AIAnalyzerService {
     this.apiEndpoint = config.claude.endpoint;
     this.model = config.claude.model;
     this.apiVersion = config.claude.apiVersion;
-    console.log(this.apiKey)
+    
+    // Initialize tool registry, using the initializeTools option if provided
+    const shouldInitializeTools = options.initializeTools !== undefined ? options.initializeTools : true;
+    this.toolRegistry = new ToolRegistryService(shouldInitializeTools);
 
     if (!this.apiKey) {
       throw new Error("Claude API key is required");
@@ -197,6 +203,7 @@ export class AIAnalyzerService {
 
     try {
       logger.info("Making request to Claude API for text analysis...");
+      const numbers = await this.addNumbers(5, 7);
       const response = await fetch(this.apiEndpoint, {
         method: "POST",
         headers: {
@@ -243,6 +250,146 @@ export class AIAnalyzerService {
       return parsed;
     } catch (error) {
       logger.error("Error analyzing text:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze text with tool calling capabilities
+   * @param prompt The prompt to send to Claude
+   * @returns Analysis result with tool usage
+   */
+  async analyzeWithTools(prompt: string): Promise<Record<string, any>> {
+    logger.info("Starting analyzeWithTools");
+
+    if (!prompt) {
+      logger.warn("No prompt provided for tool-based analysis");
+      throw new Error("No prompt provided for analysis");
+    }
+
+    // Get tool definitions
+    const toolDefinitions = this.toolRegistry.getAllToolDefinitions();
+    
+    try {
+      logger.info("Making request to Claude API with tool definitions...");
+      const response = await fetch(this.apiEndpoint, {
+        method: "POST",
+        headers: {
+          "x-api-key": this.apiKey,
+          "anthropic-version": this.apiVersion,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: config.claude.maxTokens,
+          temperature: config.claude.temperature,
+          tools: toolDefinitions,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Claude API error: ${errorText}`);
+      }
+
+      const data = await response.json();
+      logger.info("Received response from Claude API");
+
+      // Process tool calls if any
+      if (data.content && data.content.length > 0) {
+        // Handle any tool calls in the response
+        for (const content of data.content) {
+          if (content.type === "tool_use") {
+            const toolCall: ToolCallRequest = {
+              name: content.name,
+              parameters: content.input,
+            };
+            
+            logger.info(`Executing tool call: ${content.name}`);
+            const toolResponse: ToolCallResponse = await this.toolRegistry.executeTool(toolCall);
+            
+            // Send the tool result back to Claude
+            const toolResponseMessage = await fetch(this.apiEndpoint, {
+              method: "POST",
+              headers: {
+                "x-api-key": this.apiKey,
+                "anthropic-version": this.apiVersion,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: this.model,
+                messages: [
+                  { role: "user", content: prompt },
+                  { role: "assistant", content: data.content },
+                  { 
+                    role: "user", 
+                    content: [
+                      {
+                        type: "tool_result",
+                        tool_use_id: content.id,
+                        result: toolResponse.output,
+                        error: toolResponse.error
+                      }
+                    ]
+                  }
+                ],
+                max_tokens: config.claude.maxTokens,
+                temperature: config.claude.temperature,
+                tools: toolDefinitions,
+              }),
+            });
+            
+            if (!toolResponseMessage.ok) {
+              const errorText = await toolResponseMessage.text();
+              throw new Error(`Claude API error after tool call: ${errorText}`);
+            }
+            
+            const finalData = await toolResponseMessage.json();
+            logger.info("Received final response after tool usage");
+            
+            // Return the entire response for further processing
+            return finalData;
+          }
+        }
+      }
+
+      // If no tool calls, return the original response
+      return data;
+    } catch (error) {
+      logger.error("Error analyzing with tools:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Simple example method to demonstrate the add tool
+   * @param a First number
+   * @param b Second number
+   * @returns The result of the addition
+   */
+  async addNumbers(a: number, b: number): Promise<number> {
+    const prompt = `I need you to add ${a} and ${b}. Please use the "add" tool for this calculation.`;
+    
+    try {
+      const result = await this.analyzeWithTools(prompt);
+      
+      // Extract the final answer from the response
+      if (result.content && result.content.length > 0) {
+        const lastContent = result.content[result.content.length - 1];
+        if (lastContent.type === "text") {
+          // Try to extract just the number from the text
+          const numMatch = lastContent.text.match(/\d+/);
+          if (numMatch) {
+            return parseInt(numMatch[0], 10);
+          }
+          return parseInt(lastContent.text, 10);
+        }
+      }
+      
+      throw new Error("Could not get a clear result from the add tool");
+    } catch (error) {
+      logger.error("Error using add tool:", error);
       throw error;
     }
   }
