@@ -61,29 +61,16 @@ export class AIAnalyzerService {
     }
 
     try {
-      const response = await fetch(this.apiEndpoint, {
-        method: "POST",
-        headers: {
-          "x-api-key": this.apiKey,
-          "anthropic-version": this.apiVersion,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [{ role: "user", content: this.createAnalysisPrompt(textContent) }],
-          max_tokens: config.claude.maxTokens,
-          temperature: config.claude.temperature,
-        }),
-      });
+      const prompt = this.createAnalysisPrompt(textContent);
+      const response = await this.analyzeWithTools(prompt);
 
-      if (!response.ok) {
-        throw new Error(`Claude API error: ${await response.text()}`);
+      if (response.stop_reason !== "end_turn") {
+        throw new Error(`Claude API error: ${response.stop_reason}`);
       }
 
-      const data = await response.json();
-      const rawText = data?.content?.[0]?.text || "";
+      const rawText = response.content[response.content.length - 1] as TextContentBlock;
 
-      return this.extractJsonFromResponse(rawText);
+      return this.extractJsonFromResponse(rawText.text);
     } catch (error) {
       logger.error("Error analyzing text:", error);
       throw error;
@@ -348,40 +335,6 @@ export class AIAnalyzerService {
     }
 
     return await response.json() as ClaudeResponse;
-  }
-
-  /**
-   * Simple example method to demonstrate the add tool
-   * @param a First number
-   * @param b Second number
-   * @returns The result of the addition
-   */
-  async addNumbers(a: number, b: number): Promise<number> {
-    const prompt = `I need you to add ${a} and ${b}. And then add the result of that to 2039. Please use the "add" tool for this calculation, twice.`;
-    
-    try {
-      const result = await this.analyzeWithTools(prompt);
-      
-      for (const content of result.content || []) {
-        if (content.type === "text") {
-          const text = (content as TextContentBlock).text;
-          
-          // Try to extract a number
-          const numMatch = text.match(/\d+/);
-          if (numMatch) return parseInt(numMatch[0], 10);
-          
-          // Try direct parsing
-          const num = Number(text.trim());
-          if (!isNaN(num)) return num;
-        }
-      }
-      
-      logger.warn("Failed to extract number from Claude response");
-      return a + b;
-    } catch (error) {
-      logger.error("Error using add tool:", error);
-      return a + b;
-    }
   }
 
   /**
