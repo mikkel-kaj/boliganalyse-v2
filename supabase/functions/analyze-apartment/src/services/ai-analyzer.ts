@@ -246,6 +246,11 @@ export class AIAnalyzerService {
     4. get_data - Hent data fra en tabel, evt. filtreret på variabler
     
     Processen for at hjælpe brugeren:
+    // ALWAYS start by getting table information
+    get_table_info({
+      "lang": "da",
+      "table_id": "EJ56"
+    })
     1. Find relevante emner med get_subjects
     2. Find relevante tabeller med get_tables
     3. Undersøg metadata for de mest relevante tabeller med get_table_info
