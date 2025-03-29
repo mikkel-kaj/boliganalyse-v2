@@ -47,4 +47,42 @@ export interface ToolRegistry {
   getToolDefinition(name: string): ToolDefinition | undefined;
   getAllToolDefinitions(): ToolDefinition[];
   executeTool(request: ToolCallRequest): Promise<ToolCallResponse>;
+}
+
+/**
+ * Claude API Types
+ */
+export interface TextContentBlock {
+  type: 'text';
+  text: string;
+}
+
+export interface ToolUseContentBlock {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, any>;
+}
+
+export interface ToolResultContentBlock {
+  type: 'tool_result';
+  tool_use_id: string;
+  content: string;
+}
+
+export type ContentBlock = TextContentBlock | ToolUseContentBlock | ToolResultContentBlock;
+
+export interface ClaudeMessage {
+  role: 'user' | 'assistant';
+  content: string | ContentBlock[];
+}
+
+export interface ClaudeResponse {
+  id?: string;
+  content: ContentBlock[];
+  model?: string;
+  role?: string;
+  stop_reason?: string;
+  type?: string;
+  [key: string]: any;
 } 

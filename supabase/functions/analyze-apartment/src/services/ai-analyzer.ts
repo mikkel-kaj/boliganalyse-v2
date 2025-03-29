@@ -1,7 +1,16 @@
 import { config } from "../config/config.ts";
 import { AnalyzerServiceOptions, HTMLParseResult } from "../types/index.ts";
 import { createLogger } from "../utils/logger.ts";
-import { ToolCallRequest, ToolCallResponse, ToolRegistry } from "../types/tool-calling.ts";
+import { 
+  ClaudeMessage, 
+  ClaudeResponse, 
+  ContentBlock,
+  TextContentBlock,
+  ToolCallRequest, 
+  ToolCallResponse, 
+  ToolRegistry, 
+  ToolUseContentBlock
+} from "../types/tool-calling.ts";
 import { ToolRegistryService } from "./tool-registry.ts";
 
 const logger = createLogger("AIAnalyzer");
@@ -267,7 +276,7 @@ export class AIAnalyzerService {
    * @param prompt The prompt to send to Claude
    * @returns Analysis result with tool usage
    */
-  async analyzeWithTools(prompt: string): Promise<Record<string, any>> {
+  async analyzeWithTools(prompt: string): Promise<ClaudeResponse> {
     logger.info("Starting analyzeWithTools");
 
     if (!prompt) {
@@ -279,8 +288,19 @@ export class AIAnalyzerService {
     const tools = this.toolRegistry.getAllToolDefinitions();
     
     try {
-      logger.info("Making request to Claude API with tool definitions...");
-      const response = await fetch(this.apiEndpoint, {
+      // Initialize messages array with user prompt
+      const messages: ClaudeMessage[] = [
+        { role: "user", content: prompt }
+      ];
+      
+      // Accumulated final response
+      const finalResult: ClaudeResponse = {
+        content: []
+      };
+      
+      // Initial Claude API call
+      logger.info("Making initial request to Claude API with tool definitions...");
+      let response = await fetch(this.apiEndpoint, {
         method: "POST",
         headers: {
           "x-api-key": this.apiKey,
@@ -289,10 +309,10 @@ export class AIAnalyzerService {
         },
         body: JSON.stringify({
           model: this.model,
-          messages: [{ role: "user", content: prompt }],
+          messages: messages,
           max_tokens: config.claude.maxTokens,
           temperature: config.claude.temperature,
-          tools: tools
+          tools: tools,
         }),
       });
 
@@ -301,30 +321,61 @@ export class AIAnalyzerService {
         throw new Error(`Claude API error: ${errorText}`);
       }
 
-      const data = await response.json();
-      logger.info("Received response from Claude API");
-
-      // Process tool calls if any
-      if (data.content && data.content.length > 0) {
-        // Handle any tool calls in the response
+      let data = await response.json() as ClaudeResponse;
+      logger.info("Received initial response from Claude API");
+      
+      // Process response, potentially with multiple tool calls
+      while (data.content && data.content.length > 0) {
+        // Track if we found a tool call in this response
+        let foundToolCall = false;
+        
+        // Store the assistant response for adding to message history
+        const assistantMessageContent = data.content;
+        
+        // Add all text content to the finalResult
         for (const content of data.content) {
-          if (content.type === "tool_use") {
+          if (content.type === 'text') {
+            finalResult.content.push(content as TextContentBlock);
+          } else if (content.type === 'tool_use') {
+            foundToolCall = true;
+            
+            // Extract tool call information
+            const toolUseContent = content as ToolUseContentBlock;
             const toolCall: ToolCallRequest = {
-              name: content.name,
-              parameters: content.input,
-              id: content.id
+              name: toolUseContent.name,
+              parameters: toolUseContent.input,
+              id: toolUseContent.id
             };
             
-            logger.info(`Executing tool call: ${content.name}`);
+            // Execute the tool
+            logger.info(`Executing tool call: ${toolUseContent.name}`);
             const toolResponse: ToolCallResponse = await this.toolRegistry.executeTool(toolCall);
             
             // Format the tool result properly - ensure it's a string
             const resultContent = toolResponse.error 
               ? toolResponse.error 
-              : String(toolResponse.output); // Convert to string to ensure compatibility
+              : String(toolResponse.output);
             
-            // Send the tool result back to Claude
-            const toolResponseMessage = await fetch(this.apiEndpoint, {
+            // Add the assistant and tool result messages to the conversation
+            messages.push({
+              role: "assistant",
+              content: assistantMessageContent
+            });
+            
+            messages.push({
+              role: "user",
+              content: [
+                {
+                  type: "tool_result",
+                  tool_use_id: toolUseContent.id,
+                  content: resultContent
+                }
+              ]
+            });
+            
+            // Make another API call to continue the conversation
+            logger.info("Making follow-up request to Claude API after tool call");
+            response = await fetch(this.apiEndpoint, {
               method: "POST",
               headers: {
                 "x-api-key": this.apiKey,
@@ -333,42 +384,46 @@ export class AIAnalyzerService {
               },
               body: JSON.stringify({
                 model: this.model,
-                messages: [
-                  { role: "user", content: prompt },
-                  { role: "assistant", content: data.content },
-                  { 
-                    role: "user", 
-                    content: [
-                      {
-                        type: "tool_result",
-                        tool_use_id: content.id,
-                        content: resultContent
-                      }
-                    ]
-                  }
-                ],
+                messages: messages,
                 max_tokens: config.claude.maxTokens,
                 temperature: config.claude.temperature,
                 tools: tools,
               }),
             });
             
-            if (!toolResponseMessage.ok) {
-              const errorText = await toolResponseMessage.text();
-              throw new Error(`Claude API error after tool call: ${errorText}`);
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`Claude API error in follow-up: ${errorText}`);
             }
             
-            const finalData = await toolResponseMessage.json();
-            logger.info("Received final response after tool usage");
+            data = await response.json() as ClaudeResponse;
+            logger.info("Received follow-up response from Claude API");
             
-            // Return the entire response for further processing
-            return finalData;
+            // Add the response to the final result
+            for (const content of data.content) {
+              if (content.type === 'text') {
+                finalResult.content.push(content as TextContentBlock);
+              }
+            }
+            
+            // Break the inner loop since we've processed this tool call
+            break;
           }
         }
+        
+        // If no tool call was found, we're done
+        if (!foundToolCall) {
+          break;
+        }
       }
-
-      // If no tool calls, return the original response
-      return data;
+      
+      // Add any additional properties from the last response
+      const finalResponse: ClaudeResponse = {
+        ...data,
+        content: finalResult.content
+      };
+      
+      return finalResponse;
     } catch (error) {
       logger.error("Error analyzing with tools:", error);
       throw error;
@@ -382,30 +437,31 @@ export class AIAnalyzerService {
    * @returns The result of the addition
    */
   async addNumbers(a: number, b: number): Promise<number> {
-    const prompt = `I need you to add ${a} and ${b}. Please use the "add" tool for this calculation.`;
+    const prompt = `I need you to add ${a} and ${b}. And then add the result of that to 2039. Please use the "add" tool for this calculation, twice.`;
     
     try {
       const result = await this.analyzeWithTools(prompt);
       
       // Extract the final answer from the response
       if (result.content && result.content.length > 0) {
-        const lastContent = result.content[result.content.length - 1];
-        if (lastContent.type === "text") {
-          // Try to extract just the number from the text
-          const numMatch = lastContent.text.match(/\d+/);
-          if (numMatch) {
-            return parseInt(numMatch[0], 10);
+        for (const content of result.content) {
+          if (content.type === "text") {
+            // Try to extract just the number from the text
+            const textContent = content as TextContentBlock;
+            const numMatch = textContent.text.match(/\d+/);
+            if (numMatch) {
+              return parseInt(numMatch[0], 10);
+            }
+            
+            // Try to directly parse the text as a number
+            const num = Number(textContent.text.trim());
+            if (!isNaN(num)) {
+              return num;
+            }
           }
-          
-          // Try to directly parse the text as a number
-          const num = Number(lastContent.text.trim());
-          if (!isNaN(num)) {
-            return num;
-          }
-          
-          logger.warn(`Could not parse number from result text: "${lastContent.text}"`);
-          return 0;
         }
+        
+        logger.warn("Could not parse number from result text");
       }
       
       // If we couldn't extract the number from the response, default to calculating it directly
