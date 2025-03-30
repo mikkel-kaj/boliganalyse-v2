@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/layouts";
 import HomePage from "@/pages/HomePage";
 import AnalysisPage from "@/pages/AnalysisPage";
 import RecentAnalysesPage from "@/pages/RecentAnalysesPage";
+import TermsPage from "@/pages/TermsPage";
 import NotFound from "@/pages/NotFound";
 import Commercial from "@/components/Commercial";
 
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<HomePage />} />
             <Route path="/analyse/:id" element={<AnalysisPage />} />
             <Route path="/analyseret" element={<RecentAnalysesPage />} />
+            <Route path="/vilkar" element={<TermsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </MainLayout>

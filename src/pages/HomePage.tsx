@@ -213,19 +213,6 @@ const HomePage = () => {
           </section>
         )}
       </main>
-      
-      <footer className="border-t border-border mt-auto">
-        <div className="container px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">© 2024 Boliganalyse.ai</p>
-            <div className="flex items-center gap-6 sm:gap-4">
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground">Kontakt os</a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground">Om os</a>
-              <a href="#" className="text-sm text-muted-foreground hover:text-foreground">Vilkår</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
