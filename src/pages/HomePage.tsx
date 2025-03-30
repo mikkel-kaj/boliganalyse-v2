@@ -17,6 +17,7 @@ const HomePage = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>(AnalysisStatus.PENDING);
   const [listingId, setListingId] = useState<string | null>(null);
+  const [isUrlValid, setIsUrlValid] = useState(false);
   const navigate = useNavigate();
 
   // SEO schema for homepage
@@ -97,6 +98,23 @@ const HomePage = () => {
     }
   };
 
+  const validateUrl = (inputUrl: string) => {
+    if (!inputUrl.trim()) {
+      setUrlError("Indtast venligst et link til en boligannonce");
+      setIsUrlValid(false);
+      return;
+    }
+    
+    const validation = validateListingUrl(inputUrl);
+    if (!validation.valid) {
+      setUrlError(validation.error || "Ugyldig URL");
+      setIsUrlValid(false);
+    } else {
+      setUrlError(null);
+      setIsUrlValid(true);
+    }
+  };
+
   const renderStatusMessage = () => {
     return analysisStatusMessages[analysisStatus] || "Forbereder analyse...";
   };
@@ -132,8 +150,9 @@ const HomePage = () => {
                 <Input 
                   value={url}
                   onChange={(e) => {
-                    setUrl(e.target.value);
-                    setUrlError(null);
+                    const newUrl = e.target.value;
+                    setUrl(newUrl);
+                    validateUrl(newUrl);
                   }}
                   className={`h-12 text-base border-input/70 shadow-sm 
                     transition-all duration-200 
@@ -150,7 +169,7 @@ const HomePage = () => {
               <Button 
                 type="submit" 
                 className="bg-purple hover:bg-purple-dark h-12 px-6 w-full sm:w-auto transition-all duration-200 hover:shadow-md"
-                disabled={isAnalyzing}
+                disabled={isAnalyzing || !isUrlValid}
               >
                 {isAnalyzing ? (
                   <>
