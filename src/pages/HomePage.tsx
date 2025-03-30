@@ -128,24 +128,28 @@ const HomePage = () => {
             </div>
             
             <form onSubmit={handleAnalyze} className="flex flex-col sm:flex-row max-w-lg mx-auto gap-3 px-4 sm:px-0">
-              <div className="flex-1 relative">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
-                  Bolig-annonce
-                </div>
+              <div className="flex-1 relative group">
                 <Input 
                   value={url}
                   onChange={(e) => {
                     setUrl(e.target.value);
                     setUrlError(null);
                   }}
-                  className={`pl-28 h-12 text-base sm:text-sm ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
-                  placeholder="Indsæt link til boligannonce..."
+                  className={`h-12 text-base border-input/70 shadow-sm 
+                    transition-all duration-200 
+                    group-hover:border-purple/50 group-hover:shadow-md 
+                    focus:border-purple focus:shadow-md focus:shadow-purple/10
+                    placeholder:text-muted-foreground/70 placeholder:transition-opacity placeholder:duration-200
+                    focus:placeholder:text-muted-foreground/50
+                    ${urlError ? 'border-red-500 focus:ring-red-500' : ''}`}
+                  placeholder="Indsæt link til boligannonce her..."
                   disabled={isAnalyzing}
                 />
+                <div className="absolute inset-0 rounded-md pointer-events-none ring-2 ring-transparent ring-offset-2 transition-all duration-300 group-focus-within:ring-purple/40"></div>
               </div>
               <Button 
                 type="submit" 
-                className="bg-purple hover:bg-purple-dark h-12 px-6 w-full sm:w-auto"
+                className="bg-purple hover:bg-purple-dark h-12 px-6 w-full sm:w-auto transition-all duration-200 hover:shadow-md"
                 disabled={isAnalyzing}
               >
                 {isAnalyzing ? (
