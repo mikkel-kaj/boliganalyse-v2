@@ -9,6 +9,7 @@ This Supabase Edge Function analyzes real estate listings from various Danish pr
 - Uses OpenAI for advanced analysis
 - Extensible architecture for adding new providers
 - Background processing for better user experience
+- Advanced web scraping with Firecrawl integration
 
 ## Architecture
 

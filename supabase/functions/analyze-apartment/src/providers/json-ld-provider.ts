@@ -42,52 +42,6 @@ export class JsonLdProvider extends BaseProvider {
   }
 
   /**
-   * Extract the original source URL from the HTML content
-   * Usually the URL itself for direct JSON-LD sites
-   */
-  async extractSourceUrl(htmlContent: string): Promise<string | undefined> {
-    try {
-      // Try to extract URL from JSON-LD if possible
-      const document = new DOMParser().parseFromString(htmlContent, "text/html");
-      if (!document) return undefined;
-      
-      const jsonLdElements = document.querySelectorAll('script[type="application/ld+json"]');
-      for (const element of jsonLdElements) {
-        try {
-          const content = element.textContent;
-          if (content) {
-            const data = JSON.parse(content);
-            
-            // Check if it's an array or single object
-            const items = Array.isArray(data) ? data : [data];
-            
-            // Look for canonical URL in various possible properties
-            for (const item of items) {
-              if (item.url) return item.url;
-              if (item.mainEntityOfPage?.id) return item.mainEntityOfPage.id;
-              if (item.mainEntityOfPage) return item.mainEntityOfPage;
-            }
-          }
-        } catch (error) {
-          logger.error("Error parsing JSON-LD for source URL", error);
-        }
-      }
-      
-      // If no URL found in JSON-LD, check for canonical link in HTML
-      const canonicalLink = document.querySelector('link[rel="canonical"]');
-      if (canonicalLink) {
-        const href = (canonicalLink as Element).getAttribute("href");
-        if (href) return href;
-      }
-      
-      return undefined;
-    } catch (error) {
-      logger.error("Failed to extract source URL", error);
-      return undefined;
-    }
-  }
-
-  /**
    * Extract the main property image URL from the HTML content
    */
   override async extractImageUrl(htmlContent: string): Promise<string | undefined> {
@@ -145,21 +99,18 @@ export class JsonLdProvider extends BaseProvider {
   async parseHtml(url: string, htmlContent: string): Promise<HTMLParseResult> {
     try {
       // Extract basic fields that are common across providers
-      const energyRating = await this.extractEnergyRating(htmlContent);
       const property_image_url = await this.extractImageUrl(htmlContent);
       const originalLink = url; // For direct JSON-LD sites, URL is already the source
-      const textContent = htmlUtils.extractTextFromHtml(htmlContent);
+      const textContent = await htmlUtils.extractTextFromHtml(htmlContent);
 
       // Extract specific fields from JSON-LD
-      const specificFields = await this.extractSpecificFields(htmlContent);
+      const specificFields = await this.extractJsonFromJSONLD(htmlContent);
       const extractedText = JSON.stringify(specificFields) + "\n" + textContent;
 
       return {
         originalLink,
-        energyRating,
         property_image_url,
         extractedText,
-        partialAnalysis: specificFields,
       };
     } catch (error) {
       logger.error("Failed to parse HTML", error);
@@ -170,7 +121,7 @@ export class JsonLdProvider extends BaseProvider {
   /**
    * Extract data from JSON-LD
    */
-  async extractSpecificFields(htmlContent: string): Promise<Record<string, any>> {
+  async extractJsonFromJSONLD(htmlContent: string): Promise<Record<string, any>> {
     try {
       const document = new DOMParser().parseFromString(htmlContent, "text/html");
       if (!document) {
@@ -179,7 +130,7 @@ export class JsonLdProvider extends BaseProvider {
 
       // Extract structured data from JSON-LD
       const jsonLdElements = document.querySelectorAll('script[type="application/ld+json"]');
-      
+
       for (const element of jsonLdElements) {
         try {
           const content = element.textContent;
@@ -191,7 +142,7 @@ export class JsonLdProvider extends BaseProvider {
           logger.error("Failed to parse JSON-LD", jsonError);
         }
       }
-      
+
       // Return empty object if no JSON-LD found
       return {};
     } catch (error) {

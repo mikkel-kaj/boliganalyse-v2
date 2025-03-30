@@ -4,7 +4,8 @@
     "deno-dom": "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts",
     "std": "npm:std@^0.1.40",
     "std/http/server": "https://deno.land/std@0.168.0/http/server.ts",
-    "std/testing/asserts": "https://deno.land/std@0.168.0/testing/asserts.ts"
+    "std/testing/asserts": "https://deno.land/std@0.168.0/testing/asserts.ts",
+    "@mendable/firecrawl-js": "https://esm.sh/@mendable/firecrawl-js@1.21.0"
   },
   "tasks": {
     "start": "deno run --allow-net --allow-env index.ts",

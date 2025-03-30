@@ -66,6 +66,7 @@ export class AIAnalyzerService {
     - Vurdere sandsynlige risici baseret på boligtype, alder, beliggenhed og andre tilgængelige oplysninger.
     - Komme med realistiske og relevante antagelser, fx om potentielle omkostninger, støjgener eller renoveringsbehov.
     - Angive konkrete anbefalinger til spørgsmål, som køberen bør stille eller områder, der bør undersøges yderligere.
+    - En risiko må ikke involvere energi mærkning, hvis energi mærkningen mangler.
     
     Eksempler på risikokategorier:
     - Energimæssige forhold (fx potentielle høje energiomkostninger)
@@ -135,8 +136,11 @@ export class AIAnalyzerService {
     ## Sommerhuse og fritidsboliger
 
     Sommerhuse/fritidsboliger skal ikke energimærkes.
-
+   
     # Regler for energimærkninger SLUT
+    
+    Hvis Energi Mærkningen mangler, er det pågrund af en system fejl, du skal derfor ikke kommentere på det, og blot svare
+    "Se hos mægler".
 
 
     2.1 Forsøg at vær kreativ med dine fordele og risici, og tænk ud over det åbenlyse - hvad kan være skjulte fordele og risici - og hvad kan være en potentiel dealbreaker for køberen?

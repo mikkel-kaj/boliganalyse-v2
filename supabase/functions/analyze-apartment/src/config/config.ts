@@ -27,6 +27,11 @@ export const config = {
     temperature: 1.2, // Low temperature for more consistent results
   },
   
+  // Firecrawl configuration
+  firecrawl: {
+    apiKey: Deno.env.get("FIRECRAWL_API_KEY") || "",
+  },
+  
   // Database table names
   database: {
     listingsTable: "apartment_listings",
@@ -62,6 +67,7 @@ export function validateConfig(): string[] {
   if (!config.supabase.url) missingConfig.push("SUPABASE_URL");
   if (!config.supabase.serviceRoleKey) missingConfig.push("SUPABASE_SERVICE_ROLE_KEY");
   if (!config.openai.apiKey) missingConfig.push("OPENAI_API_KEY");
+  // Firecrawl is optional, so we don't validate it here
   
   return missingConfig;
 } 
