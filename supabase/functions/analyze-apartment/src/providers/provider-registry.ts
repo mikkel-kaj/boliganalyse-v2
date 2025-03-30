@@ -5,6 +5,9 @@ import { createLogger } from "../utils/logger.ts";
 import { FallbackProvider } from "./fallback-provider.ts";
 import { HomeProvider } from "./home-provider.ts";
 import { JsonLdProvider } from "./json-ld-provider.ts";
+import { FirecrawlProvider } from "./firecrawl-provider.ts";
+import { DanboligProvider } from "./danbolig-provider.ts";
+import { EdcProvider } from "./edc-provider.ts";
 
 const logger = createLogger("ProviderRegistry");
 
@@ -19,10 +22,15 @@ export class ProviderRegistry {
    * Private constructor to enforce singleton pattern
    */
   private constructor() {
-    // Register all available providers (Order still matters for priority)
+    // Register all available providers (Ordered by priority)
     this.registerProvider(new BoligsidenProvider());
-    this.registerProvider(new JsonLdProvider());
     this.registerProvider(new HomeProvider());
+    this.registerProvider(new DanboligProvider());
+    this.registerProvider(new EdcProvider())
+    // Add FirecrawlProvider as a generic web scraper before fallback
+    this.registerProvider(new FirecrawlProvider());
+    this.registerProvider(new JsonLdProvider());
+
     this.registerProvider(new FallbackProvider());
     // Note: Add new providers here as they're implemented
     // this.registerProvider(new NyboligProvider());

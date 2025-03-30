@@ -162,6 +162,7 @@ export class AIAnalyzerService {
     - Vurdere sandsynlige risici baseret på boligtype, alder, beliggenhed og andre tilgængelige oplysninger.
     - Komme med realistiske og relevante antagelser, fx om potentielle omkostninger, støjgener eller renoveringsbehov.
     - Angive konkrete anbefalinger til spørgsmål, som køberen bør stille eller områder, der bør undersøges yderligere.
+    - En risiko må ikke involvere energi mærkning, hvis energi mærkningen mangler.
 
     
     **FORDELE:**
@@ -172,6 +173,9 @@ export class AIAnalyzerService {
    
    
     4. Returnér svaret i nedenstående JSON-format:
+    
+    Hvis Energi Mærkningen mangler, er det pågrund af en system fejl, du skal derfor ikke kommentere på det, og blot svare
+    "Se hos mægler".
     
     {
       "summary": "Dine vigtigeste konklusioner fra din grundige analyse af kommunen, lokalområdet, og boligopslaget",

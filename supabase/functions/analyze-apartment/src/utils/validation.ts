@@ -32,7 +32,6 @@ export const SUPPORTED_DOMAINS = [
   
   // Other real estate agencies
   'lokalbolig.dk',
-  'robinhus.dk',
   'boligone.dk',
   '1848.dk',
   'dinmaegler.dk',

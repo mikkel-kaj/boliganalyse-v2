@@ -27,15 +27,12 @@ export interface ValidationResult {
 export interface ProviderInfo {
   name: string;
   canHandle: (url: string) => boolean;
-  extractSourceUrl: (htmlContent: string) => Promise<string | undefined>;
 }
 
 export interface HTMLParseResult {
   originalLink?: string;
-  energyRating?: string;
   property_image_url?: string;
   extractedText?: string;
-  partialAnalysis?: Record<string, any>;
 }
 
 export interface AnalysisResult {
