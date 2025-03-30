@@ -249,11 +249,15 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                                                     {risk.excerpt}
                                                                 </blockquote>
                                                             )}
-                                                            {risk.recommendations?.[0] && (
-                                                                <div className="mt-3 bg-risk-default/20 rounded-lg p-3">
-                                                                    <p className="text-sm font-medium text-risk-default">
-                                                                        💬 Spørg mægler: "{risk.recommendations[0].prompt || risk.question}"
-                                                                    </p>
+                                                            {risk.recommendations && risk.recommendations.length > 0 && (
+                                                                <div className="mt-3 space-y-2">
+                                                                    {risk.recommendations.map((recommendation, index) => (
+                                                                        <div key={index} className="bg-risk-default/20 rounded-lg p-3">
+                                                                            <p className="text-sm font-medium text-risk-default">
+                                                                                💬 {recommendation.promptTitle || ""}: "{recommendation.prompt}"
+                                                                            </p>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             )}
                                                         </div>
