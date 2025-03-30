@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { MoonIcon, SunIcon } from "lucide-react";
+import { MoonIcon, SunIcon, HomeIcon } from "lucide-react";
 
 export const Navbar = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -30,10 +30,19 @@ export const Navbar = () => {
           <span className="text-xl font-bold">Bolig<span className="text-purple">analyse</span>.ai</span>
         </Link>
         
-        <div className="flex items-center gap-4">
-          <Link to="/analyseret" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Analyserede boliger
-          </Link>
+        <div className="flex items-center gap-3">
+          <Button asChild variant="outline" className="hidden sm:flex items-center gap-1 border-purple/50 hover:border-purple bg-purple/5 hover:bg-purple/10">
+            <Link to="/analyseret">
+              <HomeIcon className="h-4 w-4 mr-1" />
+              <span className="text-foreground font-medium">Analyserede boliger</span>
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="sm:hidden">
+            <Link to="/analyseret" className="text-sm font-medium flex items-center">
+              <HomeIcon className="h-4 w-4 mr-1" />
+              Se boliger
+            </Link>
+          </Button>
           <Button onClick={toggleTheme} variant="ghost" size="icon" className="rounded-full">
             {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
           </Button>
