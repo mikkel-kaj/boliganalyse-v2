@@ -47,7 +47,7 @@ export const SUPPORTED_DOMAINS = [
 export function validateListingUrl(url: string): ValidationResult {
   // Check if URL is provided
   if (!url) {
-    return { valid: false, error: "URL er ikke angivet" };
+    return { valid: false, error: "Link er ikke angivet" };
   }
 
   try {
@@ -59,7 +59,7 @@ export function validateListingUrl(url: string): ValidationResult {
     if (parsedUrl.href.includes('ViewPage')) {
       return { 
         valid: false, 
-        error: "URL'en ser ud til at være en bolig der ikke er til salg." 
+        error: "Linket ser ud til at være en bolig der ikke er til salg." 
       };
     }
     
@@ -72,7 +72,7 @@ export function validateListingUrl(url: string): ValidationResult {
     if (!SUPPORTED_DOMAINS.includes(domain)) {
       return { 
         valid: false, 
-        error: "URL'en skal være fra en understøttet boligportal. Se listen over understøttede portaler på forsiden."
+        error: "Linket skal være fra en understøttet boligportal. Se listen over understøttede portaler på forsiden."
       };
     }
     
@@ -80,7 +80,7 @@ export function validateListingUrl(url: string): ValidationResult {
   } catch (error) {
     return { 
       valid: false, 
-      error: "Ugyldig URL-format" 
+      error: "Linket er ugyldigt" 
     };
   }
 }
@@ -91,7 +91,7 @@ export function validateListingUrl(url: string): ValidationResult {
 export function validateBoligsideUrl(url: string): ValidationResult {
   // Check if URL is provided
   if (!url) {
-    return { valid: false, error: "URL er ikke angivet" };
+    return { valid: false, error: "Link er ikke angivet" };
   }
 
   try {
@@ -102,7 +102,7 @@ export function validateBoligsideUrl(url: string): ValidationResult {
     if (!parsedUrl.hostname.match(/^(www\.)?boligsiden\.dk$/i)) {
       return { 
         valid: false, 
-        error: "URL skal være fra boligsiden.dk" 
+        error: "Linket skal være fra boligsiden.dk" 
       };
     }
     
@@ -110,14 +110,14 @@ export function validateBoligsideUrl(url: string): ValidationResult {
     if (!parsedUrl.searchParams.has('udbud')) {
       return {
         valid: false,
-        error: "URL'en skal indeholde en udbuds-ID (udbud=...)"
+        error: "Linket skal indeholde en udbuds-ID (udbud=...)"
       };
     }
     
     if (parsedUrl.href.includes('ViewPage')) {
       return { 
         valid: false, 
-        error: "URL'en ser ud til at være en bolig der ikke er til salg." 
+        error: "Linket ser ud til at være en bolig der ikke er til salg." 
       };
     }
     
@@ -125,7 +125,7 @@ export function validateBoligsideUrl(url: string): ValidationResult {
   } catch (error) {
     return { 
       valid: false, 
-      error: "Ugyldig URL-format" 
+      error: "Linket er ugyldigt" 
     };
   }
 } 

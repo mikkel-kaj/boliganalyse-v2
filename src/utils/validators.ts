@@ -91,7 +91,7 @@ export function validateListingUrl(url: string): { valid: boolean; error?: strin
   } catch (error) {
     return { 
       valid: false, 
-      error: "Ugyldig URL-format" 
+      error: "Linket er ugyldigt" 
     };
   }
 }
@@ -136,7 +136,7 @@ export function validateBoligsideUrl(url: string): { valid: boolean; error?: str
   } catch (error) {
     return { 
       valid: false, 
-      error: "Ugyldig URL-format" 
+      error: "Linket er ugyldigt" 
     };
   }
 } 

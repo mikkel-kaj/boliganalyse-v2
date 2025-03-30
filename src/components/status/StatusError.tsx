@@ -50,7 +50,7 @@ const StatusError: React.FC<StatusErrorProps> = ({
       case AnalysisStatus.CANCELLED:
         return "Analysen blev annulleret. Dette kan skyldes vedligeholdelse eller andre system-relaterede årsager.";
       case AnalysisStatus.INVALID_URL:
-        return "Den angivne URL er ugyldig eller understøttes ikke. Prøv en boligannonce fra en af vores understøttede boligportaler.";
+        return "Det angivne link er ugyldigt eller understøttes ikke. Prøv et boligopslag fra en af vores understøttede boligportaler.";
       default:
         return "Der opstod en fejl under behandlingen af boliganalysen.";
     }
@@ -73,7 +73,7 @@ const StatusError: React.FC<StatusErrorProps> = ({
             {status === AnalysisStatus.ERROR && "Der opstod en fejl under analysen"}
             {status === AnalysisStatus.TIMEOUT && "Analysen tog for lang tid"}
             {status === AnalysisStatus.CANCELLED && "Analysen blev annulleret"}
-            {status === AnalysisStatus.INVALID_URL && "Ugyldig URL"}
+            {status === AnalysisStatus.INVALID_URL && "Ugyldigt link"}
           </p>
           <p className="mt-1">{friendlyMessage}</p>
           

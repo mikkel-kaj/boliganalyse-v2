@@ -14,7 +14,7 @@ export const analysisStatusMessages: Record<AnalysisStatus, string> = {
   [AnalysisStatus.FINALIZING]: "Færdiggør analyse...",
   [AnalysisStatus.COMPLETED]: "Analyse fuldført!",
   [AnalysisStatus.ERROR]: "Fejl under analysen",
-  [AnalysisStatus.INVALID_URL]: "Ugyldig bolig-URL",
+  [AnalysisStatus.INVALID_URL]: "Ugyldigt link",
   [AnalysisStatus.TIMEOUT]: "Analysen tog for lang tid",
   [AnalysisStatus.CANCELLED]: "Analysen blev annulleret"
 };
@@ -29,7 +29,7 @@ export const errorMessagesByStatus: {
   [AnalysisStatus.TIMEOUT]: string
 } = {
   [AnalysisStatus.ERROR]: "Der opstod en uventet fejl under analysen. Prøv igen eller kontakt support hvis problemet fortsætter.",
-  [AnalysisStatus.INVALID_URL]: "Den angivne URL er ugyldig eller understøttes ikke. Prøv en anden boligannonce fra en understøttet boligportal.",
+  [AnalysisStatus.INVALID_URL]: "Det angivne link er ugyldigt eller understøttes ikke. Prøv et andet boligopslag fra en understøttet boligportal.",
   [AnalysisStatus.TIMEOUT]: "Analysen tog for lang tid at fuldføre. Prøv venligst igen senere, da systemet kan være overbelastet.",
   [AnalysisStatus.CANCELLED]: "Analysen blev annulleret. Dette kan skyldes vedligeholdelse eller andre systemrelaterede årsager.",
 };
