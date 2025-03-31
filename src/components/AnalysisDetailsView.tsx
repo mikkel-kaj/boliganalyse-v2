@@ -424,7 +424,6 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                     />
                                 </CollapsibleContent>
                             </Collapsible>
-                            <DetailedCommercial />
                         </div>
                     </div>
                 </div>
