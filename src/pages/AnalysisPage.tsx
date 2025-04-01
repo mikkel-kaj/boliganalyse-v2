@@ -4,7 +4,8 @@ import AnalysisProgressView from "@/components/AnalysisProgressView";
 import AnalysisDetailsView from "@/components/AnalysisDetailsView";
 import AnalysisInitialLoading from "@/components/AnalysisInitialLoading";
 import { AnalysisStatus, isErrorStatus } from "@/lib/status";
-        import {useToast} from "@/hooks/use-toast.ts";
+import { useToast } from "@/hooks/use-toast.ts";
+import { SurveyDialog } from "@/components/SurveyDialog";
 
 const AnalysisPage = () => {
     const { id } = useParams();
@@ -151,18 +152,21 @@ const AnalysisPageContent = () => {
     const propertyDetails = getPropertyDetails(property);
 
     return (
-        <AnalysisDetailsView
-            property={property}
-            listing={listing}
-            risks={risks}
-            highlights={highlights}
-            summary={summary}
-            timeAgoDisplay={timeAgoDisplay}
-            propertyDetails={propertyDetails}
-            onShare={handleShare}
-            originalUrl={listing?.url || ""}
-            propertyId={listing?.id || ""}
-        />
+        <>
+            <AnalysisDetailsView
+                property={property}
+                listing={listing}
+                risks={risks}
+                highlights={highlights}
+                summary={summary}
+                timeAgoDisplay={timeAgoDisplay}
+                propertyDetails={propertyDetails}
+                onShare={handleShare}
+                originalUrl={listing?.url || ""}
+                propertyId={listing?.id || ""}
+            />
+            <SurveyDialog isAnalysisComplete={isCompleted} />
+        </>
     );
 };
 
