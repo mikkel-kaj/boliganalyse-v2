@@ -165,7 +165,6 @@ const AnalysisPageContent = () => {
                 originalUrl={listing?.url || ""}
                 propertyId={listing?.id || ""}
             />
-            <SurveyDialog isAnalysisComplete={isCompleted} />
         </>
     );
 };
