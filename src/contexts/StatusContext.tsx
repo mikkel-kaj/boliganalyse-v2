@@ -2,6 +2,7 @@ import React, { createContext, ReactNode, useContext, useEffect, useState, useRe
 import { AnalysisStatus, errorMessagesByStatus, isTerminalStatus, statusFromString } from '@/lib/status';
 import { supabase } from '@/integrations/supabase/client';
 import { isErrorStatus, isProcessingStatus } from '@/lib/status/utils';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 // Define the context interface
 interface StatusContextType {
@@ -17,7 +18,7 @@ interface StatusContextType {
   
   // Status management methods
   setListingId: (id: string | null) => void;
-  refreshStatus: () => Promise<AnalysisStatus | null>;
+  refreshStatus: () => Promise<void>;
   
   // Entire listing data
   listing: Record<string, any> | null;
@@ -34,7 +35,7 @@ const StatusContext = createContext<StatusContextType>({
   isProcessing: false,
   
   setListingId: () => {},
-  refreshStatus: async () => null,
+  refreshStatus: async () => {},
   
   listing: null
 });
@@ -60,121 +61,136 @@ export const StatusProvider: React.FC<StatusProviderProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [listing, setListing] = useState<Record<string, any> | null>(null);
-  
-  // Polling state
-  const [pollingInterval, setPollingInterval] = useState<number>(1000); // Start with 1 second
-  const maxPollingInterval = 4000; // Max polling interval of 4 seconds
-  const pollingTimeoutRef = useRef<number | null>(null);
-  const initialFetchRef = useRef<boolean>(true);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   // Fetch status from API
-  const fetchStatus = async (id: string, isInitialFetch = false) => {
+  const fetchStatus = async (id: string) => {
+    setIsLoading(true);
+    setError(null); // Clear previous errors
     try {
-      // Only show loading indicator on initial fetch, not during polling
-      if (isInitialFetch) {
-        setIsLoading(true);
-      }
-      
       // Fetch full listing data
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('client_apartment_listings')
         .select('*')
         .eq('id', id)
         .maybeSingle();
-      
-      if (error) {
-        throw error;
+
+      if (fetchError) {
+        console.error('Error fetching listing status:', fetchError);
+        throw new Error('Failed to fetch listing data.');
       }
-      
+
       if (!data) {
-        throw new Error('Listing not found');
+        throw new Error(`Listing with ID ${id} not found.`);
       }
-      
-      // Update listing data
+
+      // Update state with fetched data
       setListing(data);
-      
-      // Update status
       const newStatus = statusFromString(data.status || '');
       setStatus(newStatus);
-      
-      // Set error message if this is an error status
+
       if (isErrorStatus(newStatus)) {
-        const errorMessage = errorMessagesByStatus[newStatus];
-        setError(errorMessage);
-      } else {
-        setError(null);
+        setError(errorMessagesByStatus[newStatus] || 'An unknown error occurred.');
       }
-      
-      return newStatus;
-    } catch (error) {
-      console.error('Error fetching listing status:', error);
-      setError('Error fetching listing data');
+
+      return data; // Return data for potential chaining
+
+    } catch (err: any) {
+      console.error('Error in fetchStatus:', err);
+      setStatus(AnalysisStatus.ERROR); // Use the generic ERROR status
+      setError(err.message || 'Error fetching listing data');
+      setListing(null); // Clear listing data on error
       return null;
     } finally {
-      if (isInitialFetch) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
   
   // Refresh the status
   const refreshStatus = async () => {
-    if (!listingId) return null;
-    return fetchStatus(listingId, true);
+    if (!listingId) return;
+    await fetchStatus(listingId);
   };
   
-  // Set up polling for status changes
+  // Set up subscription for status changes
   useEffect(() => {
-    initialFetchRef.current = true; // Reset to true when listingId changes
-    
-    if (!listingId) {
-      // Reset state when no listing ID
+    // Function to handle incoming payload
+    const handlePayload = (payload: any) => {
+      console.log('Supabase payload received:', payload);
+      const { new: newRecord } = payload;
+      if (newRecord) {
+        setListing(newRecord);
+        const newStatus = statusFromString(newRecord.status || '');
+        setStatus(newStatus);
+
+        if (isErrorStatus(newStatus)) {
+          setError(errorMessagesByStatus[newStatus] || 'An unknown error occurred.');
+        } else {
+          setError(null);
+        }
+      }
+    };
+
+    // Cleanup function
+    const cleanup = () => {
+      if (channelRef.current) {
+        console.log(`Unsubscribing from Supabase channel for listing ${listingId}`);
+        supabase.removeChannel(channelRef.current)
+          .then(() => console.log('Successfully removed channel'))
+          .catch(err => console.error('Error removing channel:', err));
+        channelRef.current = null;
+      }
+      // Reset state when listingId is cleared
       setStatus(AnalysisStatus.PENDING);
       setError(null);
       setListing(null);
-      
-      // Clear any existing timeout
-      if (pollingTimeoutRef.current !== null) {
-        clearTimeout(pollingTimeoutRef.current);
-        pollingTimeoutRef.current = null;
-      }
-      return;
+      setIsLoading(false);
+    };
+
+    if (listingId) {
+      // Perform initial fetch first
+      fetchStatus(listingId).then(initialData => {
+        // Only subscribe if the initial fetch was successful (data exists)
+        if (initialData && !channelRef.current) {
+          console.log(`Subscribing to Supabase channel for listing ${listingId}`);
+          const channel = supabase
+            .channel(`listing-status:${listingId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'client_apartment_listings',
+                filter: `id=eq.${listingId}`
+              },
+              handlePayload
+            )
+            .subscribe((status, err) => {
+              if (status === 'SUBSCRIBED') {
+                console.log(`Successfully subscribed to channel for listing ${listingId}`);
+              } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.error(`Subscription error for listing ${listingId}:`, err || status);
+                setError(`Failed to subscribe to real-time updates. Status: ${status}`);
+                // Optionally: attempt to resubscribe or fallback to polling
+              }
+            });
+          channelRef.current = channel;
+        } else if (!initialData) {
+            // Handle case where initial fetch failed (e.g., ID not found)
+            // Error state is already set by fetchStatus
+            console.log(`Initial fetch failed for listing ${listingId}, not subscribing.`);
+        }
+      });
+    } else {
+      // No listingId, ensure cleanup and reset state
+      cleanup();
     }
-    
-    // Initial fetch
-    fetchStatus(listingId, true).then(() => {
-      initialFetchRef.current = false; // Mark initial fetch as completed
-    });
-    
-    // Define the polling function
-    const pollStatus = async () => {
-      if (!listingId) return;
-      
-      const newStatus = await fetchStatus(listingId, false);
-      
-      // If we've reached a terminal status, stop polling completely
-      if (newStatus && isTerminalStatus(newStatus)) {
-        // Stop polling - don't schedule another timeout
-        return;
-      } else {
-        // Continue polling with exponential backoff
-        const nextInterval = Math.min(pollingInterval * 1.5, maxPollingInterval);
-        setPollingInterval(nextInterval);
-        pollingTimeoutRef.current = window.setTimeout(pollStatus, pollingInterval);
-      }
-    };
-    
-    // Start polling after a delay
-    pollingTimeoutRef.current = window.setTimeout(pollStatus, pollingInterval);
-    
-    // Clean up on unmount or when listingId changes
+
+    // Return cleanup function
     return () => {
-      if (pollingTimeoutRef.current !== null) {
-        clearTimeout(pollingTimeoutRef.current);
-        pollingTimeoutRef.current = null;
-      }
+        cleanup();
     };
-  }, [listingId]);
+  }, [listingId]); // Dependency array includes listingId
   
   // Derived state
   const isTerminal = isTerminalStatus(status);
