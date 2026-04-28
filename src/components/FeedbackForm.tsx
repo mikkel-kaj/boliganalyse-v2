@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/integrations/api/client";
 import { Send, Loader2 } from "lucide-react";
 import {useToast} from "@/hooks/use-toast.ts";
 
@@ -51,17 +51,13 @@ const FeedbackForm = ({ propertyId, propertyAddress }: FeedbackFormProps) => {
         data.propertyAddress = propertyAddress;
       }
 
-      const { error } = await supabase
-        .from('feedback')
-        .insert([{
-          feedback_type: data.feedbackType,
-          message: data.message,
-          email: data.email,
-          property_id: data.propertyId,
-          property_address: data.propertyAddress
-        }]);
-
-      if (error) throw error;
+      await apiClient.submitFeedback({
+        feedback_type: data.feedbackType,
+        message: data.message,
+        email: data.email || null,
+        listing_id: data.propertyId || null,
+        property_address: data.propertyAddress || null,
+      });
 
       toast({
         title: "Feedback modtaget",

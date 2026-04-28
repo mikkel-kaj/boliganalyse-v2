@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/integrations/api/client";
 import { useQuery } from '@tanstack/react-query';
 import { validateListingUrl } from '../utils/validators';
 import { RiskIcon, HighlightIcon } from '@/components/IconMapper';
@@ -36,22 +36,10 @@ const HomePage = () => {
   const { data: recentListings } = useQuery({
     queryKey: ['recent-listings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('client_apartment_listings')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .eq('status', AnalysisStatus.COMPLETED)
-        .limit(20);
-      
-      if (error) throw error;
-      
-      // Filter out listings missing property data
-      if (!data) return [];
-      
-      const validListings = data.filter(listing => 
-        listing?.analysis?.property?.address
+      const data = await apiClient.listRecent(20);
+      const validListings = data.filter(
+        (listing) => listing.analysis?.property?.address,
       );
-      
       return validListings.slice(0, 8);
     }
   });
@@ -70,25 +58,15 @@ const HomePage = () => {
     setAnalysisStatus(AnalysisStatus.QUEUED);
 
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-apartment', {
-        body: { url }
-      });
-
-      if (error) {
-        console.error("Error calling analyze-apartment function:", error);
-        setIsAnalyzing(false);
-        setAnalysisStatus(AnalysisStatus.ERROR);
-        return;
-      }
-
+      const data = await apiClient.startAnalysis({ url });
       console.log("Analysis response:", data);
       setListingId(data.listing.id);
 
-      if (data.isExisting) {
+      if (data.is_existing) {
         navigate(`/analyse/${data.listing.id}`);
         setIsAnalyzing(false);
       } else {
-        // Keep isAnalyzing true to continue polling for updates
+        // Keep isAnalyzing true; SSE on the analysis page will drive updates.
         navigate(`/analyse/${data.listing.id}`);
       }
     } catch (err) {

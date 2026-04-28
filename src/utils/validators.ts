@@ -49,9 +49,9 @@ function extractDomain(url: string): string {
 
 /**
  * Validates that a URL is from a supported real estate provider.
- * This should be kept in sync with the backend validation in
- * supabase/functions/analyze-apartment/utils/validation.ts
- * 
+ * Mirrors the backend list in api/src/utils/validation.py — keep both
+ * in sync when adding/removing supported portals.
+ *
  * @param url URL to validate
  * @returns Object with validation result and error message if invalid
  */

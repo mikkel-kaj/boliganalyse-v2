@@ -6,11 +6,20 @@
 #   sudo systemctl reload caddy
 #
 # Replace your-domain.example with your actual domain. DNS A records for
-# both subdomains must point to this server before reload.
+# all subdomains must point to this server before reload.
 
 # Supabase API + Studio.
 supabase.your-domain.example {
     reverse_proxy localhost:8000
+}
+
+# FastAPI listing analysis service.
+# `flush_interval -1` keeps SSE streams flowing without buffering — without
+# it the frontend's EventSource sees status updates in batches at end-of-stream.
+api.your-domain.example {
+    reverse_proxy localhost:8001 {
+        flush_interval -1
+    }
 }
 
 # Frontend, if you serve it from this box.

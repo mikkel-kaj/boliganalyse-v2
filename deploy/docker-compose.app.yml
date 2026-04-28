@@ -5,15 +5,52 @@
 #                  -f docker-compose.caddy.yml \
 #                  -f docker-compose.app.yml up -d
 #
-# Pipes the API keys read by
-# supabase/functions/analyze-apartment/src/config/config.ts
-# (Deno.env.get) into the edge-runtime container.
+# Adds the FastAPI `api` service that drives listing analysis, and (still)
+# pipes the legacy edge-function env vars while phase-2 cutover is in flight.
 
 services:
+  # ---- New FastAPI server (phase 2) ---------------------------------------
+  api:
+    build:
+      # The api/ tree must be rsynced to /opt/supabase-stack/api/ on the
+      # server before bringing the stack up. See deploy/scripts/deploy-api.sh.
+      context: ./api
+      dockerfile: Dockerfile
+    image: boliganalyse-api:latest
+    restart: unless-stopped
+    depends_on:
+      kong:
+        condition: service_started
+    environment:
+      # Reach Supabase via the internal docker network rather than the public
+      # Caddy hostname — fewer hops, no TLS handshake, no DNS lookup.
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-4-7}
+      ANTHROPIC_MAX_TOKENS: ${ANTHROPIC_MAX_TOKENS:-8000}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
+      ENABLE_DST_TOOLS: ${ENABLE_DST_TOOLS:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      # Host-installed Caddy proxies https://api.<domain> → localhost:8001
+      - "127.0.0.1:8001:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request, sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health', timeout=2).status==200 else sys.exit(1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---- Legacy edge function (kept until phase 2 cutover is verified) ------
+  # DST tools are forced OFF here regardless of the global ENABLE_DST_TOOLS —
+  # the edge runtime's wall-clock makes the DST-driven analysis chain fragile,
+  # and the new api service is where DST belongs anyway.
   functions:
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-unused}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      ENABLE_DST_TOOLS: ${ENABLE_DST_TOOLS:-false}
+      ENABLE_DST_TOOLS: "false"

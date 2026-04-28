@@ -1,8 +1,7 @@
-import {supabase} from "@/integrations/supabase/client";
+import { apiClient } from "@/integrations/api/client";
 import {useQuery} from '@tanstack/react-query';
 import SEO from "@/components/SEO";
 import {ListingPreview} from '@/components/ListingPreview';
-import {AnalysisStatus} from '@/types/status';
 
 const RecentAnalysesPage = () => {
     // SEO schema for recent analyses page
@@ -17,22 +16,9 @@ const RecentAnalysesPage = () => {
     const {data: recentProperties, isLoading, error} = useQuery({
         queryKey: ['recent-analyses'],
         queryFn: async () => {
-            const {data, error} = await supabase
-                .from('client_apartment_listings')
-                .select('*')
-                .eq('status', AnalysisStatus.COMPLETED)
-                .order('created_at', {ascending: false})
-                .limit(30);
-
-            if (error) {
-                throw error;
-            }
-
-            // Filter out listings missing property data
-            if (!data) return [];
-            
-            return data.filter(listing => 
-                listing?.analysis?.property?.address
+            const data = await apiClient.listRecent(30);
+            return data.filter(
+                (listing) => listing.analysis?.property?.address,
             );
         }
     });

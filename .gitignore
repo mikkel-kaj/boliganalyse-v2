@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Python (api/)
+api/.venv/
+api/__pycache__/
+api/**/__pycache__/
+api/*.egg-info/
+api/.pytest_cache/
+api/.ruff_cache/
+api/.env
+api/.env.*
+!api/.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

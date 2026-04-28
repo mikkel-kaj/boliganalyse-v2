@@ -5,90 +5,113 @@
 - **Code repo:** `https://github.com/mikkel-kaj/boliganalyse-v2` (origin/main).
   The old repo at `mikkel-kaj/bolig-analyse-ai` is preserved for history but
   no longer the source of truth.
-- **Deployment target:** self-hosted Supabase v1.26.04 + Caddy on a Hetzner
-  CPX31 VPS at `178.104.213.102`. SSH alias: `ssh boliganalyse`
-  (key: `~/.ssh/boliganalyse_hetzner`, user: `root`).
-- **Public Supabase URL:** `https://supabase.dev.boliganalyse.ai`. Studio
-  is behind basic auth (DASHBOARD_USERNAME/PASSWORD in the server `.env`).
-- **DB schema source of truth:** `supabase/migrations/*.sql`. Apply via
-  `deploy/scripts/apply-migrations.sh` or by `docker cp` + psql inside the
-  `supabase-db` container.
-- **Edge function:** `supabase/functions/analyze-apartment/`. Deployed via
-  `deploy/scripts/deploy-function.sh boliganalyse` — rsyncs to
-  `/opt/supabase-stack/volumes/functions/analyze-apartment/` and bounces
-  the edge runtime container.
+- **Deployment target:** self-hosted Supabase v1.26.04 + Caddy + a FastAPI
+  service on a Hetzner CPX31 VPS at `178.104.213.102`. SSH alias:
+  `ssh boliganalyse` (key: `~/.ssh/boliganalyse_hetzner`, user: `root`).
+- **Public URLs:**
+  - `https://supabase.dev.boliganalyse.ai` — Studio + Postgres APIs (admin only)
+  - `https://api.dev.boliganalyse.ai` — FastAPI listing service (frontend
+    talks ONLY to this hostname)
+- **DB schema source of truth:** `supabase/migrations/*.sql` — currently a
+  single baseline `20260428160000_app_schema_baseline.sql`. Apply via
+  `deploy/scripts/apply-migrations.sh`.
+- **API service:** `api/` (FastAPI + Python 3.12 + uv). Deployed via
+  `deploy/scripts/deploy-api.sh boliganalyse` — rsyncs to
+  `/opt/supabase-stack/api/` and rebuilds the container.
 
 ## Build and Development Commands
 
-- `npm run dev`: Start frontend dev server (Vite, listens on `:8080`).
-  Requires `.env.local` with `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`.
+### Frontend (`src/`)
+
+- `npm run dev`: Vite dev server on `:8080`. Requires `.env.local` with
+  `VITE_API_URL=http://localhost:8000` (or your remote API).
 - `npm run build`: Production build.
-- `npm run lint`: ESLint across the codebase.
-- `deno test --allow-net --allow-env supabase/functions/analyze-apartment/src/tests/`:
-  Edge function unit tests.
+- `npm run lint`: ESLint.
+
+### API (`api/`)
+
+- `uv sync`: Install Python dependencies (creates `api/.venv/`).
+- `uv run uvicorn src.main:app --reload`: Local dev server on `:8000`.
+  Requires `api/.env` with `SUPABASE_*`, `ANTHROPIC_API_KEY`,
+  `FIRECRAWL_API_KEY` etc. (see `api/.env.example`).
+- `uv run ruff check`: Lint.
+- `uv run pytest`: Tests (when written).
 
 ## Project structure
 
 - **Frontend** (Vite + React 18 + TS + shadcn/ui + Tailwind + React Query):
-  `src/`. Talks to Supabase via `@supabase/supabase-js` for both
-  postgres queries (REST) and realtime subscriptions on
-  `public.client_apartment_listings`.
-- **Edge function** (Deno, runs in Supabase's edge-runtime container):
-  `supabase/functions/analyze-apartment/`. Scrapes a listing, parses
-  structured data, calls Claude for the analysis, writes back to
-  `private.apartment_listings`. A trigger mirrors writes to
-  `public.client_apartment_listings`, which is what the frontend reads.
-- **Deployment artifacts:** `deploy/`. `README.md` is the from-scratch
-  setup guide. `docker-compose.app.yml` is layered onto upstream's compose
-  files (`-f docker-compose.yml -f docker-compose.caddy.yml -f docker-compose.app.yml`).
-
-## Phase status
-
-- **Phase 1 — done**: lift the cloud Supabase setup onto a self-hosted
-  Hetzner box, no rewrite. Smoke-tested end-to-end with a real listing
-  through Opus 4.7. All infrastructure is in place.
-- **Phase 2 — planned**: replace the edge function with a dedicated API
-  server (no rewrite of analysis logic, just relocate). The edge runtime's
-  60-second wall-clock + 200K-token context + opaque limits made the
-  agentic Claude loop fragile; a long-running server lifts those.
-- **Phase 3 — planned by user**: full overhaul / redesign. Out of scope
-  until phase 2 is shipped.
-
-## Code Style Guidelines
-
-- **TypeScript**: strict typing preferred but project has
-  `strictNullChecks: false`.
-- **Imports**: absolute via `@/` for `src/`.
-- **Components**: React functional components with TS types.
-- **Naming**: camelCase for variables/functions, PascalCase for
-  components/types.
-
-## Operational gotchas worth knowing
-
-- **`ENABLE_DST_TOOLS=false`** by default in `deploy/docker-compose.app.yml`.
-  The Danmarks-Statistik tool-calling chain was the #1 source of edge
-  runtime timeouts. It's off in phase 1; revisit when the dedicated API
-  exists.
-- **Realtime publication** must include `public.client_apartment_listings`,
-  not `private.apartment_listings`. There's a migration that ensures this
-  (`20260428120000_fix_realtime_publication.sql`).
-- **Migration `20250330183846`** had triggers defined before their
-  functions — would fail on a fresh DB. Already fixed (function defs
-  moved before trigger creates, `IF EXISTS` / `OR REPLACE` for
-  idempotency).
-- **Dashboard credentials, anon key, service-role key, postgres password,
-  and the three app API keys (OPENAI/ANTHROPIC/FIRECRAWL)** all live in
-  `/opt/supabase-stack/.env` on the server (mode `600`). Never commit
-  this file — the `.env.local` and `*.local` patterns in `.gitignore`
-  cover it locally.
-- **Don't log into the server's Postgres directly** for routine reads
-  unless needed; prefer Studio at `https://supabase.dev.boliganalyse.ai`
-  with the dashboard creds.
-- **Frontend hosting** is currently dev-only (local `npm run dev`).
-  Deciding where production lives (Netlify with new env vars vs the
-  Hetzner box behind Caddy) is a phase-2 task.
+  `src/`. Talks to the API via `src/integrations/api/client.ts`. No
+  Supabase JS dependency. Live status updates over SSE via `EventSource`.
+- **API** (FastAPI + Python 3.12, ~1500 LOC): `api/src/`. Long-running
+  container; no wall-clock cap. Scrapes a listing via one of seven
+  providers, parses structured data, runs the Claude tool-use loop with
+  Danmarks Statistik tools, persists to `app.apartment_listings` via the
+  service-role key.
+- **DB:** Single `app` schema with `apartment_listings` and `feedback`
+  tables. Anon/authenticated have zero permissions; only service_role
+  (= the API server) reads and writes.
+- **Deployment artifacts:** `deploy/`. `README.md` has setup-from-scratch.
+  `docker-compose.app.yml` adds the `api` service to the upstream
+  supabase compose. `Caddyfile.example` has the `api.<domain>` block
+  with `flush_interval -1` for SSE.
 
 ## Architecture details
 
-See `ARCHITECTURE.md` for the status-management state machine, frontend
-component layout, and the planned phase-2 dedicated-API design.
+See `ARCHITECTURE.md` for topology, state machine, code layout, and the
+tool-use loop semantics.
+
+## Code Style Guidelines
+
+### Python (`api/`)
+
+- Python 3.12, type hints everywhere.
+- `ruff` for lint/format (config in `pyproject.toml`).
+- Use `httpx.AsyncClient` for HTTP — no `requests`.
+- Use `selectolax` for HTML parsing — no `bs4`.
+
+### TypeScript (`src/`)
+
+- `strictNullChecks: false` (legacy — don't fight it for old code).
+- Imports via `@/` alias to `src/`.
+- React functional components with TS types.
+- camelCase for variables/functions, PascalCase for components/types.
+
+## Operational gotchas worth knowing
+
+- **PostgREST schema exposure:** `PGRST_DB_SCHEMAS=public,graphql_public,app`
+  on the server — without `app`, supabase-py can't reach the tables.
+- **API service uses internal Kong URL:** inside the docker network,
+  `SUPABASE_URL=http://kong:8000`. The public hostname is for
+  external/admin access only.
+- **DST tools default ON for the API.** The legacy edge function (which
+  is now deleted) used to force them OFF because of wall-clock fragility.
+  The long-running API has no such cap.
+- **CORS:** `CORS_ORIGINS` env (comma-separated) gates which origins the
+  API accepts. Add new frontend hostnames there.
+- **SSE buffering:** Caddy MUST have `flush_interval -1` on the
+  `api.<domain>` block. Without it, EventSource sees status updates
+  batched at end-of-stream. See `deploy/Caddyfile.example`.
+- **Sanitize before write:** the repository strips null bytes from text
+  fields — Postgres rejects `\0` in `text` columns even though Python
+  tolerates them.
+- **Secrets** (anon key, service-role key, Postgres password,
+  ANTHROPIC/FIRECRAWL keys) live in `/opt/supabase-stack/.env` on the
+  server (mode `600`). Never commit. `.env*.local` and `api/.env*` are
+  gitignored.
+
+## Migrating from the old setup (notes for context)
+
+If you're poking through git history: the old repo had a Deno edge
+function at `supabase/functions/analyze-apartment/` and a `private`/`public`
+schema split where the frontend used Supabase JS to read a mirror table
+over Realtime. Phase 2 (April 2026) replaced all of that:
+- Deno → FastAPI
+- Edge runtime → long-running container
+- Realtime subscriptions → SSE
+- private/public split → single `app` schema, API-only access
+- Old migrations squashed to one baseline
+
+The state machine, status enum values, provider list, and Claude prompt
+all transferred 1:1. The JSON shape returned by `/listings/{id}` matches
+what the old `client_apartment_listings` row looked like, minus the
+internal columns.

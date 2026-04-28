@@ -1,212 +1,203 @@
-# Bolig Analyse AI - Architecture Documentation
+# Boliganalyse.ai — Architecture
 
-## Deployment topology (current)
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Hetzner CPX31 VPS — 178.104.213.102 — Ubuntu 24.04             │
-│                                                                 │
-│  ┌────────┐    ┌─────────────────────────────────────────────┐  │
-│  │  Caddy │ →  │  Supabase stack (upstream v1.26.04 compose) │  │
-│  │  :443  │    │  ─ Postgres 15      ─ Auth (GoTrue)         │  │
-│  └────────┘    │  ─ PostgREST        ─ Realtime              │  │
-│        ↑       │  ─ Storage          ─ Studio                │  │
-│        │       │  ─ Kong gateway     ─ Edge Runtime (Deno)   │  │
-│   TLS via      │  ─ Vector + Logflare analytics              │  │
-│   Let's        └─────────────────────────────────────────────┘  │
-│   Encrypt      Edge Runtime mounts                              │
-│                /opt/supabase-stack/volumes/functions/           │
-│                  └ analyze-apartment/  ← deployed via rsync     │
-└─────────────────────────────────────────────────────────────────┘
-              ↑ DNS: supabase.dev.boliganalyse.ai (Cloudflare,
-              │      DNS-only / not proxied during phase 1)
-              │
-   Frontend (Vite/React, currently `npm run dev` only)
-   ─ Reads VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY from env
-   ─ Hits PostgREST, Realtime, and `functions/v1/analyze-apartment`
-     all under the same supabase.dev.boliganalyse.ai hostname
-```
-
-Secrets and config live in `/opt/supabase-stack/.env` (mode 600). The
-Caddy + edge-runtime layering is provided by composing
-`docker-compose.yml` (upstream) + `docker-compose.caddy.yml` (upstream
-TLS overlay) + `docker-compose.app.yml` (app-specific env passthrough,
-checked into `deploy/`).
-
-## Phase 2 plan: dedicated API server
-
-The edge function is the friction point. Anthropic's agentic tool-calling
-loops over many DST queries blow past the edge runtime's 60-second
-wall-clock and 200K-token context windows. Phase 2 lifts
-`analyze-apartment` out of the edge runtime into a long-running container
-on the same box:
+## Deployment topology
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  Hetzner CPX31 VPS                                              │
-│                                                                 │
-│  ┌────────┐    ┌──────────────────────┐                         │
-│  │  Caddy │ →  │  Supabase stack      │  (DB / Auth / Realtime  │
-│  │  :443  │    └──────────────────────┘   / Storage / Studio)   │
-│  │        │    ┌──────────────────────┐                         │
-│  │        │ →  │  api/  Hono on Bun   │  (analyze, scrape, AI)  │
-│  └────────┘    │  Long-running, no    │                         │
-│                │  wall-clock limits.  │                         │
-│                │  Hits Supabase via   │                         │
-│                │  service-role key.   │                         │
-│                └──────────────────────┘                         │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  Hetzner CPX31 VPS — 178.104.213.102 — Ubuntu 24.04                 │
+│                                                                     │
+│  ┌────────┐    ┌─────────────────────────────────────────────────┐  │
+│  │  Caddy │ →  │  Supabase stack (upstream v1.26.04 compose)     │  │
+│  │  :443  │    │  ─ Postgres 15      ─ PostgREST                 │  │
+│  └────────┘    │  ─ Auth (GoTrue)    ─ Storage                   │  │
+│       ↑        │  ─ Studio           ─ Kong gateway              │  │
+│       │        └─────────────────────────────────────────────────┘  │
+│       │        ┌─────────────────────────────────────────────────┐  │
+│       └─────►  │  api/  FastAPI on Python 3.12                   │  │
+│                │  ─ Long-running, no wall-clock cap              │  │
+│   TLS via      │  ─ Service-role-key access to Postgres          │  │
+│   Let's        │  ─ Listing scrape + Claude analysis +           │  │
+│   Encrypt      │    DST tool calls + SSE streaming               │  │
+│                └─────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+              ↑
+   DNS (Cloudflare, DNS-only / no proxy):
+     supabase.dev.boliganalyse.ai → Caddy → Kong (Postgres/Auth/Studio)
+     api.dev.boliganalyse.ai      → Caddy → FastAPI :8001
+     dev.boliganalyse.ai          → Caddy → SPA build (optional)
 
-  api.dev.boliganalyse.ai → POST /analyze
-  supabase.dev.boliganalyse.ai → REST/Realtime/Storage as before
+   Frontend (Vite/React)
+   ─ Reads VITE_API_URL from env
+   ─ Talks ONLY to api.dev.boliganalyse.ai — no Supabase JS, no anon key
+   ─ Live status via SSE (EventSource) on /listings/{id}/events
 ```
 
-Frontend swaps `supabase.functions.invoke('analyze-apartment', …)` for
-`fetch('https://api.dev.boliganalyse.ai/analyze', …)`. Realtime, status,
-RLS, and DB layout are unchanged. The `analyze-apartment` source moves
-mostly 1:1 from Deno → Bun (a handful of imports and `Deno.env.get`
-substitutions).
+The frontend has zero direct contact with Supabase. The API server is the
+sole Postgres client; it holds the service-role key and decides what to
+return. Anon and authenticated roles have no permissions on `app.*`.
 
-## Status Management System
+Compose layering: `docker-compose.yml` (upstream)
++ `docker-compose.caddy.yml` (upstream TLS) + `docker-compose.app.yml`
+(our `api` service + env passthrough — checked into `deploy/`).
 
-The application features a robust status management system that tracks and displays the progress of property analyses.
+## Code layout
 
-### Core Components
+```
+api/                          FastAPI service (Python 3.12, uv)
+  pyproject.toml + uv.lock    Pinned deps
+  Dockerfile                  Multi-stage build, ~150 MB final image
+  src/
+    main.py                   App init, lifespan, router wiring
+    config.py                 pydantic-settings env loader
+    routes/
+      listings.py             POST /listings, GET, list, SSE events
+      feedback.py             POST /feedback
+      schemas.py              Pydantic response models (public surface)
+      dependencies.py         FastAPI deps for the repo singleton
+    services/
+      listing_processor.py    State-machine orchestrator
+      ai_analyzer.py          Claude tool-use loop with MAX_TOOL_TURNS cap
+      tool_registry.py        Registry for Claude-callable tools
+      base_tool.py            Tool ABC + JSON-schema validation
+      prompt.py               The big Danish analysis prompt
+      tools/dst_api.py        Danmarks Statistik tools (4 of them)
+    providers/
+      base.py                 Provider ABC
+      registry.py             Singleton, ordered chain
+      boligsiden.py           Specialised, follows realtor redirect
+      home.py                 home.dk
+      danbolig.py             via Firecrawl, with markdown trim
+      edc.py                  edc.dk via JSON-LD
+      json_ld.py              Generic JSON-LD extractor
+      firecrawl.py            Universal fallback via Firecrawl REST
+      fallback.py             Last resort — body text only
+    repositories/
+      listing.py              Service-role async access to app.*
+    types/
+      status.py               AnalysisStatus enum
+      models.py               HTMLParseResult, etc.
+    utils/
+      url.py, html.py, validation.py
 
-#### 1. Status Library (`/src/lib/status/`)
+src/                          Frontend (Vite + React + TypeScript)
+  integrations/api/client.ts  Fetch + SSE client — no Supabase
+  contexts/StatusContext.tsx  Pulls status via API + EventSource
+  pages/, components/, lib/
 
-- **types.ts**: Core definitions
-  - `AnalysisStatus` enum (pending, queued, processing states, terminal states)
-  - Status groupings and valid transitions
-  - Processing order for workflow progression
+supabase/migrations/          Single baseline:
+  20260428160000_app_schema_baseline.sql
 
-- **utils.ts**: Helper functions
-  - Status type checking and conversion
-  - Progress calculation
-  - Transition validation
-
-- **ui.ts**: UI utilities
-  - Human-readable messages
-  - CSS class generation
-  - Error message templates
-
-#### 2. Status Manager
-
-- **Backend** (`/supabase/functions/analyze-apartment/src/services/status-manager.ts`):
-  - Handles status transitions
-  - Manages status persistence
-  - Provides error handling capabilities
-
-#### 3. React Context (`/src/contexts/StatusContext.tsx`)
-
-- Provides status state to components
-- Manages subscriptions to real-time updates
-- Exposes status-related properties and actions
-
-#### 4. UI Components (`/src/components/status/`)
-
-- `StatusIndicator`: Step indicators
-- `StatusProgressBar`: Visual progress representation
-- `StatusMessage`: User-friendly status messages
-- `StatusStepList`: Workflow visualization
-- `StatusError`: Error display with context
-
-### Status Workflow
-
-1. Analysis begins in `PENDING` state
-2. Transitions through processing states based on backend progress
-3. Terminates in `COMPLETED`, `ERROR`, `TIMEOUT`, `INVALID_URL`, or `CANCELLED`
-
-### Status Transitions
-
-The system enforces valid status transitions through the `isValidTransition` function:
-
-- Same status is always valid
-- Each status can only transition to specific next states
-- Terminal states cannot transition to other states
-
-### Error Handling
-
-- `StatusError` component displays error messages based on status
-- Error metadata is captured (type, message, stack trace)
-- User-friendly error messages are provided based on error context
-
-## Frontend Architecture
-
-### Main Components
-
-- `AnalysisPage`: Container component with StatusProvider
-- `AnalysisPageContent`: Presentation component using StatusContext
-- `AnalysisProgressView`: Status visualization for in-progress analyses
-- `AnalysisDetailsView`: Display of completed analysis results
-
-### Data Flow
-
-1. User submits property URL for analysis
-2. Backend processes the listing, updating status at each step
-3. Frontend subscribes to status changes via StatusContext
-4. UI renders appropriate view based on current status
-5. Analysis results are displayed when status reaches `COMPLETED`
-
-## Backend Architecture
-
-### Processing Pipeline
-
-1. `ListingProcessorService`: Orchestrates the analysis workflow
-2. `StatusManager`: Manages status transitions and validation
-3. Analysis steps:
-   - Fetch property listing HTML
-   - Parse structured data
-   - Prepare data for AI analysis
-   - Generate AI insights
-   - Save analysis results
-
-### Error Handling
-
-- Timeout detection with AbortController
-- Structured error information in database
-- Error categorization (general, timeout, invalid URL)
-
-## Key Benefits
-
-1. **Maintainability**: Clear separation of concerns
-2. **Reliability**: Validated status transitions
-3. **Extensibility**: New statuses can be added with minimal changes
-4. **User Experience**: Consistent status visualization
-5. **Performance**: Optimized real-time updates
-6. **Error Handling**: Context-aware error information
-
-## Usage Examples
-
-### Checking Status in Components
-
-```tsx
-const MyComponent = () => {
-  const { status, isError, isTerminal } = useStatus();
-  
-  // Conditional rendering based on status
-  if (isError) {
-    return <ErrorView />;
-  }
-  
-  if (isTerminal) {
-    return <CompletedView />;
-  }
-  
-  return <ProgressView status={status} />;
-};
+deploy/
+  docker-compose.app.yml      Adds the api service to the supabase stack
+  Caddyfile.example           SSE-friendly reverse proxy block
+  scripts/
+    apply-migrations.sh       Runs supabase db push against the live DB
+    deploy-api.sh             Rsyncs api/ + rebuilds the api container
+    generate-keys.mjs         Derives JWTs from JWT_SECRET
 ```
 
-### Updating Status in Backend
+## Database schema
 
-```typescript
-// Update status with validation
-await statusManager.updateStatus(listingId, AnalysisStatus.ANALYZING);
+One schema, two tables, no mirror:
 
-// Handle errors with context
-try {
-  // Processing logic
-} catch (error) {
-  await statusManager.setErrorStatus(listingId, error, AnalysisStatus.ERROR);
-}
 ```
+app.apartment_listings        Canonical row per listing
+app.feedback                  User feedback (FK to apartment_listings)
+```
+
+Internal fields (`html_primary`, `html_redirect`, `text_primary`,
+`text_redirect`, `error_message`, `normalized_url`) are written by the
+processor for audit/debug, but are **never** serialized into API
+responses. `routes/schemas.py:ListingResponse.from_row` is the single
+projection point.
+
+Permissions: `service_role` has `USAGE` on `app` and `ALL` on the
+tables. `anon` and `authenticated` are explicitly revoked. RLS is
+intentionally not enabled — when only one role can reach the data, RLS
+is theatre.
+
+## Status state machine
+
+`AnalysisStatus` enum (api/src/types/status.py + lib/status on the
+frontend) drives both DB writes and SSE events.
+
+```
+            ┌──────────────────────────────────────────────┐
+            ▼                                              │
+    pending → queued → fetching_html → parsing_data        │
+                                            │              │
+                  ┌─────────────────────────┘              │
+                  ▼                                        │
+        preparing_analysis  (only if redirect URL differs) │
+                  │                                        │
+                  ▼                                        │
+        generating_insights → finalizing → completed       │
+                                                           │
+        any state → error / timeout / invalid_url          │
+        (terminal — closes SSE stream)            ─────────┘
+                                              re-analysis from error
+                                              re-runs with status=queued
+```
+
+Listings already in a non-error terminal state are returned as-is
+unless the request includes `force=true`.
+
+## Live status delivery
+
+`GET /listings/{id}/events` opens an SSE stream. The endpoint polls the
+DB on a 500 ms cadence; on every observed status change it emits a
+`status` event with the public listing projection. When the listing
+hits a terminal state it emits a final `complete` or `error` event and
+closes the stream. Caddy's `flush_interval -1` keeps events flushing
+without batching.
+
+The frontend's `StatusContext` opens the stream after an initial fetch
+and closes it on unmount or when the listing is already terminal at
+fetch time.
+
+## Tool-use loop
+
+`AIAnalyzerService._analyze_with_tools` drives a Claude messages.create
+loop:
+
+1. Send the prompt + tool definitions.
+2. For every `tool_use` block, execute the matching tool and append a
+   `tool_result` block (truncated to 6 KB to keep DST payloads bounded).
+3. If turn count hits `MAX_TOOL_TURNS = 3`, send one final request
+   *without* tools plus a forced "JSON only" instruction.
+4. Walk the brace depth from the first `{` (skipping braces inside
+   strings) to extract the JSON object regardless of fences or chat
+   around it.
+
+Re-enabling DST tools by default is safe now: the new server has no
+wall-clock cap. The `ENABLE_DST_TOOLS` env var still flips them off
+for debugging or DST outages.
+
+## Front-end consumption
+
+`apiClient` (`src/integrations/api/client.ts`) is the only path between
+browser and server. It exposes:
+
+- `startAnalysis({ url, force })` — POST /listings
+- `getListing(id)` — GET /listings/{id}
+- `listRecent(limit)` — GET /listings (recent completed)
+- `submitFeedback(payload)` — POST /feedback
+- `streamListingEvents(id, handlers)` — SSE wrapper, returns a
+  `close()` function for cleanup
+
+The `Listing` type is defined client-side and matches the
+`ListingResponse` Pydantic model field-for-field.
+
+## Operational notes
+
+- All secrets live in `/opt/supabase-stack/.env` on the server. The
+  `api` container reads `SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`,
+  `FIRECRAWL_API_KEY`, plus `ANTHROPIC_MODEL`/`MAX_TOKENS` and
+  `CORS_ORIGINS` overrides. See `deploy/.env.example`.
+- The `api` service connects to Kong over the docker network
+  (`http://kong:8000`) — no public TLS round-trip for internal calls.
+- Host port `8001` (loopback only) is what the system Caddy reverse
+  proxies to.
+- Frontend hosting is still up to the user — Netlify with
+  `VITE_API_URL=https://api.dev.boliganalyse.ai` is the simplest path;
+  self-hosting behind the same Caddy is the alternative.
