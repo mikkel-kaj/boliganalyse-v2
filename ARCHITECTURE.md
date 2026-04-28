@@ -1,5 +1,72 @@
 # Bolig Analyse AI - Architecture Documentation
 
+## Deployment topology (current)
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Hetzner CPX31 VPS — 178.104.213.102 — Ubuntu 24.04             │
+│                                                                 │
+│  ┌────────┐    ┌─────────────────────────────────────────────┐  │
+│  │  Caddy │ →  │  Supabase stack (upstream v1.26.04 compose) │  │
+│  │  :443  │    │  ─ Postgres 15      ─ Auth (GoTrue)         │  │
+│  └────────┘    │  ─ PostgREST        ─ Realtime              │  │
+│        ↑       │  ─ Storage          ─ Studio                │  │
+│        │       │  ─ Kong gateway     ─ Edge Runtime (Deno)   │  │
+│   TLS via      │  ─ Vector + Logflare analytics              │  │
+│   Let's        └─────────────────────────────────────────────┘  │
+│   Encrypt      Edge Runtime mounts                              │
+│                /opt/supabase-stack/volumes/functions/           │
+│                  └ analyze-apartment/  ← deployed via rsync     │
+└─────────────────────────────────────────────────────────────────┘
+              ↑ DNS: supabase.dev.boliganalyse.ai (Cloudflare,
+              │      DNS-only / not proxied during phase 1)
+              │
+   Frontend (Vite/React, currently `npm run dev` only)
+   ─ Reads VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY from env
+   ─ Hits PostgREST, Realtime, and `functions/v1/analyze-apartment`
+     all under the same supabase.dev.boliganalyse.ai hostname
+```
+
+Secrets and config live in `/opt/supabase-stack/.env` (mode 600). The
+Caddy + edge-runtime layering is provided by composing
+`docker-compose.yml` (upstream) + `docker-compose.caddy.yml` (upstream
+TLS overlay) + `docker-compose.app.yml` (app-specific env passthrough,
+checked into `deploy/`).
+
+## Phase 2 plan: dedicated API server
+
+The edge function is the friction point. Anthropic's agentic tool-calling
+loops over many DST queries blow past the edge runtime's 60-second
+wall-clock and 200K-token context windows. Phase 2 lifts
+`analyze-apartment` out of the edge runtime into a long-running container
+on the same box:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Hetzner CPX31 VPS                                              │
+│                                                                 │
+│  ┌────────┐    ┌──────────────────────┐                         │
+│  │  Caddy │ →  │  Supabase stack      │  (DB / Auth / Realtime  │
+│  │  :443  │    └──────────────────────┘   / Storage / Studio)   │
+│  │        │    ┌──────────────────────┐                         │
+│  │        │ →  │  api/  Hono on Bun   │  (analyze, scrape, AI)  │
+│  └────────┘    │  Long-running, no    │                         │
+│                │  wall-clock limits.  │                         │
+│                │  Hits Supabase via   │                         │
+│                │  service-role key.   │                         │
+│                └──────────────────────┘                         │
+└─────────────────────────────────────────────────────────────────┘
+
+  api.dev.boliganalyse.ai → POST /analyze
+  supabase.dev.boliganalyse.ai → REST/Realtime/Storage as before
+```
+
+Frontend swaps `supabase.functions.invoke('analyze-apartment', …)` for
+`fetch('https://api.dev.boliganalyse.ai/analyze', …)`. Realtime, status,
+RLS, and DB layout are unchanged. The `analyze-apartment` source moves
+mostly 1:1 from Deno → Bun (a handful of imports and `Deno.env.get`
+substitutions).
+
 ## Status Management System
 
 The application features a robust status management system that tracks and displays the progress of property analyses.
