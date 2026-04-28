@@ -1,0 +1,25 @@
+# Drop this on the Hetzner box at /etc/caddy/Caddyfile after installing
+# Caddy. Caddy handles TLS automatically via Let's Encrypt.
+#
+#   sudo apt-get install -y caddy
+#   sudo nano /etc/caddy/Caddyfile   # paste contents, edit hostnames
+#   sudo systemctl reload caddy
+#
+# Replace your-domain.example with your actual domain. DNS A records for
+# both subdomains must point to this server before reload.
+
+# Supabase API + Studio.
+supabase.your-domain.example {
+    reverse_proxy localhost:8000
+}
+
+# Frontend, if you serve it from this box.
+# Build the SPA locally with `npm run build`, scp `dist/` to /var/www/app/,
+# and uncomment this block.
+#
+# app.your-domain.example {
+#     root * /var/www/app
+#     try_files {path} /index.html
+#     file_server
+#     encode gzip
+# }

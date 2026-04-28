@@ -36,8 +36,8 @@ export const config = {
   claude: {
     apiKey: Deno.env.get("ANTHROPIC_API_KEY") || "",
     endpoint: "https://api.anthropic.com/v1/messages",
-    model: "claude-3-7-sonnet-20250219", // Default model, can be overridden
-    maxTokens: 4000,
+    model: "claude-opus-4-7", // Default model, can be overridden
+    maxTokens: 8000,
     temperature: 0.5, // Low temperature for more consistent results
     apiVersion: "2023-06-01",
   },
@@ -64,6 +64,13 @@ export const config = {
   logging: {
     enabled: true,
     level: Deno.env.get("LOG_LEVEL") || "info",
+  },
+
+  // Feature flags
+  features: {
+    // DST tool-calling is the slow part of the analysis pipeline.
+    // Set ENABLE_DST_TOOLS=true to opt back in.
+    enableDstTools: Deno.env.get("ENABLE_DST_TOOLS") === "true",
   },
 };
 

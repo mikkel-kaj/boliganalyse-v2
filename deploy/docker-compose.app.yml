@@ -1,0 +1,19 @@
+# App-specific overrides for the upstream supabase/supabase docker compose.
+#
+# Layered onto the stack via:
+#   docker compose -f docker-compose.yml \
+#                  -f docker-compose.caddy.yml \
+#                  -f docker-compose.app.yml up -d
+#
+# Pipes the API keys read by
+# supabase/functions/analyze-apartment/src/config/config.ts
+# (Deno.env.get) into the edge-runtime container.
+
+services:
+  functions:
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENABLE_DST_TOOLS: ${ENABLE_DST_TOOLS:-false}

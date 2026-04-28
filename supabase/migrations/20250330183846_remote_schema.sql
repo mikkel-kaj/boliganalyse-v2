@@ -1,13 +1,8 @@
-drop policy "Allow anonymous access to apartment_listings" on "private"."apartment_listings";
-
-CREATE TRIGGER on_new_analysis AFTER INSERT ON private.apartment_listings FOR EACH ROW EXECUTE FUNCTION handle_new_listing();
-
-CREATE TRIGGER on_update_analysis AFTER UPDATE ON private.apartment_listings FOR EACH ROW EXECUTE FUNCTION handle_update_listing();
-
+drop policy if exists "Allow anonymous access to apartment_listings" on "private"."apartment_listings";
 
 drop view if exists "public"."client_apartment_listings";
 
-create table "public"."client_apartment_listings" (
+create table if not exists "public"."client_apartment_listings" (
     "id" uuid not null,
     "url" text,
     "property_image_url" text,
@@ -21,7 +16,7 @@ create table "public"."client_apartment_listings" (
 
 alter table "public"."client_apartment_listings" enable row level security;
 
-CREATE UNIQUE INDEX client_apartment_listings_pkey ON public.client_apartment_listings USING btree (id);
+CREATE UNIQUE INDEX IF NOT EXISTS client_apartment_listings_pkey ON public.client_apartment_listings USING btree (id);
 
 alter table "public"."client_apartment_listings" add constraint "client_apartment_listings_pkey" PRIMARY KEY using index "client_apartment_listings_pkey";
 
@@ -53,7 +48,7 @@ CREATE OR REPLACE FUNCTION public.handle_update_listing()
 AS $function$
 BEGIN
     UPDATE public.client_apartment_listings
-    SET 
+    SET
         url = NEW.url,
         property_image_url = NEW.property_image_url,
         analysis = NEW.analysis,
@@ -66,6 +61,10 @@ BEGIN
 END;
 $function$
 ;
+
+CREATE OR REPLACE TRIGGER on_new_analysis AFTER INSERT ON private.apartment_listings FOR EACH ROW EXECUTE FUNCTION handle_new_listing();
+
+CREATE OR REPLACE TRIGGER on_update_analysis AFTER UPDATE ON private.apartment_listings FOR EACH ROW EXECUTE FUNCTION handle_update_listing();
 
 grant delete on table "public"."client_apartment_listings" to "anon";
 
@@ -109,12 +108,11 @@ grant truncate on table "public"."client_apartment_listings" to "service_role";
 
 grant update on table "public"."client_apartment_listings" to "service_role";
 
+drop policy if exists "Enable read access for all users" on "public"."client_apartment_listings";
+
 create policy "Enable read access for all users"
 on "public"."client_apartment_listings"
 as permissive
 for select
 to public
 using (true);
-
-
-

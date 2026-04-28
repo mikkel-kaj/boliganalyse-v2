@@ -6,12 +6,13 @@ import {
   ToolImplementation, 
   ToolRegistry 
 } from "../types/tool-calling.ts";
-import { 
-  GetSubjectsTool, 
-  GetTablesTool, 
-  GetTableInfoTool, 
-  GetDataTool 
+import {
+  GetSubjectsTool,
+  GetTablesTool,
+  GetTableInfoTool,
+  GetDataTool
 } from "./tools/dst-api-tools.ts";
+import { config } from "../config/config.ts";
 
 const logger = createLogger("ToolRegistry");
 
@@ -40,13 +41,16 @@ export class ToolRegistryService implements ToolRegistry {
   initializeTools(): void {
     logger.info("Initializing tools...");
 
-    // Register Danmarks Statistik API tools
-    this.registerTool(new GetSubjectsTool());
-    this.registerTool(new GetTablesTool());
-    this.registerTool(new GetTableInfoTool());
-    this.registerTool(new GetDataTool());
+    if (config.features.enableDstTools) {
+      this.registerTool(new GetSubjectsTool());
+      this.registerTool(new GetTablesTool());
+      this.registerTool(new GetTableInfoTool());
+      this.registerTool(new GetDataTool());
+      logger.info("DST tools registered");
+    } else {
+      logger.info("DST tools disabled (ENABLE_DST_TOOLS != true)");
+    }
 
-    // Register additional tools here as they are implemented
     logger.info("Tool initialization complete");
   }
 

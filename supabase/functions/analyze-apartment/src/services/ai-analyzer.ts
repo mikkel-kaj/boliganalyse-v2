@@ -72,8 +72,13 @@ export class AIAnalyzerService {
         throw new Error(`Claude API error: ${response.stop_reason}`);
       }
 
-      const rawText = response
-        .content[response.content.length - 1] as TextContentBlock;
+      const textBlocks = response.content.filter(
+        (c): c is TextContentBlock => c.type === "text",
+      );
+      if (textBlocks.length === 0) {
+        throw new Error("Claude returned no text content");
+      }
+      const rawText = textBlocks[textBlocks.length - 1];
 
       return this.extractJsonFromResponse(rawText.text);
     } catch (error) {
@@ -83,16 +88,50 @@ export class AIAnalyzerService {
   }
 
   private extractJsonFromResponse(rawText: string): Record<string, any> {
-    const jsonStart = rawText.indexOf("{");
-    const jsonEnd = rawText.lastIndexOf("}");
+    // Strip markdown code fences if Claude wrapped the JSON in ```json ... ```
+    const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    const text = fenceMatch ? fenceMatch[1] : rawText;
 
-    if (jsonStart === -1 || jsonEnd === -1) {
+    const start = text.indexOf("{");
+    if (start === -1) {
       throw new Error("Could not find JSON in response");
     }
 
+    // Brace-balance forward from the first `{`, ignoring braces inside strings.
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    let end = -1;
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === "\\" && inString) {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end === -1) {
+      throw new Error("Could not find balanced JSON object in response");
+    }
+
     try {
-      const jsonText = rawText.substring(jsonStart, jsonEnd + 1);
-      return JSON.parse(jsonText);
+      return JSON.parse(text.substring(start, end + 1));
     } catch (error) {
       throw new Error(
         `Failed to parse response from Claude: ${(error as Error).message}`,
@@ -232,6 +271,12 @@ export class AIAnalyzerService {
     const messages: ClaudeMessage[] = [{ role: "user", content: prompt }];
     const finalResult: ClaudeResponse = { content: [] };
 
+    // Cap tool iterations so a chatty model can't run forever and bust the
+    // edge-runtime wall-clock limit. Last turn is forced into final text by
+    // dropping tools from the request.
+    const MAX_TOOL_TURNS = 3;
+    let turn = 0;
+
     try {
       let data = await this.makeClaudeRequest(messages, tools);
 
@@ -244,41 +289,63 @@ export class AIAnalyzerService {
           }
         }
 
-        // Find any tool calls
-        const toolCall = data.content.find((c) => c.type === "tool_use") as
-          | ToolUseContentBlock
-          | undefined;
+        // Find every tool call in this turn — Claude 4.x emits parallel
+        // tool_use blocks, and the API requires a tool_result for each.
+        const toolCalls = data.content.filter(
+          (c) => c.type === "tool_use",
+        ) as ToolUseContentBlock[];
 
-        // If no tool calls, we're done
-        if (!toolCall) break;
+        if (toolCalls.length === 0) break;
 
-        // Execute the tool
-        logger.info(`Executing tool: ${toolCall.name}`);
-        const toolRequest: ToolCallRequest = {
-          name: toolCall.name,
-          parameters: toolCall.input,
-          id: toolCall.id,
-        };
-
-        const toolResponse = await this.toolRegistry.executeTool(toolRequest);
-        const resultContent = toolResponse.error
-          ? toolResponse.error
-          : String(toolResponse.output);
-
-        console.log("tool result:" + resultContent);
-
-        // Update conversation with assistant message and tool result
-        messages.push({ role: "assistant", content: data.content });
-        messages.push({
-          role: "user",
-          content: [{
-            type: "tool_result",
+        const toolResults = [];
+        for (const toolCall of toolCalls) {
+          logger.info(`Executing tool: ${toolCall.name}`);
+          const toolResponse = await this.toolRegistry.executeTool({
+            name: toolCall.name,
+            parameters: toolCall.input,
+            id: toolCall.id,
+          });
+          const rawResult = toolResponse.error
+            ? toolResponse.error
+            : String(toolResponse.output);
+          const MAX_TOOL_RESULT_CHARS = 6000;
+          const resultContent = rawResult.length > MAX_TOOL_RESULT_CHARS
+            ? rawResult.slice(0, MAX_TOOL_RESULT_CHARS) +
+              `\n[truncated ${rawResult.length - MAX_TOOL_RESULT_CHARS} chars]`
+            : rawResult;
+          console.log("tool result:" + resultContent);
+          toolResults.push({
+            type: "tool_result" as const,
             tool_use_id: toolCall.id,
             content: resultContent,
-          }],
-        });
+          });
+        }
 
-        // Continue conversation
+        messages.push({ role: "assistant", content: data.content });
+        messages.push({ role: "user", content: toolResults });
+
+        turn++;
+        if (turn >= MAX_TOOL_TURNS) {
+          logger.info(
+            `Hit MAX_TOOL_TURNS (${MAX_TOOL_TURNS}); forcing final JSON answer without tools`,
+          );
+          messages.push({
+            role: "user",
+            content:
+              "Du har nu data nok. Foretag ingen flere tool-kald. " +
+              "Returnér udelukkende den endelige boliganalyse som ét JSON-objekt " +
+              "i det skema, jeg specificerede i den oprindelige instruktion. " +
+              "Ingen forklarende tekst før eller efter — kun JSON.",
+          });
+          data = await this.makeClaudeRequest(messages);
+          for (const content of data.content ?? []) {
+            if (content.type === "text") {
+              finalResult.content.push(content as TextContentBlock);
+            }
+          }
+          break;
+        }
+
         data = await this.makeClaudeRequest(messages, tools);
       }
 
@@ -301,21 +368,22 @@ export class AIAnalyzerService {
     retryCount: number = 0,
   ): Promise<ClaudeResponse> {
     logger.info("Making request to Claude API");
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages,
+      max_tokens: config.claude.maxTokens,
+    };
+    if (tools && tools.length > 0) {
+      body.tools = tools;
+    }
     const response = await fetch(this.apiEndpoint, {
       method: "POST",
       headers: {
-        "anthropic-beta": "token-efficient-tools-2025-02-19",
         "x-api-key": this.apiKey,
         "anthropic-version": this.apiVersion,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: this.model,
-        messages: messages,
-        max_tokens: config.claude.maxTokens,
-        temperature: config.claude.temperature,
-        tools: tools,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok && response.status == 429 && retryCount < 3) {
