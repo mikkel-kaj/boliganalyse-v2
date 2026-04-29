@@ -196,8 +196,10 @@ The `Listing` type is defined client-side and matches the
   `CORS_ORIGINS` overrides. See `deploy/.env.example`.
 - The `api` service connects to Kong over the docker network
   (`http://kong:8000`) — no public TLS round-trip for internal calls.
-- Host port `8001` (loopback only) is what the system Caddy reverse
-  proxies to.
+- Caddy is the supabase compose's own container (mount:
+  `/opt/supabase-stack/volumes/proxy/caddy/Caddyfile`), and reaches the
+  api service via docker DNS at `http://api:8000`. The api container
+  publishes no host port — only Caddy can reach it.
 - Frontend hosting is still up to the user — Netlify with
   `VITE_API_URL=https://api.dev.boliganalyse.ai` is the simplest path;
   self-hosting behind the same Caddy is the alternative.

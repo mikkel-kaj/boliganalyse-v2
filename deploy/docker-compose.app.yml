@@ -33,15 +33,23 @@ services:
       ENABLE_DST_TOOLS: ${ENABLE_DST_TOOLS:-true}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-    ports:
-      # Host-installed Caddy proxies https://api.<domain> → localhost:8001
-      - "127.0.0.1:8001:8000"
+    # No host port mapping — the in-network Caddy reaches the api
+    # service via docker DNS at http://api:8000. Keeping the API off the
+    # host loopback also limits the blast radius if the box is compromised.
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request, sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health', timeout=2).status==200 else sys.exit(1)\""]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # ---- Static frontend served by the supabase-bundled Caddy ---------------
+  # The built SPA at ./volumes/frontend/ is mounted read-only into the caddy
+  # container. The matching `dev.<domain>` block in the Caddyfile points at
+  # /var/www/app — see deploy/Caddyfile.example.
+  caddy:
+    volumes:
+      - ./volumes/frontend:/var/www/app:ro
 
   # ---- Legacy edge function (kept until phase 2 cutover is verified) ------
   # DST tools are forced OFF here regardless of the global ENABLE_DST_TOOLS —

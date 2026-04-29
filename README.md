@@ -1,69 +1,124 @@
-# Welcome to your Lovable project
+# Boliganalyse.ai
 
-## Project info
+AI-powered analysis of Danish property listings. Paste a URL from a major
+Danish real-estate portal — boligsiden, home, edc, danbolig, estate,
+nybolig — and the backend scrapes the listing, runs Claude over the text,
+and streams back a structured analysis of risks, highlights, and
+buyer-relevant questions.
 
-**URL**: https://lovable.dev/projects/048e9704-7060-46f6-9f5c-b8466037e54e
+## Stack
 
-## How can I edit this code?
+- **Frontend** — Vite + React 18 + TypeScript + shadcn/ui + Tailwind +
+  React Query. Talks only to the API; live status updates via SSE
+  (`EventSource`). No Supabase JS dependency.
+- **API** — FastAPI on Python 3.12 + uv. Long-running container; runs the
+  Claude tool-use loop without wall-clock pressure. Holds the
+  service-role key; the only thing that touches Postgres.
+- **Database** — Postgres (in the self-hosted Supabase stack). Single
+  `app` schema. Anon roles have zero permissions.
+- **Hosting** — Self-hosted Supabase v1.26.04 on a Hetzner CPX31 box
+  (Ubuntu 24.04). Caddy fronts everything, including the SPA static
+  files, all behind one box.
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/048e9704-7060-46f6-9f5c-b8466037e54e) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+Browser ─► dev.boliganalyse.ai ─────► Caddy ─► /var/www/app  (SPA)
+                                       │
+        ─► api.dev.boliganalyse.ai ────┴► Caddy ─► api:8000 (FastAPI)
+                                                      │
+                                                      └► kong:8000 ─► Postgres
+        ─► supabase.dev.boliganalyse.ai ─► Caddy ─► kong:8000 ─► Studio + REST
+                                                          (admin only,
+                                                           basic auth)
 ```
 
-**Edit a file directly in GitHub**
+## Repository layout
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+api/                         FastAPI service
+  src/                       Source — see api/README.md
+  pyproject.toml + uv.lock   Pinned Python deps
+  Dockerfile
 
-**Use GitHub Codespaces**
+src/                         Frontend SPA source
+  integrations/api/client.ts API + SSE client (the only network surface)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+supabase/migrations/         Single baseline migration for the `app` schema
 
-## What technologies are used for this project?
+deploy/
+  README.md                  From-scratch setup + day-to-day operations
+  docker-compose.app.yml     Compose overlay (api service + caddy frontend volume)
+  Caddyfile.example          Reference for the api/dev caddy blocks
+  scripts/
+    apply-migrations.sh      supabase db push against the live DB
+    deploy-api.sh            Rsync api/ + rebuild the container
+    deploy-frontend.sh       Build SPA + rsync to the host volume
+    generate-keys.mjs        Derive ANON/SERVICE_ROLE JWTs from JWT_SECRET
 
-This project is built with .
+ARCHITECTURE.md              State machine, code layout, tool-use loop
+CLAUDE.md                    Notes for AI agents working in this repo
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Quickstart (local development)
 
-## How can I deploy this project?
+You need:
 
-Simply open [Lovable](https://lovable.dev/projects/048e9704-7060-46f6-9f5c-b8466037e54e) and click on Share -> Publish.
+- **Node.js 20+** (`npm` ships with it)
+- **Python 3.12** + **[uv](https://docs.astral.sh/uv/)** (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- **SSH access** to the Hetzner box if you want to point at remote Supabase
 
-## I want to use a custom domain - is that possible?
+### 1. Frontend
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+```bash
+cd ~/dev/boliganalyse-ai
+cp .env.example .env.local
+# .env.local already says VITE_API_URL=http://localhost:8000 — leave as-is
+# unless you want to point at the deployed API.
+npm install
+npm run dev          # http://localhost:8080
+```
+
+### 2. API
+
+```bash
+cd ~/dev/boliganalyse-ai/api
+cp .env.example .env
+# Fill in real values. Get SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY,
+# FIRECRAWL_API_KEY from /opt/supabase-stack/.env on the Hetzner box, or
+# from your password manager:
+#   ssh boliganalyse 'sudo cat /opt/supabase-stack/.env'
+uv sync              # creates api/.venv
+uv run uvicorn src.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+The API reads `SUPABASE_URL` from `.env`. Default is the live
+self-hosted instance — anything you do locally hits production data.
+
+### 3. Smoke test
+
+Open `http://localhost:8080`, paste a real listing URL from boligsiden /
+home / edc / danbolig / estate / nybolig. Status flows live through SSE
+within ~60-180s.
+
+## Deploying
+
+All three deploy commands are in `deploy/scripts/`. They assume your SSH
+config has a `boliganalyse` alias for the Hetzner box (key in
+`~/.ssh/boliganalyse_hetzner`, user `root`).
+
+| Command | What it does |
+| --- | --- |
+| `./deploy/scripts/deploy-api.sh boliganalyse` | Rsyncs `api/` to the server and rebuilds the api container. ~2-3 min on first build, ~30s on rebuilds. |
+| `./deploy/scripts/deploy-frontend.sh boliganalyse` | Builds the SPA with `VITE_API_URL=https://api.dev.boliganalyse.ai` inlined, rsyncs `dist/` to the volume Caddy serves. Picked up immediately, no reload. |
+| `./deploy/scripts/apply-migrations.sh` | Runs `supabase db push` against the live DB. Tunnel port 5432 first via `ssh -L 5432:localhost:5432 boliganalyse`. |
+
+See [deploy/README.md](deploy/README.md) for the from-scratch
+provisioning guide and the operational runbook (adding env vars,
+rotating keys, debugging failed analyses, etc.).
+
+## Architecture
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for:
+- Status state machine and SSE delivery
+- The Claude tool-use loop with `MAX_TOOL_TURNS`
+- DB schema and the deliberate single-schema / service-role-only model
+- Why we don't use Supabase JS in the browser anymore

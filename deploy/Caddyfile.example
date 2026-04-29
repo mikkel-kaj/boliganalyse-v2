@@ -1,34 +1,38 @@
-# Drop this on the Hetzner box at /etc/caddy/Caddyfile after installing
-# Caddy. Caddy handles TLS automatically via Let's Encrypt.
+# The supabase compose stack ships its own Caddy container that mounts
+# /opt/supabase-stack/volumes/proxy/caddy/Caddyfile. We DO NOT install
+# Caddy as a system service — append the api block below into the
+# existing Caddyfile inside that mount, then reload via:
 #
-#   sudo apt-get install -y caddy
-#   sudo nano /etc/caddy/Caddyfile   # paste contents, edit hostnames
-#   sudo systemctl reload caddy
+#   docker exec supabase-caddy caddy reload --config /etc/caddy/Caddyfile
 #
-# Replace your-domain.example with your actual domain. DNS A records for
-# all subdomains must point to this server before reload.
-
-# Supabase API + Studio.
-supabase.your-domain.example {
-    reverse_proxy localhost:8000
-}
+# The supabase block (using {$PROXY_DOMAIN}) is provided by upstream
+# and serves Studio + Kong-routed APIs at https://supabase.<domain>.
+# Don't replace it; just add the block below.
 
 # FastAPI listing analysis service.
 # `flush_interval -1` keeps SSE streams flowing without buffering — without
-# it the frontend's EventSource sees status updates in batches at end-of-stream.
-api.your-domain.example {
-    reverse_proxy localhost:8001 {
+# it the frontend's EventSource sees status updates batched at end-of-stream.
+api.dev.boliganalyse.ai {
+    reverse_proxy api:8000 {
         flush_interval -1
     }
+
+    header -server
 }
 
-# Frontend, if you serve it from this box.
-# Build the SPA locally with `npm run build`, scp `dist/` to /var/www/app/,
-# and uncomment this block.
-#
-# app.your-domain.example {
-#     root * /var/www/app
-#     try_files {path} /index.html
-#     file_server
-#     encode gzip
-# }
+# Frontend SPA served from the volume mount declared in
+# deploy/docker-compose.app.yml.
+dev.boliganalyse.ai {
+    root * /var/www/app
+    try_files {path} /index.html
+    file_server
+    encode gzip
+
+    # Long-lived cache for hashed asset filenames; SPA shell stays revalidated.
+    @assets path /assets/*
+    header @assets Cache-Control "public, max-age=31536000, immutable"
+
+    header /index.html Cache-Control "no-cache"
+
+    header -server
+}
