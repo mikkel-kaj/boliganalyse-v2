@@ -47,13 +47,18 @@ async def ingest_documents(
     mindworking: _MindworkingFetcher,
     storage: _Storage,
     repo: _Repo,
+    source_email_id: str | None = None,
 ) -> list[ListingDocumentRow]:
     """Fetch, dedupe, store, and persist each `DocumentRef`. Returns the
     rows that were either newly inserted or already existed.
 
     Per-document errors are logged and skipped; the function never
     raises on a fetch/upload/insert failure for a single document.
+
+    When `source_email_id` is set, inserted rows get `source='email'` and
+    `source_email_id` linked back to the inbound email row.
     """
+    source = "email" if source_email_id else "scrape"
     rows: list[ListingDocumentRow] = []
     for ref in refs:
         try:
@@ -84,7 +89,7 @@ async def ingest_documents(
             inserted = await repo.insert(
                 NewListingDocument(
                     listing_id=listing_id,
-                    source="scrape",
+                    source=source,
                     filename=fetched.filename,
                     content_type=fetched.content_type,
                     size_bytes=len(fetched.content),
@@ -93,6 +98,7 @@ async def ingest_documents(
                     storage_bucket=storage.bucket,
                     kind=ref.kind or None,
                     source_url=ref.source_url,
+                    source_email_id=source_email_id,
                 )
             )
             rows.append(inserted)

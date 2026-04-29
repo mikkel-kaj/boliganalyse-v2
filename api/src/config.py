@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     )
     inbox_domain: str = "inbox.boliganalyse.ai"
 
+    # No semantic default: a missing/empty secret means the webhook rejects
+    # everything (the route checks `not x_inbound_secret` first). Production
+    # deploys must set INBOUND_EMAIL_SECRET in /opt/supabase-stack/.env.
+    inbound_email_secret: str = Field("", alias="INBOUND_EMAIL_SECRET")
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

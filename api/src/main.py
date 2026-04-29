@@ -9,8 +9,9 @@ from supabase import acreate_client
 from src.config import get_settings
 from src.documents.storage import DocumentStorage
 from src.repositories.document import DocumentRepository
+from src.repositories.inbound_email import InboundEmailRepository
 from src.repositories.listing import ListingRepository
-from src.routes import documents, feedback, listings
+from src.routes import documents, feedback, listings, webhooks
 from src.routes.schemas import HealthResponse
 
 settings = get_settings()
@@ -25,6 +26,7 @@ logging.basicConfig(
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.repository = await ListingRepository.create()
     app.state.document_repository = await DocumentRepository.create()
+    app.state.inbound_email_repository = await InboundEmailRepository.create()
     storage_client = await acreate_client(
         settings.supabase_url, settings.supabase_service_role_key
     )
@@ -35,6 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # supabase-py manages its own httpx lifecycle internally; nothing to close
         app.state.repository = None
         app.state.document_repository = None
+        app.state.inbound_email_repository = None
         app.state.document_storage = None
 
 
@@ -57,3 +60,4 @@ async def health() -> HealthResponse:
 app.include_router(listings.router)
 app.include_router(documents.router)
 app.include_router(feedback.router)
+app.include_router(webhooks.router)

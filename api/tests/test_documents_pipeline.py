@@ -214,6 +214,28 @@ async def test_failed_upload_does_not_stop_other_documents() -> None:
     assert rows[0].filename == "b.pdf"
 
 
+async def test_source_email_id_overrides_source_to_email() -> None:
+    fetched_a = _fetched(b"%PDF-A", "salgsopstilling.pdf")
+    mw = _FakeMindworking({_URL_A: fetched_a})
+    storage = _FakeStorage()
+    repo = _FakeRepo()
+    email_id = "99999999-9999-9999-9999-999999999999"
+
+    rows = await ingest_documents(
+        _LISTING_ID,
+        [_ref(_URL_A)],
+        mindworking=mw,
+        storage=storage,
+        repo=repo,
+        source_email_id=email_id,
+    )
+
+    assert len(rows) == 1
+    inserted = repo.inserted[0]
+    assert inserted.source == "email"
+    assert inserted.source_email_id == email_id
+
+
 async def test_empty_refs_returns_empty_list() -> None:
     mw = _FakeMindworking({})
     storage = _FakeStorage()

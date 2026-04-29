@@ -87,6 +87,21 @@ class DocumentRef:
 
 
 @dataclass(slots=True)
+class InboundEmailRow:
+    """Mirrors a row in `app.inbound_emails`."""
+
+    id: str
+    inbox_local_part: str
+    status: str
+    received_at: str
+    listing_id: str | None = None
+    from_address: str | None = None
+    subject: str | None = None
+    raw_storage_path: str | None = None
+    error_message: str | None = None
+
+
+@dataclass(slots=True)
 class HomeListingMetadata:
     store_id: str
     case_number: str

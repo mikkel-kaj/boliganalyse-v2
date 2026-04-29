@@ -4,6 +4,7 @@ from fastapi import Request
 
 from src.documents.storage import DocumentStorage
 from src.repositories.document import DocumentRepository
+from src.repositories.inbound_email import InboundEmailRepository
 from src.repositories.listing import ListingRepository
 
 
@@ -26,3 +27,12 @@ def get_document_storage(request: Request) -> DocumentStorage:
     if storage is None:
         raise RuntimeError("DocumentStorage not initialised on app.state")
     return storage
+
+
+def get_inbound_email_repository(request: Request) -> InboundEmailRepository:
+    repo: InboundEmailRepository | None = getattr(
+        request.app.state, "inbound_email_repository", None
+    )
+    if repo is None:
+        raise RuntimeError("InboundEmailRepository not initialised on app.state")
+    return repo
