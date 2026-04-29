@@ -84,3 +84,9 @@ class DocumentRef:
     filename_hint: str
     kind: str
     source_url: str
+
+
+@dataclass(slots=True)
+class HomeListingMetadata:
+    store_id: str
+    case_number: str
