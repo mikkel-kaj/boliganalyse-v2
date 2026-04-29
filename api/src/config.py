@@ -3,6 +3,16 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.types.models import HomeLeadIdentity
+
+_HOME_PRIVACY_POLICY_HTML = (
+    '<p>Læs mere om homes behandling af personoplysninger i homes privatlivspolitik '
+    '<strong><a rel="noopener" href="https://home.dk/om-home/politikker/privatlivspolitik/" '
+    'target="_blank" title="Privatlivspolitik">her</a></strong></p>\n'
+    '<p>Se den fulde liste med de op til 175 home ejendomsmæglerforretninger '
+    '<a href="https://home.dk/soeg-maegler/" title="Søg mægler"><strong>her</strong></a></p>'
+)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -31,9 +41,29 @@ class Settings(BaseSettings):
     max_tool_turns: int = 3
     max_tool_result_chars: int = 6000
 
+    home_lead_first_name: str = "Boliganalyse"
+    home_lead_last_name: str = "AI"
+    home_lead_phone: str = "+4512345678"
+    home_lead_postal_code: str = "2100"
+    home_lead_privacy_policy_html: str = _HOME_PRIVACY_POLICY_HTML
+    home_lead_purpose_text_headline_html: str = (
+        "<p><strong>*Bestilling af salgsmateriale og eventuelt samtykke til mæglerkontakt:</strong></p>"
+    )
+    inbox_domain: str = "inbox.boliganalyse.ai"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def build_home_lead_identity(self) -> HomeLeadIdentity:
+        return HomeLeadIdentity(
+            first_name=self.home_lead_first_name,
+            last_name=self.home_lead_last_name,
+            phone=self.home_lead_phone,
+            postal_code=self.home_lead_postal_code,
+            privacy_policy_html=self.home_lead_privacy_policy_html,
+            purpose_text_headline_html=self.home_lead_purpose_text_headline_html,
+        )
 
 
 @lru_cache

@@ -90,3 +90,13 @@ class DocumentRef:
 class HomeListingMetadata:
     store_id: str
     case_number: str
+
+
+@dataclass(slots=True)
+class HomeLeadIdentity:
+    first_name: str
+    last_name: str
+    phone: str           # E.164, e.g. "+4512345678"
+    postal_code: str     # e.g. "2100"
+    privacy_policy_html: str
+    purpose_text_headline_html: str
