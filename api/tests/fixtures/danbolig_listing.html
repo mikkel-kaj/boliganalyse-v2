@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="da">
+<head><meta charset="utf-8"><title>Test fixture</title></head>
+<body>
+<div id="app">
+<property-page :property-data="{
+  'address': 'Eksempelvej 1, 9000 Aalborg',
+  'features': [
+    {
+      'name': 'LivingAreaM2',
+      'label': 'Boligareal',
+      'value': '216 m&sup2;'
+    }
+  ],
+  'documents': [
+    {
+      'brokerId': '486',
+      'propertyId': '4860001679',
+      'url': 'https://danbolig.mindworking.eu/api/Public/Documents/26d87892-deb1-44b4-bc6d-549702714284',
+      'name': 'Salgsopstilling',
+      'type': 'Salgsopstilling - Villa',
+      'inserted': '2026-04-29T09:32:06.757',
+      'visibleName': 'Salgsopstilling'
+    },
+    {
+      'brokerId': '486',
+      'propertyId': '4860001679',
+      'url': 'https://danbolig.mindworking.eu/api/Public/Documents/889d6dbc-ad49-440d-99c1-f9afbb36201f',
+      'name': 'Energimærke',
+      'type': 'Energimærke, gældende',
+      'inserted': '2026-04-29T09:32:06.757',
+      'visibleName': 'Energimærke'
+    }
+  ],
+  'openHouses': [
+    {
+      'brokerId': '486',
+      'propertyId': '4860001679',
+      'openHouseFrom': '2026-05-16T11:00:00',
+      'openHouseTo': '2026-05-16T12:00:00'
+    }
+  ]
+}"></property-page>
+</div>
+</body>
+</html>

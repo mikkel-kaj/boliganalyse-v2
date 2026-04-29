@@ -74,3 +74,13 @@ class NewListingDocument:
     storage_bucket: str = "documents"
     source_url: str | None = None
     source_email_id: str | None = None
+
+
+@dataclass(slots=True)
+class DocumentRef:
+    """Reference to a document discovered on a listing page, before fetch."""
+
+    url: str
+    filename_hint: str
+    kind: str
+    source_url: str

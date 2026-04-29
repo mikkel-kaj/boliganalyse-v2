@@ -3,7 +3,13 @@ import logging
 
 import httpx
 
+from src.documents import mindworking as mindworking_module
+from src.documents.extractors.danbolig import extract_danbolig_documents
+from src.documents.pipeline import ingest_documents
+from src.documents.storage import DocumentStorage
+from src.providers.base import BaseProvider
 from src.providers.registry import ProviderNotFoundError, ProviderRegistry
+from src.repositories.document import DocumentRepository
 from src.repositories.listing import ListingRepository
 from src.services.ai_analyzer import AIAnalyzerService
 from src.types.models import HTMLParseResult
@@ -41,10 +47,16 @@ class ListingProcessorService:
         *,
         ai_analyzer: AIAnalyzerService | None = None,
         provider_registry: ProviderRegistry | None = None,
+        document_storage: DocumentStorage | None = None,
+        document_repository: DocumentRepository | None = None,
+        mindworking_fetcher: object | None = None,
     ) -> None:
         self._repository = repository
         self._ai_analyzer = ai_analyzer or AIAnalyzerService(initialize_tools=True)
         self._provider_registry = provider_registry or ProviderRegistry.get_instance()
+        self._document_storage = document_storage
+        self._document_repository = document_repository
+        self._mindworking_fetcher = mindworking_fetcher or mindworking_module
 
     async def process_listing(self, listing_id: str, url: str) -> bool:
         try:
@@ -86,6 +98,8 @@ class ListingProcessorService:
 
         await self._repository.update_status(listing_id, AnalysisStatus.PARSING_DATA)
         parse_result = await provider.parse_html(url, html_content)
+
+        await self._maybe_ingest_provider_documents(listing_id, provider, html_content)
 
         original_html: str | None = None
         original_parse: HTMLParseResult | None = None
@@ -131,6 +145,56 @@ class ListingProcessorService:
         await self._repository.update_status(listing_id, AnalysisStatus.FINALIZING)
         await self._repository.save_analysis_result(listing_id, analysis)
         logger.info("Processing completed for listing %s", listing_id)
+
+    async def _maybe_ingest_provider_documents(
+        self, listing_id: str, provider: BaseProvider, html_content: str
+    ) -> None:
+        """Best-effort document ingestion for providers that expose them.
+
+        Currently only Danbolig is wired. Any failure is logged and
+        swallowed — document ingestion never breaks the analysis run.
+        """
+        if provider.name != "Danbolig":
+            return
+
+        try:
+            refs = extract_danbolig_documents(html_content)
+        except Exception:
+            logger.exception(
+                "Danbolig document extraction failed for listing %s", listing_id
+            )
+            return
+
+        if not refs:
+            return
+
+        try:
+            storage = self._document_storage
+            repo = self._document_repository
+            if storage is None:
+                from supabase import acreate_client
+
+                from src.config import get_settings
+
+                settings = get_settings()
+                client = await acreate_client(
+                    settings.supabase_url, settings.supabase_service_role_key
+                )
+                storage = DocumentStorage(client)
+            if repo is None:
+                repo = await DocumentRepository.create()
+
+            await ingest_documents(
+                listing_id,
+                refs,
+                mindworking=self._mindworking_fetcher,
+                storage=storage,
+                repo=repo,
+            )
+        except Exception:
+            logger.exception(
+                "Danbolig document ingestion failed for listing %s", listing_id
+            )
 
     @staticmethod
     async def _fetch_html(url: str) -> str:
