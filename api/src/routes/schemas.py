@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from src.types.models import ListingDocumentRow
+
 
 class StartAnalysisRequest(BaseModel):
     url: str
@@ -56,3 +58,30 @@ class FeedbackResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str = "ok"
+
+
+class ListingDocumentResponse(BaseModel):
+    """Public projection of `app.listing_documents`. Storage location
+    (bucket/path) and integrity hash stay server-side."""
+
+    id: str
+    kind: str | None = None
+    filename: str
+    content_type: str
+    size_bytes: int
+    source: str
+    source_url: str | None = None
+    created_at: str
+
+    @classmethod
+    def from_row(cls, row: ListingDocumentRow) -> "ListingDocumentResponse":
+        return cls(
+            id=row.id,
+            kind=row.kind,
+            filename=row.filename,
+            content_type=row.content_type,
+            size_bytes=row.size_bytes,
+            source=row.source,
+            source_url=row.source_url,
+            created_at=row.created_at,
+        )
