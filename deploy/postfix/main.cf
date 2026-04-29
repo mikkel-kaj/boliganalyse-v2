@@ -1,0 +1,97 @@
+# Postfix main.cf — receive-only configuration for inbox.boliganalyse.ai.
+#
+# The host accepts mail addressed to *@inbox.boliganalyse.ai, runs the
+# sender past a small whitelist of broker domains, and pipes the raw
+# RFC822 message to the FastAPI inbound-email webhook via the
+# `inbound-pipe` transport defined in master.cf.
+
+# ---- Identity --------------------------------------------------------------
+
+myhostname = inbox.boliganalyse.ai
+myorigin = $myhostname
+
+# We are NOT a destination for any local mailbox — every accepted recipient
+# must match a virtual_alias rule. Leaving mydestination empty prevents the
+# local(8) delivery agent from ever firing.
+mydestination =
+
+# Accept mail from any client. The sender-domain whitelist below is what
+# actually gates which messages we relay to the pipe.
+mynetworks = 127.0.0.0/8 [::1]/128
+inet_interfaces = all
+inet_protocols = all
+
+# ---- Virtual mailbox + transport routing -----------------------------------
+
+# Accept mail for inbox.boliganalyse.ai as a virtual mailbox domain — Postfix
+# delegates delivery for these addresses to whatever the transport_maps + the
+# virtual_transport say. We DON'T use virtual_alias_maps here: alias maps
+# rewrite the recipient address, but we want to preserve the original
+# envelope local part (it's the listing ID lookup key for the webhook).
+virtual_mailbox_domains = inbox.boliganalyse.ai
+# An empty mailbox map keeps Postfix from trying to write to disk; it just
+# uses transport_maps + virtual_transport to dispatch.
+virtual_mailbox_maps = static:OK
+virtual_transport = inbound-pipe:
+
+# transport_maps lets us match every recipient at the inbox domain to the
+# pipe transport via regexp. This is what the `virtual-regex` file does.
+transport_maps = regexp:/etc/postfix/virtual-regex
+
+# ---- TLS -------------------------------------------------------------------
+
+# Accept STARTTLS but don't require it — many MTAs (especially small Danish
+# brokers) still send plaintext-only. setup-postfix.sh symlinks the cert
+# files into /etc/postfix/tls/.
+smtpd_tls_cert_file = /etc/postfix/tls/fullchain.pem
+smtpd_tls_key_file = /etc/postfix/tls/privkey.pem
+smtpd_tls_security_level = may
+smtpd_tls_loglevel = 1
+smtpd_tls_received_header = yes
+
+# ---- Size + safety ---------------------------------------------------------
+
+# 35 MB — slightly above the 30 MB Mindworking helper documents we expect.
+# The webhook also enforces its own cap; this is the outer guardrail.
+message_size_limit = 35000000
+mailbox_size_limit = 0
+
+# ---- Recipient restrictions / sender whitelist -----------------------------
+
+# The whitelist is keyed on sender domain (envelope MAIL FROM). Anything not
+# explicitly OK'd is rejected. Add new broker domains in sender_access and
+# rebuild the image (or `postmap` the file inside the running container).
+smtpd_recipient_restrictions =
+    permit_mynetworks,
+    reject_non_fqdn_recipient,
+    reject_unknown_recipient_domain,
+    check_sender_access hash:/etc/postfix/sender_access,
+    reject
+
+# Reject before DATA when we already know we'll drop the message.
+smtpd_helo_required = yes
+smtpd_delay_reject = no
+
+# ---- Misc ------------------------------------------------------------------
+
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 3.6
+
+# Postfix scrubs the environment by default. The pipe transport runs the
+# inbound.py script as `nobody`, so we must:
+#   (a) import the two app vars into the postfix master's env at startup
+#   (b) export them down to spawned daemons (pipe/local/etc).
+# Both lists must include Postfix's own defaults — replacing them wholesale
+# breaks unrelated machinery (TZ, MAIL_CONFIG, ...).
+import_environment =
+    MAIL_CONFIG MAIL_DEBUG MAIL_LOGTAG TZ XAUTHORITY DISPLAY LANG=C
+    POSTLOG_SERVICE POSTLOG_HOSTNAME
+    INBOUND_WEBHOOK_URL INBOUND_EMAIL_SECRET
+export_environment =
+    TZ MAIL_CONFIG LANG
+    INBOUND_WEBHOOK_URL INBOUND_EMAIL_SECRET
+
+# Quiet down noisy reverse-DNS warnings — we don't reject on PTR.
+disable_vrfy_command = yes

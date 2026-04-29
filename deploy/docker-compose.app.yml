@@ -43,6 +43,32 @@ services:
       retries: 3
       start_period: 10s
 
+  # ---- Inbound mail receiver (Postfix) ------------------------------------
+  # Receives mail addressed to `*@inbox.boliganalyse.ai` and pipes each
+  # accepted message to the FastAPI webhook over the in-network docker DNS
+  # name `api`. SMTP doesn't go through Caddy — port 25 is exposed directly
+  # on the host. See deploy/scripts/setup-postfix.sh for TLS cert + DNS
+  # setup before bringing this service up.
+  postfix:
+    build:
+      context: ./postfix
+      dockerfile: Dockerfile
+    image: boliganalyse-postfix:latest
+    restart: unless-stopped
+    ports:
+      - "25:25"
+    environment:
+      INBOUND_WEBHOOK_URL: ${INBOUND_WEBHOOK_URL:-http://api:8000/webhooks/inbound-email}
+      INBOUND_EMAIL_SECRET: ${INBOUND_EMAIL_SECRET}
+    volumes:
+      # Operator runs setup-postfix.sh which symlinks Let's Encrypt's live
+      # certs into ${POSTFIX_TLS_CERT_DIR} (default
+      # /opt/supabase-stack/postfix-tls). Mount read-only.
+      - ${POSTFIX_TLS_CERT_DIR:-./postfix-tls}:/etc/postfix/tls:ro
+    depends_on:
+      api:
+        condition: service_healthy
+
   # ---- Static frontend served by the supabase-bundled Caddy ---------------
   # The built SPA at ./volumes/frontend/ is mounted read-only into the caddy
   # container. The matching `dev.<domain>` block in the Caddyfile points at

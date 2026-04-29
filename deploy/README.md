@@ -312,6 +312,113 @@ Then re-run the migrations and a full smoke-test. Keep a backup of
 
 ---
 
+## Inbound mail
+
+Brokers (Home, Mindworking shops, Danbolig, etc) deliver sales-material
+documents by email. We receive those at `*@inbox.boliganalyse.ai` via a
+Postfix container, which pipes each accepted message to the FastAPI
+inbound-email webhook at `http://api:8000/webhooks/inbound-email`. The
+local part of the recipient address is used to match against listing
+IDs.
+
+### DNS records
+
+Add at the registrar before bringing the postfix service up:
+
+| Record | Value |
+| --- | --- |
+| `inbox.boliganalyse.ai. A` | `178.104.213.102` |
+| `inbox.boliganalyse.ai. MX 10` | `inbox.boliganalyse.ai.` |
+
+The PTR (rDNS) record `178.104.213.102 -> inbox.boliganalyse.ai` is set
+in the **Hetzner Cloud Console** under the server's network tab — the
+script can't manage it. Without the PTR, Gmail/Outlook will silently
+drop *outbound* mail; we are receive-only so the practical impact is
+just bounce notifications from senders.
+
+### Bootstrap
+
+Run once on the box:
+
+```bash
+ssh boliganalyse
+sudo /opt/supabase-stack/deploy/scripts/setup-postfix.sh
+```
+
+The script:
+
+1. Confirms DNS is in place.
+2. Acquires a Let's Encrypt cert for `inbox.boliganalyse.ai` via
+   `certbot --standalone`. **This needs port 80, which Caddy is bound
+   to.** Stop Caddy briefly (`docker compose stop caddy`), let certbot
+   finish, then `docker compose start caddy`. The script prints the
+   exact commands. Alternative: switch to DNS-01 if your registrar
+   supports it.
+3. Symlinks `fullchain.pem` + `privkey.pem` into
+   `${POSTFIX_TLS_CERT_DIR}` (default `/opt/supabase-stack/postfix-tls`)
+   so the postfix bind-mount can read them.
+4. Installs a daily certbot-renew cron.
+
+Then bring the service up:
+
+```bash
+cd /opt/supabase-stack
+docker compose -f docker-compose.yml \
+               -f docker-compose.caddy.yml \
+               -f docker-compose.app.yml \
+               up -d postfix
+```
+
+Make sure `INBOUND_EMAIL_SECRET` is set in `/opt/supabase-stack/.env` —
+both the `api` service and the postfix pipe script read it. They MUST
+agree, or every webhook call returns 401 and Postfix drops the mail.
+
+### Sender whitelist
+
+Postfix only accepts mail from the broker domains listed in
+[`deploy/postfix/sender_access`](postfix/sender_access). To add a new
+broker:
+
+1. Edit `deploy/postfix/sender_access`, add a `new-domain.dk OK` line.
+2. Rebuild the image and recreate the container:
+   ```bash
+   docker compose -f docker-compose.yml \
+                  -f docker-compose.caddy.yml \
+                  -f docker-compose.app.yml \
+                  up -d --build postfix
+   ```
+
+The `Dockerfile` runs `postmap` on the file at build time. Anything not
+in the list bounces with `554 5.7.1 ... Sender address rejected`.
+
+### Inspecting mail logs
+
+```bash
+ssh boliganalyse 'cd /opt/supabase-stack && docker compose \
+  -f docker-compose.yml -f docker-compose.caddy.yml -f docker-compose.app.yml \
+  logs -f --tail=100 postfix'
+```
+
+The pipe script writes structured `inbound.py: …` lines to stderr,
+which Postfix relays into its own log — visible above. Anything coming
+out of the FastAPI webhook itself is in the `api` service's logs.
+
+### Smoke test from outside
+
+```bash
+swaks --to test@inbox.boliganalyse.ai \
+      --server inbox.boliganalyse.ai \
+      --from sender@home.dk \
+      --header 'Subject: smoke test' \
+      --body 'hello from $(date)'
+```
+
+Use a sender domain that's on the whitelist, otherwise the SMTP server
+rejects at `RCPT TO`. After a successful send, the line should appear
+in both `postfix` and `api` logs within a second or two.
+
+---
+
 ## What's intentionally NOT here
 
 - A vendored copy of Supabase's docker-compose. It's huge and changes

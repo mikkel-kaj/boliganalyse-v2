@@ -1,0 +1,7 @@
+# Catch-all routing rule consulted by `transport_maps`.
+#
+# Every recipient at inbox.boliganalyse.ai is dispatched to the
+# `inbound-pipe` transport defined in master.cf. The full envelope
+# recipient (including the original local part) is preserved and made
+# available to the pipe script via Postfix's argument expansion.
+/^.*@inbox\.boliganalyse\.ai$/  inbound-pipe:

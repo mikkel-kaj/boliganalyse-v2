@@ -1,0 +1,18 @@
+# Sender-domain whitelist consulted by `check_sender_access` in main.cf.
+#
+# Format: <domain>  OK   — anything not listed falls through to the trailing
+# `reject` in smtpd_recipient_restrictions and bounces at SMTP time.
+#
+# After editing, rebuild the image (or run `postmap sender_access` inside the
+# running postfix container).
+
+myhome.home.dk     OK
+mindworking.dk     OK
+mindworking.eu     OK
+home.dk            OK
+danbolig.dk        OK
+nybolig.dk         OK
+edc.dk             OK
+realmaeglerne.dk   OK
+estate.dk          OK
+boligsiden.dk      OK
