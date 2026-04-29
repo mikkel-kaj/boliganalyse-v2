@@ -125,6 +125,16 @@ class ListingRepository:
             message = str(error)
         await self.update_status(listing_id, status, error_message=message)
 
+    async def set_email_lead_sent(self, listing_id: str) -> None:
+        now = _now_iso()
+        await self._table().update(
+            {
+                "email_lead_sent_at": now,
+                "status": AnalysisStatus.AWAITING_DOCUMENTS.value,
+                "updated_at": now,
+            }
+        ).eq("id", listing_id).execute()
+
     async def save_analysis_result(
         self,
         listing_id: str,

@@ -19,6 +19,8 @@ class AnalysisStatus(StrEnum):
     GENERATING_INSIGHTS = "generating_insights"
     FINALIZING = "finalizing"
 
+    AWAITING_DOCUMENTS = "awaiting_documents"
+
     COMPLETED = "completed"
     ERROR = "error"
     INVALID_URL = "invalid_url"

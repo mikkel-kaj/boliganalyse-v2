@@ -3,10 +3,16 @@ import logging
 
 import httpx
 
+from src.config import get_settings
 from src.documents import mindworking as mindworking_module
 from src.documents.extractors.danbolig import extract_danbolig_documents
+from src.documents.extractors.home import extract_home_listing_metadata
 from src.documents.pipeline import ingest_documents
 from src.documents.storage import DocumentStorage
+from src.documents.submitters.home import (
+    HomeLeadSubmissionError,
+    submit_sales_material_lead,
+)
 from src.providers.base import BaseProvider
 from src.providers.registry import ProviderNotFoundError, ProviderRegistry
 from src.repositories.document import DocumentRepository
@@ -50,6 +56,8 @@ class ListingProcessorService:
         document_storage: DocumentStorage | None = None,
         document_repository: DocumentRepository | None = None,
         mindworking_fetcher: object | None = None,
+        home_submitter: object | None = None,
+        home_metadata_extractor: object | None = None,
     ) -> None:
         self._repository = repository
         self._ai_analyzer = ai_analyzer or AIAnalyzerService(initialize_tools=True)
@@ -57,6 +65,10 @@ class ListingProcessorService:
         self._document_storage = document_storage
         self._document_repository = document_repository
         self._mindworking_fetcher = mindworking_fetcher or mindworking_module
+        self._home_submitter = home_submitter or submit_sales_material_lead
+        self._home_metadata_extractor = (
+            home_metadata_extractor or extract_home_listing_metadata
+        )
 
     async def process_listing(self, listing_id: str, url: str) -> bool:
         try:
@@ -100,6 +112,9 @@ class ListingProcessorService:
         parse_result = await provider.parse_html(url, html_content)
 
         await self._maybe_ingest_provider_documents(listing_id, provider, html_content)
+
+        if await self._maybe_submit_home_lead(listing_id, provider, html_content):
+            return
 
         original_html: str | None = None
         original_parse: HTMLParseResult | None = None
@@ -195,6 +210,57 @@ class ListingProcessorService:
             logger.exception(
                 "Danbolig document ingestion failed for listing %s", listing_id
             )
+
+    async def _maybe_submit_home_lead(
+        self, listing_id: str, provider: BaseProvider, html_content: str
+    ) -> bool:
+        """For Home.dk listings, request sales material via the lead form and
+        halt the pipeline until docs arrive (handled by inbound webhook).
+
+        Returns True when the pipeline should stop (lead submitted, status
+        is now `awaiting_documents`). Returns False to continue with normal
+        analysis — either because the provider isn't Home, metadata
+        extraction failed, or the lead submission failed (best-effort
+        fallback so the listing isn't stuck).
+        """
+        if provider.name != "Home.dk":
+            return False
+
+        metadata = self._home_metadata_extractor(html_content)
+        if metadata is None:
+            logger.warning(
+                "Home metadata extraction failed for listing %s — "
+                "continuing with normal analysis",
+                listing_id,
+            )
+            return False
+
+        settings = get_settings()
+        identity = settings.build_home_lead_identity()
+        try:
+            await self._home_submitter(
+                metadata,
+                listing_id=listing_id,
+                identity=identity,
+                inbox_domain=settings.inbox_domain,
+            )
+        except HomeLeadSubmissionError:
+            logger.exception(
+                "Home lead submission failed for listing %s — "
+                "falling back to analysis",
+                listing_id,
+            )
+            return False
+        except Exception:
+            logger.exception(
+                "Home lead submission failed for listing %s — "
+                "falling back to analysis",
+                listing_id,
+            )
+            return False
+
+        await self._repository.set_email_lead_sent(listing_id)
+        return True
 
     @staticmethod
     async def _fetch_html(url: str) -> str:
