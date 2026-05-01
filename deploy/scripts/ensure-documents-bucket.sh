@@ -176,10 +176,12 @@ if [[ -z "${CONTAINER_NAME}" ]]; then
   exit 1
 fi
 
-# `docker exec -i` so the heredoc-on-stdin approach also works; we use -e
-# DOCUMENTS_BUCKET to override only the bucket name (the URL + key already
-# come from the compose env). The python is invoked via -c with the snippet
-# substituted client-side, so it travels as one ssh argv entry.
-ssh "${SSH_TARGET}" \
-  docker exec -e "DOCUMENTS_BUCKET=${BUCKET}" "${CONTAINER_NAME}" \
-  python -c "${PYTHON_SNIPPET}"
+# Feed the multi-line python via stdin (NOT `python -c "$snippet"`) — ssh
+# reconstructs the remote argv as a single string, so newlines inside a -c
+# argument get re-parsed by the remote shell as command separators. Piping
+# the snippet to `python -` over `docker exec -i` sidesteps that entirely.
+# DOCUMENTS_BUCKET overrides just the bucket name; SUPABASE_URL +
+# SUPABASE_SERVICE_ROLE_KEY come from the api container's compose env.
+printf '%s\n' "${PYTHON_SNIPPET}" | ssh "${SSH_TARGET}" \
+  docker exec -i -e "DOCUMENTS_BUCKET=${BUCKET}" "${CONTAINER_NAME}" \
+  python -
