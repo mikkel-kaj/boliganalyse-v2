@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
-# End-to-end smoke test for Phase 2: kick off an analysis against the live
-# API, poll status, and assert that at least one document eventually appears.
+# End-to-end smoke test for the documents pipeline: kick off an analysis
+# against the live API, poll status, and assert that at least one document
+# eventually appears.
 #
-# Designed for Home.dk listings — those drop the analysis at
-# `awaiting_documents` until the broker emails sales material, which Postfix
-# pipes back to the api webhook. The full happy path therefore exercises:
-#   API → Claude → Home contact form → Postfix → API webhook → Storage.
+# Designed for email-gated brokers (Home.dk currently) — those drop the
+# analysis at `awaiting_documents` until the broker emails sales material,
+# which Postfix pipes back to the api webhook. The full happy path
+# therefore exercises:
+#   API → Claude → broker contact form → Postfix → API webhook → Storage.
 #
 # Run from the operator's laptop (NOT the VPS):
-#   ./deploy/scripts/smoke-test-phase-2.sh https://home.dk/...
-#   ./deploy/scripts/smoke-test-phase-2.sh https://home.dk/... --api-url https://api.dev.boliganalyse.ai
-#   ./deploy/scripts/smoke-test-phase-2.sh https://home.dk/... --timeout 180
-#   ./deploy/scripts/smoke-test-phase-2.sh https://home.dk/... --dry-run
+#   ./deploy/scripts/smoke-test-documents.sh https://home.dk/...
+#   ./deploy/scripts/smoke-test-documents.sh https://home.dk/... --api-url https://api.dev.boliganalyse.ai
+#   ./deploy/scripts/smoke-test-documents.sh https://home.dk/... --timeout 180
+#   ./deploy/scripts/smoke-test-documents.sh https://home.dk/... --dry-run
 #
 # Exit codes:
 #   0  documents appeared within the timeout
@@ -30,7 +32,7 @@ LISTING_URL=""
 usage() {
   cat <<'EOF' >&2
 Usage:
-  smoke-test-phase-2.sh <listing-url> [--api-url URL] [--timeout SECS] [--dry-run]
+  smoke-test-documents.sh <listing-url> [--api-url URL] [--timeout SECS] [--dry-run]
 
 Options:
   --api-url URL    Override the API base URL (default https://api.dev.boliganalyse.ai

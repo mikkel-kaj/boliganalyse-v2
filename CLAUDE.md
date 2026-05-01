@@ -12,12 +12,22 @@
   - `https://supabase.dev.boliganalyse.ai` — Studio + Postgres APIs (admin only)
   - `https://api.dev.boliganalyse.ai` — FastAPI listing service (frontend
     talks ONLY to this hostname)
-- **DB schema source of truth:** `supabase/migrations/*.sql` — currently a
-  single baseline `20260428160000_app_schema_baseline.sql`. Apply via
-  `deploy/scripts/apply-migrations.sh`.
+- **DB schema source of truth:** `supabase/migrations/*.sql`. Two files:
+  the original `app_schema_baseline.sql`, then
+  `listing_documents_and_inbound_emails.sql` for the documents pipeline.
+  Apply via `deploy/scripts/apply-migrations.sh` (uses `supabase db push`,
+  tunnels to port **5433** on the VPS — port 5432 is the pooler).
 - **API service:** `api/` (FastAPI + Python 3.12 + uv). Deployed via
   `deploy/scripts/deploy-api.sh boliganalyse` — rsyncs to
   `/opt/supabase-stack/api/` and rebuilds the container.
+- **Postfix service:** `deploy/postfix/` — receive-only MTA that pipes
+  inbound broker mail to the api webhook. Deployed via
+  `deploy/scripts/deploy-postfix.sh boliganalyse`. Listens on
+  `inbox.<domain>:25`. See `deploy/RUNBOOK_DOCUMENTS.md` for first-time
+  bring-up (DNS, PTR, Let's Encrypt cert).
+- **Documents subsystem reference:** see ARCHITECTURE.md → "Documents
+  pipeline". Adding a new realtor source for documents is documented in
+  `api/README.md` → "Adding a realtor for documents".
 
 ## Build and Development Commands
 
@@ -42,18 +52,25 @@
 - **Frontend** (Vite + React 18 + TS + shadcn/ui + Tailwind + React Query):
   `src/`. Talks to the API via `src/integrations/api/client.ts`. No
   Supabase JS dependency. Live status updates over SSE via `EventSource`.
-- **API** (FastAPI + Python 3.12, ~1500 LOC): `api/src/`. Long-running
-  container; no wall-clock cap. Scrapes a listing via one of seven
-  providers, parses structured data, runs the Claude tool-use loop with
-  Danmarks Statistik tools, persists to `app.apartment_listings` via the
+- **API** (FastAPI + Python 3.12): `api/src/`. Long-running container; no
+  wall-clock cap. Scrapes a listing via one of seven providers, parses
+  structured data, optionally ingests broker PDFs (direct or via email
+  round-trip), runs the Claude tool-use loop with the PDFs attached as
+  document content blocks, persists to `app.apartment_listings` via the
   service-role key.
-- **DB:** Single `app` schema with `apartment_listings` and `feedback`
-  tables. Anon/authenticated have zero permissions; only service_role
-  (= the API server) reads and writes.
-- **Deployment artifacts:** `deploy/`. `README.md` has setup-from-scratch.
-  `docker-compose.app.yml` adds the `api` service to the upstream
-  supabase compose. `Caddyfile.example` has the `api.<domain>` block
-  with `flush_interval -1` for SSE.
+- **DB:** Single `app` schema with four tables — `apartment_listings`,
+  `feedback`, `listing_documents`, `inbound_emails`. Anon/authenticated
+  have zero permissions; only service_role (= the API server) reads
+  and writes.
+- **Storage:** A private `documents` bucket holds the broker PDFs the
+  api downloads (energimærke, tilstandsrapport, elinstallationsrapport,
+  …). Bootstrapped eagerly via `deploy/scripts/ensure-documents-bucket.sh`.
+- **Deployment artifacts:** `deploy/`. `README.md` has from-scratch setup;
+  `RUNBOOK_DOCUMENTS.md` has the documents-feature rollout.
+  `docker-compose.app.yml` overlays our services (api, postfix,
+  supabase-db SSL, frontend caddy mount) onto the upstream supabase
+  compose. `Caddyfile.example` has the `api.<domain>` block with
+  `flush_interval -1` for SSE.
 
 ## Architecture details
 
@@ -95,23 +112,50 @@ tool-use loop semantics.
   fields — Postgres rejects `\0` in `text` columns even though Python
   tolerates them.
 - **Secrets** (anon key, service-role key, Postgres password,
-  ANTHROPIC/FIRECRAWL keys) live in `/opt/supabase-stack/.env` on the
-  server (mode `600`). Never commit. `.env*.local` and `api/.env*` are
-  gitignored.
+  ANTHROPIC/FIRECRAWL keys, **`INBOUND_EMAIL_SECRET`**) live in
+  `/opt/supabase-stack/.env` on the server (mode `600`). Never commit.
+  `.env*.local` and `api/.env*` are gitignored.
+- **`INBOUND_EMAIL_SECRET` must reach BOTH api and postfix.** It's a
+  shared HMAC the postfix pipe script sends as `X-Inbound-Secret` and
+  the webhook verifies. If only one side has it, every email returns
+  401 and gets dropped silently. `docker-compose.app.yml` passes it to
+  both services — keep it that way when adding new environment plumbing.
+- **Postfix logs to stdout via `maillog_file = /dev/stdout`** + a
+  `postlog` service in master.cf. Don't unset `maillog_file` — the slim
+  Debian image has no syslog daemon, and removing it makes every postfix
+  line vanish silently.
+- **DB migrations need port 5433, not 5432.** The supabase-db container
+  is bound to host loopback `5433` in `docker-compose.app.yml`; host
+  port `5432` is taken by `supabase-pooler` which doesn't speak TLS.
+  `apply-migrations.sh` uses `?sslmode=require` against `5433`.
+- **Document downloads are proxied through the api**, not signed-URL
+  redirects. `GET /listings/{id}/documents/{doc_id}` streams the PDF
+  bytes from Storage so the bucket can stay private and the hostname
+  stays `api.<domain>`.
 
-## Migrating from the old setup (notes for context)
+## Historical context (notes for git-history spelunking)
 
-If you're poking through git history: the old repo had a Deno edge
-function at `supabase/functions/analyze-apartment/` and a `private`/`public`
-schema split where the frontend used Supabase JS to read a mirror table
-over Realtime. Phase 2 (April 2026) replaced all of that:
-- Deno → FastAPI
-- Edge runtime → long-running container
-- Realtime subscriptions → SSE
-- private/public split → single `app` schema, API-only access
-- Old migrations squashed to one baseline
+The repo went through two major migrations before reaching the current
+shape. Both are visible in the commit history but no longer in the code:
+
+1. **Deno edge function → FastAPI api service.** The old repo had
+   `supabase/functions/analyze-apartment/` running on the Supabase edge
+   runtime and a `private`/`public` schema split where the frontend
+   used Supabase JS to read a mirror table over Realtime. The cutover
+   replaced Deno with FastAPI, edge runtime with a long-running
+   container (no wall-clock cap), Realtime subscriptions with SSE, and
+   the schema split with a single `app` schema reachable only via the
+   service-role-key-holding api server.
+
+2. **Documents pipeline added.** `app.listing_documents`,
+   `app.inbound_emails`, the postfix container, the
+   `awaiting_documents` status, and Claude's PDF document-block
+   ingestion all landed together. Direct-scrape (Danbolig pattern) and
+   email-gated (Home pattern) both flow into the same Storage bucket
+   and the same analyser. See ARCHITECTURE.md → "Documents pipeline"
+   for the full topology.
 
 The state machine, status enum values, provider list, and Claude prompt
-all transferred 1:1. The JSON shape returned by `/listings/{id}` matches
-what the old `client_apartment_listings` row looked like, minus the
-internal columns.
+all transferred 1:1 across both migrations. The JSON shape returned by
+`/listings/{id}` matches what the old `client_apartment_listings` row
+looked like, minus the internal columns.

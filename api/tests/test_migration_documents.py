@@ -1,8 +1,10 @@
-"""Verify the documents-phase-1 migration applies cleanly on top of the
-baseline and produces the expected schema + permissions.
+"""Verify the documents migration (`listing_documents` + `inbound_emails`)
+applies cleanly on top of the baseline and produces the expected schema
+plus permissions.
 
 Spins up an ephemeral Postgres via testcontainers, applies the baseline
-migration first, then the new one, and asserts each piece of the spec.
+migration first, then the documents migration, and asserts each piece of
+the spec.
 """
 
 from __future__ import annotations

@@ -1,15 +1,14 @@
-# Phase 2 Deploy Runbook
+# Documents-feature Deploy Runbook
 
-Take whatever's currently merged on `main` and roll it onto the live
-`dev.boliganalyse.ai` stack.
+Bring the documents subsystem up on a server that already runs the base
+stack (Supabase + Caddy + api + frontend). Roll-up of every step that
+isn't part of the from-scratch guide in [`README.md`](README.md).
 
-This runbook is **incremental** — it assumes the Phase 1 stack is already
-running on the Hetzner box (Supabase + Caddy + api + frontend, all the
-DNS for `supabase`/`api`/`dev` already pointed and TLS-issued). If the
-box is fresh, do the from-scratch sections in [`README.md`](README.md)
-first, then come back here.
+If the box is fresh, do the from-scratch sections in `README.md` first
+(Supabase pinning, JWT keys, base DNS for `supabase`/`api`/`dev`), then
+come back here.
 
-What Phase 2 adds on top of the running stack:
+What this runbook adds on top of the base stack:
 
 - A new private Storage bucket (`documents`) for sales-material PDFs.
 - `INBOUND_EMAIL_SECRET` in the server's `.env` — shared HMAC between
@@ -63,9 +62,9 @@ command -v rsync supabase docker uv jq curl
 
 ## 1. DNS records for inbound mail
 
-If Phase 2 has been deployed once before, skip to step 2.
+If the inbox DNS is already set, skip to step 2.
 
-Add at the registrar (these are **in addition to** the Phase 1 records
+Add at the registrar (these are **in addition to** the existing records
 for `supabase` / `api` / `dev`):
 
 | Record | Type | Value |
@@ -332,7 +331,7 @@ the request target.
 ## 9. End-to-end smoke test
 
 ```bash
-./deploy/scripts/smoke-test-phase-2.sh https://home.dk/<some-real-listing>
+./deploy/scripts/smoke-test-documents.sh https://home.dk/<some-real-listing>
 ```
 
 Use a real Home.dk listing URL — those drop to `awaiting_documents`
@@ -376,7 +375,7 @@ ssh boliganalyse 'docker logs --tail=200 supabase-caddy'
 ssh boliganalyse 'cd /opt/supabase-stack && docker compose logs --tail=200 storage rest'
 ```
 
-Common Phase 2-specific failure modes:
+Common Documents-feature-specific failure modes:
 
 - **Inbound mail returns 401 from the api webhook** — `INBOUND_EMAIL_SECRET`
   doesn't match between Postfix and api. Re-check step 3, then recreate
@@ -423,7 +422,7 @@ The api container drops to the old image in ~5-10s.
 ### 11b. Roll back the migration (only if absolutely necessary)
 
 `apply-migrations.sh` does not generate down migrations. If a deploy
-needs the Phase 2 baseline reverted, do it manually — and only after
+needs the documents-baseline migration reverted, do it manually — and only after
 a `pg_dump`:
 
 ```bash
@@ -466,7 +465,7 @@ Restart with `start postfix` to bring it back.
 | Deploy postfix | `./deploy/scripts/deploy-postfix.sh boliganalyse` |
 | Deploy frontend | `./deploy/scripts/deploy-frontend.sh boliganalyse` |
 | Bootstrap bucket | `./deploy/scripts/ensure-documents-bucket.sh boliganalyse` |
-| Smoke test | `./deploy/scripts/smoke-test-phase-2.sh <url>` |
+| Smoke test | `./deploy/scripts/smoke-test-documents.sh <url>` |
 | TLS / cron bootstrap | `sudo /opt/supabase-stack/deploy/scripts/setup-postfix.sh` (on VPS) |
 
 Every deploy script supports `--dry-run` (or `--help`) for printing the

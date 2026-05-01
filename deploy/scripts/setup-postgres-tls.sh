@@ -6,10 +6,11 @@
 # to ssl=on and bind-mounts ./postgres-tls into the container).
 #
 # Why a self-signed cert is fine: `supabase db push` is invoked over an
-# SSH tunnel (ssh -L 5432:localhost:5432 boliganalyse), so the wire is
-# already encrypted; the cert exists only so postgres answers "yes I
-# speak TLS" during the handshake. Clients use sslmode=require, which
-# does not validate the cert chain.
+# SSH tunnel (ssh -L 5433:localhost:5433 boliganalyse — note port 5433,
+# the supabase-db loopback; 5432 is the pooler), so the wire is already
+# encrypted; the cert exists only so postgres answers "yes I speak TLS"
+# during the handshake. Clients use sslmode=require, which does not
+# validate the cert chain.
 #
 # Postgres refuses to start unless the key file is owned by the
 # in-container postgres user (uid 105 / gid 106 in the supabase/postgres

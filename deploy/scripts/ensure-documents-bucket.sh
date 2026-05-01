@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Ensure the private `documents` Storage bucket exists on the live Supabase.
 #
-# Phase 2 added DocumentStorage.ensure_bucket(), but it only runs lazily on
-# the first upload — so the very first scrape after a fresh deploy can race
-# the bucket-create. This script runs the same idempotent code eagerly,
-# reusing the api container's supabase-py + service-role key.
+# DocumentStorage.ensure_bucket() runs lazily on the first upload, so the
+# very first scrape after a fresh deploy can race the bucket-create. This
+# script runs the same idempotent code eagerly, reusing the api container's
+# supabase-py + service-role key.
 #
 # Two modes:
 #

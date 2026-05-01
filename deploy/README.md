@@ -121,16 +121,19 @@ Studio is reachable at `https://supabase.<domain>` (basic-auth gate via
 ### 5. Apply migrations
 
 From your laptop, with the Supabase CLI installed
-(`brew install supabase/tap/supabase`) and an SSH tunnel to Postgres:
+(`brew install supabase/tap/supabase` or via the install tarball) and an
+SSH tunnel to Postgres. The tunnel must hit port **5433** on the VPS —
+that's the supabase-db loopback. Port 5432 belongs to supabase-pooler,
+which doesn't speak TLS and the CLI rejects it.
 
 ```bash
-ssh -fN -L 5432:localhost:5432 boliganalyse
-export SELF_HOSTED_DB_URL="postgresql://postgres:<POSTGRES_PASSWORD>@localhost:5432/postgres"
+ssh -fN -L 5433:localhost:5433 boliganalyse
+export SELF_HOSTED_DB_URL='postgresql://postgres:<POSTGRES_PASSWORD>@localhost:5433/postgres?sslmode=require'
 ./deploy/scripts/apply-migrations.sh
 ```
 
-A single baseline migration sets up the `app` schema with
-`apartment_listings` and `feedback`.
+The migrations set up the `app` schema with `apartment_listings`,
+`feedback`, `listing_documents`, and `inbound_emails`.
 
 ### 6. Deploy the API + frontend
 
@@ -165,8 +168,8 @@ Day-to-day tasks against the running box.
 ./deploy/scripts/deploy-frontend.sh boliganalyse
 
 # DB schema change — add a new file under supabase/migrations/:
-ssh -fN -L 5432:localhost:5432 boliganalyse
-export SELF_HOSTED_DB_URL="postgresql://postgres:<POSTGRES_PASSWORD>@localhost:5432/postgres"
+ssh -fN -L 5433:localhost:5433 boliganalyse
+export SELF_HOSTED_DB_URL='postgresql://postgres:<POSTGRES_PASSWORD>@localhost:5433/postgres?sslmode=require'
 ./deploy/scripts/apply-migrations.sh
 ```
 

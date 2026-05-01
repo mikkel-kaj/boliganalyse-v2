@@ -5,8 +5,9 @@
 #                  -f docker-compose.caddy.yml \
 #                  -f docker-compose.app.yml up -d
 #
-# Adds the FastAPI `api` service that drives listing analysis, and (still)
-# pipes the legacy edge-function env vars while phase-2 cutover is in flight.
+# Adds the FastAPI `api` service that drives listing analysis, the Postfix
+# container that receives broker emails for the documents pipeline, the
+# supabase-db SSL override, and the SPA static-file mount on caddy.
 
 services:
   # ---- supabase-db: enable TLS so the supabase CLI can connect ------------
@@ -43,7 +44,7 @@ services:
         "ssl_key_file=/etc/postgresql-tls/server.key"
       ]
 
-  # ---- New FastAPI server (phase 2) ---------------------------------------
+  # ---- FastAPI api service ------------------------------------------------
   api:
     build:
       # The api/ tree must be rsynced to /opt/supabase-stack/api/ on the
@@ -115,10 +116,13 @@ services:
     volumes:
       - ./volumes/frontend:/var/www/app:ro
 
-  # ---- Legacy edge function (kept until phase 2 cutover is verified) ------
-  # DST tools are forced OFF here regardless of the global ENABLE_DST_TOOLS —
-  # the edge runtime's wall-clock makes the DST-driven analysis chain fragile,
-  # and the new api service is where DST belongs anyway.
+  # ---- Legacy edge-function service (no code; container kept for compose
+  # health) ----------------------------------------------------------------
+  # The Deno edge function was deleted when the FastAPI api took over, but
+  # the upstream supabase compose still defines a `functions:` service. We
+  # leave it here with DST tools OFF (a leftover from when the edge runtime
+  # ran the analysis chain — DST + a 60s wall-clock made it fragile). Safe
+  # to remove once we're sure no caller hits the legacy path.
   functions:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-unused}
