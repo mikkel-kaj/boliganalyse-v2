@@ -37,6 +37,7 @@ const StatusStepList: React.FC<StatusStepListProps> = ({
     { status: AnalysisStatus.QUEUED, label: 'Forberedelse af analyse' },
     { status: AnalysisStatus.FETCHING_HTML, label: 'Indsamling af data fra boligannoncen' },
     { status: AnalysisStatus.PARSING_DATA, label: 'Indledende analyse af boligen' },
+    { status: AnalysisStatus.AWAITING_DOCUMENTS, label: 'Henter dokumenter fra mægler' },
     { status: AnalysisStatus.PREPARING_ANALYSIS, label: 'Identifikation af nøgleinformation' },
     { status: AnalysisStatus.ANALYZING, label: 'AI-vurdering af risici og højdepunkter' },
     { status: AnalysisStatus.COMPLETED, label: 'Færdiggørelse af analysen' }

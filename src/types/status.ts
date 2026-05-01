@@ -10,6 +10,7 @@ export enum AnalysisStatus {
   // Processing states (granular updates)
   FETCHING_HTML = "fetching_html",       // Fetching the HTML content
   PARSING_DATA = "parsing_data",         // Extracting structured data from HTML
+  AWAITING_DOCUMENTS = "awaiting_documents", // Waiting on broker to email documents
   PREPARING_ANALYSIS = "preparing_analysis", // Preparing data for AI analysis
   ANALYZING = "analyzing",               // AI is analyzing the data
   GENERATING_INSIGHTS = "generating_insights", // Generating insights from analysis
@@ -31,6 +32,7 @@ export const analysisStatusMessages: Record<AnalysisStatus, string> = {
   [AnalysisStatus.QUEUED]: "I kø til analyse...",
   [AnalysisStatus.FETCHING_HTML]: "Indlæser bolig-annonce...",
   [AnalysisStatus.PARSING_DATA]: "Udtrækker boligdata...",
+  [AnalysisStatus.AWAITING_DOCUMENTS]: "Henter dokumenter fra mægler (~30 sek)",
   [AnalysisStatus.PREPARING_ANALYSIS]: "Forbereder AI-analyse...",
   [AnalysisStatus.ANALYZING]: "Analyserer boligdata...",
   [AnalysisStatus.GENERATING_INSIGHTS]: "Genererer indsigter og anbefalinger...",
@@ -50,6 +52,7 @@ export const analysisStatusProgress: Record<AnalysisStatus, number> = {
   [AnalysisStatus.QUEUED]: 5,
   [AnalysisStatus.FETCHING_HTML]: 10,
   [AnalysisStatus.PARSING_DATA]: 25,
+  [AnalysisStatus.AWAITING_DOCUMENTS]: 35,
   [AnalysisStatus.PREPARING_ANALYSIS]: 40,
   [AnalysisStatus.ANALYZING]: 60,
   [AnalysisStatus.GENERATING_INSIGHTS]: 80,
@@ -81,6 +84,7 @@ export function isProcessingStatus(status: AnalysisStatus): boolean {
   return [
     AnalysisStatus.FETCHING_HTML,
     AnalysisStatus.PARSING_DATA,
+    AnalysisStatus.AWAITING_DOCUMENTS,
     AnalysisStatus.PREPARING_ANALYSIS,
     AnalysisStatus.ANALYZING,
     AnalysisStatus.GENERATING_INSIGHTS,

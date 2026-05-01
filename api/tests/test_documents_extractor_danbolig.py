@@ -79,6 +79,26 @@ def test_empty_html_returns_empty_list() -> None:
     assert extract_danbolig_documents("") == []
 
 
+def test_skips_null_occurrences_to_find_real_array() -> None:
+    # Real Danbolig pages embed multiple `documents` keys — typically
+    # nested inside related-property objects with `null` values — and only
+    # the listing's own block has the actual array. Make sure we don't
+    # stop at the first `null`.
+    html = """
+    <html><body><div data="{
+      'relatedProperty1': { 'documents': null, 'price': 1 },
+      'relatedProperty2': { 'documents': null, 'price': 2 },
+      'documents': [
+        { 'url': 'https://x.mindworking.eu/api/Public/Documents/abc',
+          'name': 'Salgsopstilling', 'type': 'Salgsopstilling - Villa' }
+      ]
+    }"></div></body></html>
+    """
+    refs = extract_danbolig_documents(html)
+    assert len(refs) == 1
+    assert refs[0].filename_hint == "Salgsopstilling"
+
+
 def test_entries_without_url_are_skipped() -> None:
     html = """
     <html><body><div data="{

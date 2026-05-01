@@ -90,60 +90,64 @@ def _single_to_double_quoted_json(literal: str) -> str:
 def extract_danbolig_documents(html: str) -> list[DocumentRef]:
     """Return one `DocumentRef` per entry in the embedded `documents` array.
 
-    Robust to:
+    Real Danbolig pages embed several `documents` keys — related-property
+    objects often expose `'documents': null`, while only the listing's own
+    block has the actual array — so we iterate over all matches and pick
+    the first one that yields refs. Robust to:
+
     - The block being absent (returns `[]`).
-    - The value being `null` (returns `[]`).
-    - Malformed JSON inside the block (returns `[]`, never raises).
+    - All occurrences being `null` (returns `[]`).
+    - Malformed JSON inside a block (logs + skips that block).
     """
     if not html:
         return []
 
-    match = _DOCUMENTS_KEY_RE.search(html)
-    if match is None:
-        return []
-
-    cursor = match.end()
-    # Skip whitespace after the colon.
-    while cursor < len(html) and html[cursor].isspace():
-        cursor += 1
-    if cursor >= len(html):
-        return []
-
-    if html.startswith("null", cursor):
-        return []
-    if html[cursor] != "[":
-        return []
-
-    array_literal = _extract_array_literal(html, cursor)
-    if array_literal is None:
-        logger.debug("Danbolig: unterminated documents array literal")
-        return []
-
-    try:
-        json_text = _single_to_double_quoted_json(array_literal)
-        parsed = json.loads(json_text)
-    except (ValueError, json.JSONDecodeError) as exc:
-        logger.warning("Danbolig: failed to parse documents block: %s", exc)
-        return []
-
-    if not isinstance(parsed, list):
-        return []
-
-    refs: list[DocumentRef] = []
-    for entry in parsed:
-        if not isinstance(entry, dict):
+    for match in _DOCUMENTS_KEY_RE.finditer(html):
+        cursor = match.end()
+        # Skip whitespace after the colon.
+        while cursor < len(html) and html[cursor].isspace():
+            cursor += 1
+        if cursor >= len(html):
             continue
-        url = entry.get("url")
-        if not isinstance(url, str) or not url:
+
+        if html.startswith("null", cursor):
             continue
-        name = entry.get("name") or ""
-        kind = entry.get("type") or ""
-        refs.append(
-            DocumentRef(
-                url=url,
-                filename_hint=str(name),
-                kind=str(kind),
-                source_url=url,
+        if html[cursor] != "[":
+            continue
+
+        array_literal = _extract_array_literal(html, cursor)
+        if array_literal is None:
+            logger.debug("Danbolig: unterminated documents array literal")
+            continue
+
+        try:
+            json_text = _single_to_double_quoted_json(array_literal)
+            parsed = json.loads(json_text)
+        except (ValueError, json.JSONDecodeError) as exc:
+            logger.warning("Danbolig: failed to parse documents block: %s", exc)
+            continue
+
+        if not isinstance(parsed, list):
+            continue
+
+        refs: list[DocumentRef] = []
+        for entry in parsed:
+            if not isinstance(entry, dict):
+                continue
+            url = entry.get("url")
+            if not isinstance(url, str) or not url:
+                continue
+            name = entry.get("name") or ""
+            kind = entry.get("type") or ""
+            refs.append(
+                DocumentRef(
+                    url=url,
+                    filename_hint=str(name),
+                    kind=str(kind),
+                    source_url=url,
+                )
             )
-        )
-    return refs
+        if refs:
+            return refs
+
+    return []

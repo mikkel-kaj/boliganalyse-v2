@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ImagePlaceholder } from './ImagePlaceholder';
 import { Expandable, ExpandableTrigger, ExpandableContent } from "@/components/ui/expandable";
+import DocumentsList from "@/components/DocumentsList";
 
 interface PropertyDetail {
     label: string;
@@ -392,6 +393,8 @@ const AnalysisDetailsView: React.FC<AnalysisDetailsViewProps> = ({
                                 ))}
                             </div>
                         </div>
+
+                        {propertyId && <DocumentsList listingId={propertyId} />}
 
                         {property.images && property.images.length > 0 && (
                             <div className="bg-card text-card-foreground rounded-xl p-6 mb-8">

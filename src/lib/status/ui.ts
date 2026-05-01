@@ -8,6 +8,7 @@ export const analysisStatusMessages: Record<AnalysisStatus, string> = {
   [AnalysisStatus.QUEUED]: "I kø til analyse...",
   [AnalysisStatus.FETCHING_HTML]: "Indlæser bolig-annonce...",
   [AnalysisStatus.PARSING_DATA]: "Udtrækker boligdata...",
+  [AnalysisStatus.AWAITING_DOCUMENTS]: "Henter dokumenter fra mægler (~30 sek)",
   [AnalysisStatus.PREPARING_ANALYSIS]: "Forbereder AI-analyse...",
   [AnalysisStatus.ANALYZING]: "Analyserer boligdata...",
   [AnalysisStatus.GENERATING_INSIGHTS]: "Genererer indsigter og anbefalinger...",
@@ -44,11 +45,12 @@ export function getStatusIndicatorClasses(currentStatus: AnalysisStatus, targetS
     [AnalysisStatus.QUEUED]: 1,
     [AnalysisStatus.FETCHING_HTML]: 2,
     [AnalysisStatus.PARSING_DATA]: 3,
-    [AnalysisStatus.PREPARING_ANALYSIS]: 4,
-    [AnalysisStatus.ANALYZING]: 5,
-    [AnalysisStatus.GENERATING_INSIGHTS]: 6,
-    [AnalysisStatus.FINALIZING]: 7,
-    [AnalysisStatus.COMPLETED]: 8
+    [AnalysisStatus.AWAITING_DOCUMENTS]: 4,
+    [AnalysisStatus.PREPARING_ANALYSIS]: 5,
+    [AnalysisStatus.ANALYZING]: 6,
+    [AnalysisStatus.GENERATING_INSIGHTS]: 7,
+    [AnalysisStatus.FINALIZING]: 8,
+    [AnalysisStatus.COMPLETED]: 9
   };
 
   // Base class for all indicators

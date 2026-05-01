@@ -63,6 +63,17 @@ export interface StartAnalysisResponse {
   is_existing: boolean;
 }
 
+export interface ListingDocument {
+  id: string;
+  kind: string | null;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  source: string;
+  source_url: string | null;
+  created_at: string;
+}
+
 export interface FeedbackPayload {
   feedback_type: 'idea' | 'problem' | 'other' | string;
   message: string;
@@ -116,6 +127,16 @@ export const apiClient = {
 
   listRecent(limit = 20): Promise<Listing[]> {
     return request<Listing[]>(`/listings?limit=${limit}`);
+  },
+
+  getDocuments(listingId: string): Promise<ListingDocument[]> {
+    return request<ListingDocument[]>(
+      `/listings/${encodeURIComponent(listingId)}/documents`,
+    );
+  },
+
+  documentDownloadUrl(listingId: string, documentId: string): string {
+    return `${API_URL}/listings/${encodeURIComponent(listingId)}/documents/${encodeURIComponent(documentId)}`;
   },
 
   submitFeedback(payload: FeedbackPayload): Promise<{ id: string; created_at: string }> {

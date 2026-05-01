@@ -9,6 +9,7 @@ export enum AnalysisStatus {
   // Processing states (granular updates)
   FETCHING_HTML = "fetching_html",       // Fetching the HTML content
   PARSING_DATA = "parsing_data",         // Extracting structured data from HTML
+  AWAITING_DOCUMENTS = "awaiting_documents", // Waiting on broker to email documents
   PREPARING_ANALYSIS = "preparing_analysis", // Preparing data for AI analysis
   ANALYZING = "analyzing",               // AI is analyzing the data
   GENERATING_INSIGHTS = "generating_insights", // Generating insights from analysis
@@ -40,6 +41,7 @@ export const STATUS_GROUPS: Record<AnalysisStatus, StatusGroup> = {
   [AnalysisStatus.QUEUED]: StatusGroup.INITIAL,
   [AnalysisStatus.FETCHING_HTML]: StatusGroup.PROCESSING,
   [AnalysisStatus.PARSING_DATA]: StatusGroup.PROCESSING,
+  [AnalysisStatus.AWAITING_DOCUMENTS]: StatusGroup.PROCESSING,
   [AnalysisStatus.PREPARING_ANALYSIS]: StatusGroup.PROCESSING,
   [AnalysisStatus.ANALYZING]: StatusGroup.PROCESSING,
   [AnalysisStatus.GENERATING_INSIGHTS]: StatusGroup.PROCESSING,
@@ -60,11 +62,12 @@ export const PROCESSING_ORDER: Record<AnalysisStatus, number> = {
   [AnalysisStatus.QUEUED]: 1,
   [AnalysisStatus.FETCHING_HTML]: 2,
   [AnalysisStatus.PARSING_DATA]: 3,
-  [AnalysisStatus.PREPARING_ANALYSIS]: 4,
-  [AnalysisStatus.ANALYZING]: 5,
-  [AnalysisStatus.GENERATING_INSIGHTS]: 6,
-  [AnalysisStatus.FINALIZING]: 7,
-  [AnalysisStatus.COMPLETED]: 8,
+  [AnalysisStatus.AWAITING_DOCUMENTS]: 4,
+  [AnalysisStatus.PREPARING_ANALYSIS]: 5,
+  [AnalysisStatus.ANALYZING]: 6,
+  [AnalysisStatus.GENERATING_INSIGHTS]: 7,
+  [AnalysisStatus.FINALIZING]: 8,
+  [AnalysisStatus.COMPLETED]: 9,
   [AnalysisStatus.ERROR]: -1,
   [AnalysisStatus.INVALID_URL]: -1,
   [AnalysisStatus.TIMEOUT]: -1,
