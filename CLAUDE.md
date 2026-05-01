@@ -3,8 +3,6 @@
 ## Where things live
 
 - **Code repo:** `https://github.com/mikkel-kaj/boliganalyse-v2` (origin/main).
-  The old repo at `mikkel-kaj/bolig-analyse-ai` is preserved for history but
-  no longer the source of truth.
 - **Deployment target:** self-hosted Supabase v1.26.04 + Caddy + a FastAPI
   service on a Hetzner CPX31 VPS at `178.104.213.102`. SSH alias:
   `ssh boliganalyse` (key: `~/.ssh/boliganalyse_hetzner`, user: `root`).
@@ -45,7 +43,9 @@
   Requires `api/.env` with `SUPABASE_*`, `ANTHROPIC_API_KEY`,
   `FIRECRAWL_API_KEY` etc. (see `api/.env.example`).
 - `uv run ruff check`: Lint.
-- `uv run pytest`: Tests (when written).
+- `uv run pytest`: Tests. The `tests/` folder is sparse but real
+  (e.g. `test_migration_documents.py` spins up a testcontainers
+  Postgres and runs the baseline + documents migrations).
 
 ## Project structure
 
@@ -100,9 +100,8 @@ tool-use loop semantics.
 - **API service uses internal Kong URL:** inside the docker network,
   `SUPABASE_URL=http://kong:8000`. The public hostname is for
   external/admin access only.
-- **DST tools default ON for the API.** The legacy edge function (which
-  is now deleted) used to force them OFF because of wall-clock fragility.
-  The long-running API has no such cap.
+- **DST tools default ON.** Toggle with `ENABLE_DST_TOOLS=false` if a
+  DST outage is dragging analyses out; otherwise leave them on.
 - **CORS:** `CORS_ORIGINS` env (comma-separated) gates which origins the
   API accepts. Add new frontend hostnames there.
 - **SSE buffering:** Caddy MUST have `flush_interval -1` on the
@@ -132,30 +131,3 @@ tool-use loop semantics.
   redirects. `GET /listings/{id}/documents/{doc_id}` streams the PDF
   bytes from Storage so the bucket can stay private and the hostname
   stays `api.<domain>`.
-
-## Historical context (notes for git-history spelunking)
-
-The repo went through two major migrations before reaching the current
-shape. Both are visible in the commit history but no longer in the code:
-
-1. **Deno edge function → FastAPI api service.** The old repo had
-   `supabase/functions/analyze-apartment/` running on the Supabase edge
-   runtime and a `private`/`public` schema split where the frontend
-   used Supabase JS to read a mirror table over Realtime. The cutover
-   replaced Deno with FastAPI, edge runtime with a long-running
-   container (no wall-clock cap), Realtime subscriptions with SSE, and
-   the schema split with a single `app` schema reachable only via the
-   service-role-key-holding api server.
-
-2. **Documents pipeline added.** `app.listing_documents`,
-   `app.inbound_emails`, the postfix container, the
-   `awaiting_documents` status, and Claude's PDF document-block
-   ingestion all landed together. Direct-scrape (Danbolig pattern) and
-   email-gated (Home pattern) both flow into the same Storage bucket
-   and the same analyser. See ARCHITECTURE.md → "Documents pipeline"
-   for the full topology.
-
-The state machine, status enum values, provider list, and Claude prompt
-all transferred 1:1 across both migrations. The JSON shape returned by
-`/listings/{id}` matches what the old `client_apartment_listings` row
-looked like, minus the internal columns.

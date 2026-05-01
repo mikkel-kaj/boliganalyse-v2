@@ -151,4 +151,3 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for:
 - The documents subsystem (direct vs email-gated paths) and how to add
   a new realtor source
 - DB schema and the deliberate single-schema / service-role-only model
-- Why we don't use Supabase JS in the browser anymore

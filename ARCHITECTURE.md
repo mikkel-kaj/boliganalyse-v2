@@ -31,7 +31,7 @@
    DNS (Cloudflare, DNS-only / no proxy):
      supabase.dev.boliganalyse.ai → Caddy → Kong (Postgres/Auth/Studio)
      api.dev.boliganalyse.ai      → Caddy → FastAPI :8000
-     dev.boliganalyse.ai          → Caddy → SPA build (optional)
+     dev.boliganalyse.ai          → Caddy → SPA build (bind-mount)
      inbox.dev.boliganalyse.ai    → Postfix :25 (DNS-only; A + MX + PTR)
 
    Frontend (Vite/React)
@@ -63,11 +63,6 @@ api/                          FastAPI service (Python 3.12, uv)
   src/
     main.py                   App init, lifespan, router wiring
     config.py                 pydantic-settings env loader
-    routes/
-      listings.py             POST /listings, GET, list, SSE events
-      feedback.py             POST /feedback
-      schemas.py              Pydantic response models (public surface)
-      dependencies.py         FastAPI deps for the repo singleton
     services/
       listing_processor.py    State-machine orchestrator
       ai_analyzer.py          Claude tool-use loop, analyze_with_documents
@@ -127,15 +122,25 @@ src/                          Frontend (Vite + React + TypeScript)
   contexts/StatusContext.tsx  Pulls status via API + EventSource
   pages/, components/, lib/
 
-supabase/migrations/          Single baseline:
+supabase/migrations/          Forward-only migrations:
   20260428160000_app_schema_baseline.sql
+  20260429120000_listing_documents_and_inbound_emails.sql
 
 deploy/
-  docker-compose.app.yml      Adds the api service to the supabase stack
+  docker-compose.app.yml      api + postfix + db SSL + caddy SPA mount
   Caddyfile.example           SSE-friendly reverse proxy block
+  RUNBOOK_DOCUMENTS.md        Documents-subsystem bring-up runbook
+  postfix/                    Receive-only Postfix container source
   scripts/
-    apply-migrations.sh       Runs supabase db push against the live DB
+    apply-migrations.sh       supabase db push against the live DB (5433/TLS)
     deploy-api.sh             Rsyncs api/ + rebuilds the api container
+    deploy-postfix.sh         Rsyncs postfix/ + rebuilds the postfix container
+    deploy-frontend.sh        Builds SPA + rsyncs to the host volume
+    sync-compose.sh           Rsyncs just the compose overlay (no rebuild)
+    setup-postgres-tls.sh     Self-signed cert for supabase-db
+    setup-postfix.sh          Let's Encrypt cert + cron for inbox.<domain>
+    ensure-documents-bucket.sh   Creates the private documents bucket
+    smoke-test-documents.sh   End-to-end documents-pipeline assertion
     generate-keys.mjs         Derives JWTs from JWT_SECRET
 ```
 
@@ -247,9 +252,8 @@ loop:
    strings) to extract the JSON object regardless of fences or chat
    around it.
 
-Re-enabling DST tools by default is safe now: the new server has no
-wall-clock cap. The `ENABLE_DST_TOOLS` env var still flips them off
-for debugging or DST outages.
+DST tools default to ON. `ENABLE_DST_TOOLS=false` removes them from
+the request payload — useful when DST is down.
 
 When `ListingProcessorService` calls
 `AIAnalyzerService.analyze_with_documents(text, pdf_documents)`, every
@@ -470,6 +474,3 @@ Both are unauthenticated for now (matching the rest of the read API).
   `/etc/cron.d/boliganalyse-postfix-renew`, runs daily at 03:00, and
   reloads postfix on successful renewal. Caddy needs to be stopped
   during initial issuance only — the renewal flow is non-disruptive.
-- Frontend hosting is still up to the user — Netlify with
-  `VITE_API_URL=https://api.dev.boliganalyse.ai` is the simplest path;
-  self-hosting behind the same Caddy is the alternative.

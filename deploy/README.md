@@ -53,14 +53,14 @@ large. We pin to a known-good tag.
 
 ```bash
 cd /opt
-sudo git clone --depth 1 --branch v1.24.09 https://github.com/supabase/supabase.git
+sudo git clone --depth 1 --branch v1.26.04 https://github.com/supabase/supabase.git
 sudo chown -R $USER:$USER /opt/supabase
 cp -R /opt/supabase/docker /opt/supabase-stack
 cd /opt/supabase-stack
 ```
 
-> **Pinning:** `v1.24.09` is what was current when this guide was
-> written. Bump deliberately — never `latest`.
+> **Pinning:** `v1.26.04` is the currently-deployed tag. Bump
+> deliberately — never `latest`.
 
 ### 2. Configure secrets
 
