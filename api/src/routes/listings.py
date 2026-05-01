@@ -7,8 +7,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sse_starlette.sse import EventSourceResponse
 from starlette.requests import Request
 
+from src.documents.storage import DocumentStorage
+from src.repositories.document import DocumentRepository
 from src.repositories.listing import ListingRepository
-from src.routes.dependencies import get_repository
+from src.routes.dependencies import (
+    get_document_repository,
+    get_document_storage,
+    get_repository,
+)
 from src.routes.schemas import (
     ListingResponse,
     StartAnalysisRequest,
@@ -31,6 +37,10 @@ _SSE_MAX_DURATION_SECONDS = 600
 async def start_analysis(
     payload: StartAnalysisRequest,
     repository: Annotated[ListingRepository, Depends(get_repository)],
+    document_repository: Annotated[
+        DocumentRepository, Depends(get_document_repository)
+    ],
+    document_storage: Annotated[DocumentStorage, Depends(get_document_storage)],
 ) -> StartAnalysisResponse:
     validation = validate_listing_url(payload.url)
     if not validation.valid:
@@ -53,7 +63,15 @@ async def start_analysis(
         listing = await repository.create_listing(payload.url, normalized)
         logger.info("Created new listing %s", listing["id"])
 
-    asyncio.create_task(_run_processor(listing["id"], listing["url"], repository))
+    asyncio.create_task(
+        _run_processor(
+            listing["id"],
+            listing["url"],
+            repository,
+            document_repository,
+            document_storage,
+        )
+    )
 
     return StartAnalysisResponse(
         listing=ListingResponse.from_row(listing),
@@ -139,13 +157,21 @@ async def stream_listing_events(
 
 
 async def _run_processor(
-    listing_id: str, url: str, repository: ListingRepository
+    listing_id: str,
+    url: str,
+    repository: ListingRepository,
+    document_repository: DocumentRepository,
+    document_storage: DocumentStorage,
 ) -> None:
     """Background task wrapper. Errors are caught + persisted in the
     processor itself; this wrapper just exists so a stray exception
     can't crash the asyncio task without being logged."""
     try:
-        processor = ListingProcessorService(repository)
+        processor = ListingProcessorService(
+            repository,
+            document_repository=document_repository,
+            document_storage=document_storage,
+        )
         await processor.process_listing(listing_id, url)
     except Exception:
         logger.exception("Processor crashed for listing %s", listing_id)

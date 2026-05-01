@@ -97,3 +97,38 @@ FORCE_FINAL_JSON_INSTRUCTION = (
     "i det skema, jeg specificerede i den oprindelige instruktion. "
     "Ingen forklarende tekst før eller efter — kun JSON."
 )
+
+
+def build_analysis_prompt_with_documents(
+    text_content: str, document_filenames: list[str]
+) -> str:
+    """Variant of build_analysis_prompt() used when the broker's salgs-
+    materiale-PDFs are attached to the request as `document` content blocks.
+
+    The base prompt assumes everything lives in the boligannonce text. With
+    the PDFs present we want Claude to read them, cite them in `excerpt`
+    fields (instead of saying "Se hos mægler"), and use them as the primary
+    source for tilstand, el-installation og energimærke vurderinger.
+    """
+    base = build_analysis_prompt(text_content)
+    if not document_filenames:
+        return base
+
+    files_list = "\n".join(f"   - {name}" for name in document_filenames)
+    addendum = f"""
+
+   ** VEDHÆFTEDE SALGSDOKUMENTER **
+   Følgende PDF'er er vedhæftet som document content blocks i denne
+   forespørgsel. Du SKAL læse dem og bruge deres indhold som primær kilde
+   for tilstand, el-installation og energimærke i din analyse:
+{files_list}
+
+   - Henvis altid konkret til dokumentet i feltet "excerpt", f.eks.
+     "Tilstandsrapport, side 4: 'tagdækning K2 — anbefalet udskiftning'".
+   - Hvis et område (fx tilstand) faktisk fremgår af et vedhæftet dokument,
+     må du IKKE skrive "Se hos mægler" eller "ikke nævnt i annoncen". Brug
+     dokumentet.
+   - Hvis et dokument modsiger annonceteksten, fortæl køberen det og citer
+     begge kilder.
+"""
+    return base + addendum

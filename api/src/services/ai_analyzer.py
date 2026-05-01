@@ -1,10 +1,15 @@
+import base64
 import logging
 from typing import Any
 
 from anthropic import AsyncAnthropic
 
 from src.config import get_settings
-from src.services.prompt import FORCE_FINAL_JSON_INSTRUCTION, build_analysis_prompt
+from src.services.prompt import (
+    FORCE_FINAL_JSON_INSTRUCTION,
+    build_analysis_prompt,
+    build_analysis_prompt_with_documents,
+)
 from src.services.tool_registry import ToolRegistry
 from src.types.models import HTMLParseResult
 
@@ -55,9 +60,60 @@ class AIAnalyzerService:
             raise ValueError("No text content provided for analysis")
 
         logger.info("Starting analyze_text with text length: %d", len(text_content))
-
         prompt = build_analysis_prompt(text_content)
-        response = await self._analyze_with_tools(prompt)
+        return await self._run_analysis([{"role": "user", "content": prompt}])
+
+    async def analyze_with_documents(
+        self,
+        text_content: str,
+        pdf_documents: list[tuple[str, bytes]],
+    ) -> dict[str, Any]:
+        """Analyse a listing with the broker's PDFs attached as Claude
+        document blocks (tilstandsrapport, energimærke, elinstallation, …).
+
+        Each entry in `pdf_documents` is a `(filename, pdf_bytes)` pair.
+        The prompt is rewritten via build_analysis_prompt_with_documents
+        so the model knows the PDFs are part of the input and is told to
+        reference them explicitly in `excerpt` fields. Falls back to the
+        text-only path when `pdf_documents` is empty.
+        """
+        if not text_content and not pdf_documents:
+            raise ValueError("No text or documents provided for analysis")
+
+        if not pdf_documents:
+            return await self.analyze_text(text_content)
+
+        logger.info(
+            "Starting analyze_with_documents (text=%d chars, pdfs=%d)",
+            len(text_content or ""),
+            len(pdf_documents),
+        )
+        prompt = build_analysis_prompt_with_documents(
+            text_content, [name for name, _ in pdf_documents]
+        )
+
+        content_blocks: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+        for filename, pdf_bytes in pdf_documents:
+            content_blocks.append(
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "application/pdf",
+                        "data": base64.standard_b64encode(pdf_bytes).decode("ascii"),
+                    },
+                    "title": filename,
+                }
+            )
+
+        return await self._run_analysis(
+            [{"role": "user", "content": content_blocks}]
+        )
+
+    async def _run_analysis(
+        self, initial_messages: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        response = await self._analyze_with_tools(initial_messages)
 
         stop_reason = response.get("stop_reason")
         if stop_reason and stop_reason != "end_turn":
@@ -69,9 +125,11 @@ class AIAnalyzerService:
 
         return self._extract_json_from_response(text_blocks[-1]["text"])
 
-    async def _analyze_with_tools(self, prompt: str) -> dict[str, Any]:
+    async def _analyze_with_tools(
+        self, initial_messages: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         tools = self._tool_registry.get_all_definitions()
-        messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
+        messages: list[dict[str, Any]] = list(initial_messages)
         accumulated_text_blocks: list[dict[str, Any]] = []
 
         data = await self._make_claude_request(messages, tools=tools)

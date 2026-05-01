@@ -165,8 +165,11 @@ class ListingProcessorService:
         await self._repository.update_status(
             listing_id, AnalysisStatus.GENERATING_INSIGHTS
         )
-        analysis = await self._ai_analyzer.analyze_multiple_texts(
-            parse_result, original_parse
+
+        combined_text = self._combine_listing_texts(parse_result, original_parse)
+        pdf_documents = await self._load_pdf_documents(listing_id)
+        analysis = await self._ai_analyzer.analyze_with_documents(
+            combined_text, pdf_documents
         )
 
         await self._repository.update_status(listing_id, AnalysisStatus.FINALIZING)
@@ -223,8 +226,10 @@ class ListingProcessorService:
             await self._repository.update_status(
                 listing_id, AnalysisStatus.GENERATING_INSIGHTS
             )
-            analysis = await self._ai_analyzer.analyze_multiple_texts(
-                primary_parse, None
+
+            pdf_documents = await self._load_pdf_documents(listing_id)
+            analysis = await self._ai_analyzer.analyze_with_documents(
+                primary_parse.extracted_text or "", pdf_documents
             )
 
             await self._repository.update_status(
@@ -279,6 +284,69 @@ class ListingProcessorService:
             repo=repo,
             source_email_id=source_email_id,
         )
+
+    @staticmethod
+    def _combine_listing_texts(
+        primary: HTMLParseResult, secondary: HTMLParseResult | None
+    ) -> str:
+        """Concatenate the listing texts the way analyze_multiple_texts used
+        to. Pulled out as a helper because both the regular flow and the
+        awaiting_documents resume path now need the same text + add PDFs."""
+        primary_text = primary.extracted_text or ""
+        if secondary is None:
+            return primary_text
+        return (
+            f"ORIGINAL ARTICLE FROM BOLIGSIDEN -- > {primary_text}"
+            f"\n\n---\n\n ARTICLE FROM THE ORIGINAL REALESTATE AGENT:\n"
+            f"{secondary.extracted_text or ''}"
+        )
+
+    async def _load_pdf_documents(
+        self, listing_id: str
+    ) -> list[tuple[str, bytes]]:
+        """Download all listing PDFs from Storage so they can be attached
+        to the Claude request as document content blocks. Returns an empty
+        list when storage/repo aren't wired up or when nothing's stored
+        yet — analysis falls back to text-only in that case.
+
+        Best-effort: a per-PDF download failure is logged and skipped, not
+        raised. We'd rather analyse with the PDFs that are reachable than
+        fail the whole listing because one document is corrupt.
+        """
+        if self._document_repository is None or self._document_storage is None:
+            return []
+
+        try:
+            rows = await self._document_repository.list_for_listing(listing_id)
+        except Exception:
+            logger.exception(
+                "Failed to list documents for listing %s; analysing text-only",
+                listing_id,
+            )
+            return []
+
+        documents: list[tuple[str, bytes]] = []
+        for row in rows:
+            if row.content_type != "application/pdf":
+                continue
+            try:
+                content = await self._document_storage.download(row.storage_path)
+            except Exception:
+                logger.exception(
+                    "Failed to download document %s (%s) from storage; skipping",
+                    row.id,
+                    row.storage_path,
+                )
+                continue
+            documents.append((row.filename, content))
+
+        if documents:
+            logger.info(
+                "Loaded %d PDF(s) for listing %s analysis",
+                len(documents),
+                listing_id,
+            )
+        return documents
 
     async def _reparse_cached_html(
         self, url: str, html_content: str | None

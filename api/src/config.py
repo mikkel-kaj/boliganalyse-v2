@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = Field(..., alias="ANTHROPIC_API_KEY")
     anthropic_model: str = Field("claude-opus-4-7", alias="ANTHROPIC_MODEL")
-    anthropic_max_tokens: int = Field(8000, alias="ANTHROPIC_MAX_TOKENS")
+    anthropic_max_tokens: int = Field(16000, alias="ANTHROPIC_MAX_TOKENS")
 
     firecrawl_api_key: str = Field("", alias="FIRECRAWL_API_KEY")
 

@@ -15,9 +15,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from src.config import get_settings
 from src.documents.inbound import ParsedInboundEmail, parse_inbound_email
+from src.documents.storage import DocumentStorage
+from src.repositories.document import DocumentRepository
 from src.repositories.inbound_email import InboundEmailRepository
 from src.repositories.listing import ListingRepository
 from src.routes.dependencies import (
+    get_document_repository,
+    get_document_storage,
     get_inbound_email_repository,
     get_repository,
 )
@@ -35,6 +39,10 @@ async def inbound_email(
     email_repo: Annotated[
         InboundEmailRepository, Depends(get_inbound_email_repository)
     ],
+    document_repository: Annotated[
+        DocumentRepository, Depends(get_document_repository)
+    ],
+    document_storage: Annotated[DocumentStorage, Depends(get_document_storage)],
     x_inbound_secret: Annotated[str | None, Header(alias="X-Inbound-Secret")] = None,
 ) -> dict[str, Any]:
     settings = get_settings()
@@ -85,7 +93,13 @@ async def inbound_email(
         }
 
     try:
-        await _resume_pipeline(listing_repo, parsed, inserted.id)
+        await _resume_pipeline(
+            listing_repo,
+            document_repository,
+            document_storage,
+            parsed,
+            inserted.id,
+        )
     except Exception as exc:
         logger.exception(
             "Pipeline resume failed for listing %s (email %s)",
@@ -103,11 +117,17 @@ async def inbound_email(
 
 async def _resume_pipeline(
     listing_repo: ListingRepository,
+    document_repository: DocumentRepository,
+    document_storage: DocumentStorage,
     parsed: ParsedInboundEmail,
     inbound_email_id: str,
 ) -> None:
     assert parsed.listing_id is not None
-    processor = ListingProcessorService(listing_repo)
+    processor = ListingProcessorService(
+        listing_repo,
+        document_repository=document_repository,
+        document_storage=document_storage,
+    )
     await processor.complete_with_documents(
         parsed.listing_id,
         parsed.document_urls,
