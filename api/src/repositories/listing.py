@@ -71,6 +71,26 @@ class ListingRepository:
             return None
         return response.data
 
+    async def get_for_resume(self, listing_id: str) -> dict[str, Any] | None:
+        """Fetch fields needed to resume an awaiting_documents listing.
+
+        Returns html_primary and text_primary in addition to the public
+        projection so complete_with_documents() can rebuild analyser input
+        without re-fetching the listing HTML. Kept separate from get_by_id
+        because html_primary is ~800 KB and the SSE poll loop calls
+        get_by_id on every status change.
+        """
+        response = (
+            await self._table()
+            .select(self._LISTING_COLUMNS + ", html_primary, text_primary")
+            .eq("id", listing_id)
+            .maybe_single()
+            .execute()
+        )
+        if response is None:
+            return None
+        return response.data
+
     async def list_recent(self, *, limit: int = 20) -> list[dict[str, Any]]:
         response = (
             await self._table()

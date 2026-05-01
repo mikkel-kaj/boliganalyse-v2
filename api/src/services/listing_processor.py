@@ -114,6 +114,18 @@ class ListingProcessorService:
         await self._maybe_ingest_provider_documents(listing_id, provider, html_content)
 
         if await self._maybe_submit_home_lead(listing_id, provider, html_content):
+            # Persist what we have so the awaiting_documents card can show
+            # the listing image + realtor, and complete_with_documents() has
+            # html_primary to feed back into the analyser when the broker
+            # email lands. Without this, html_primary stays NULL and the
+            # post-email analyse() call has nothing to work from.
+            await self._repository.update_listing_metadata(
+                listing_id,
+                text_primary=parse_result.extracted_text,
+                html_primary=html_content,
+                property_image_url=parse_result.property_image_url,
+                realtor=extract_domain(url),
+            )
             return
 
         original_html: str | None = None
@@ -175,7 +187,9 @@ class ListingProcessorService:
         submitted. Returns True on success, False if the listing is no
         longer in `awaiting_documents` (already finished or failed).
         """
-        listing = await self._repository.get_by_id(listing_id)
+        # Use get_for_resume so html_primary + text_primary are loaded —
+        # the analyser needs them and they're not in the public projection.
+        listing = await self._repository.get_for_resume(listing_id)
         if listing is None:
             logger.warning(
                 "complete_with_documents: listing %s not found", listing_id
