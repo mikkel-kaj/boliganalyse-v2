@@ -9,6 +9,40 @@
 # pipes the legacy edge-function env vars while phase-2 cutover is in flight.
 
 services:
+  # ---- supabase-db: enable TLS so the supabase CLI can connect ------------
+  # The stock supabase/postgres image ships with ssl=off. `supabase db push`
+  # always negotiates TLS first and aborts when the server refuses, so we
+  # have to turn it on. The wire is already protected by the SSH tunnel
+  # operators use (`ssh -L 5432:localhost:5432 …`), so a self-signed cert
+  # is sufficient — sslmode=require accepts any cert.
+  #
+  # Run deploy/scripts/setup-postgres-tls.sh on the VPS once to populate
+  # ./postgres-tls/{server.crt,server.key} with uid 105:106 (the in-container
+  # postgres user) and 0600 on the key — postgres refuses to start otherwise.
+  db:
+    volumes:
+      - ./postgres-tls:/etc/postgresql-tls:ro
+    # Bind directly to the host's loopback on 5433 so `supabase db push`
+    # (over an SSH tunnel) can reach the db without going through the
+    # supabase-pooler service, which owns host port 5432 and does not
+    # speak TLS. Loopback-bound — never exposed publicly.
+    ports:
+      - "127.0.0.1:5433:5432"
+    command:
+      [
+        "postgres",
+        "-c",
+        "config_file=/etc/postgresql/postgresql.conf",
+        "-c",
+        "log_min_messages=fatal",
+        "-c",
+        "ssl=on",
+        "-c",
+        "ssl_cert_file=/etc/postgresql-tls/server.crt",
+        "-c",
+        "ssl_key_file=/etc/postgresql-tls/server.key"
+      ]
+
   # ---- New FastAPI server (phase 2) ---------------------------------------
   api:
     build:

@@ -5,12 +5,16 @@
 # The CLI's `db push` reads supabase/migrations and applies anything not yet
 # present in the target's `supabase_migrations.schema_migrations` table.
 #
-# Set SELF_HOSTED_DB_URL in your shell before running, e.g.:
-#   export SELF_HOSTED_DB_URL='postgresql://postgres:PWD@supabase.your-domain.example:5432/postgres'
+# Set SELF_HOSTED_DB_URL in your shell before running. Tunnel via SSH so
+# nothing is exposed publicly, and target the db's loopback port 5433 on
+# the VPS (NOT 5432 — that's supabase-pooler, which doesn't speak TLS):
 #
-# Recommended: don't expose 5432 publicly. Tunnel it instead:
-#   ssh -L 5432:localhost:5432 user@hetzner
-#   export SELF_HOSTED_DB_URL='postgresql://postgres:PWD@localhost:5432/postgres'
+#   ssh -fN -L 5433:localhost:5433 boliganalyse
+#   export SELF_HOSTED_DB_URL='postgresql://postgres:PWD@localhost:5433/postgres?sslmode=require'
+#
+# The supabase-db postgres container has ssl=on (see docker-compose.app.yml
+# + setup-postgres-tls.sh). The cert is self-signed, so use sslmode=require
+# (not verify-full) — the SSH tunnel already protects the wire.
 
 set -euo pipefail
 
