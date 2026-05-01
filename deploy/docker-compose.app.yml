@@ -67,6 +67,10 @@ services:
       ENABLE_DST_TOOLS: ${ENABLE_DST_TOOLS:-true}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Shared with the postfix container so the inbound-email webhook can
+      # verify Postfix's X-Inbound-Secret header. Both services read the
+      # same value from /opt/supabase-stack/.env.
+      INBOUND_EMAIL_SECRET: ${INBOUND_EMAIL_SECRET}
     # No host port mapping — the in-network Caddy reaches the api
     # service via docker DNS at http://api:8000. Keeping the API off the
     # host loopback also limits the blast radius if the box is compromised.

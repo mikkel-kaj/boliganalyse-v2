@@ -11,6 +11,11 @@
 
 smtp       inet  n       -       n       -       -       smtpd
 
+# postlog — required when maillog_file is set in main.cf. All postfix
+# daemons send log lines through this unix socket; postlogd writes them
+# to the configured file (we use /dev/stdout so docker logs picks them up).
+postlog    unix-dgram n  -       n       -       1       postlogd
+
 # Internal plumbing — required by Postfix itself.
 pickup     unix  n       -       n       60      1       pickup
 cleanup    unix  n       -       n       -       0       cleanup

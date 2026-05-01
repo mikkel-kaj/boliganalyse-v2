@@ -95,3 +95,8 @@ export_environment =
 
 # Quiet down noisy reverse-DNS warnings — we don't reject on PTR.
 disable_vrfy_command = yes
+
+# Route all postfix logging to stdout so `docker logs supabase-postfix-1`
+# shows it. The slim debian image has no syslog daemon, which is what
+# postfix logs to by default — without this, every line is dropped.
+maillog_file = /dev/stdout
